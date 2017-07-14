@@ -14,7 +14,8 @@ A DECTalk interface bot for Discord, designed to do all of the text-to-speech st
 
 ## Usage
 - Activate the virtualenv
-- `python code/hawking.py`
+- `cd` into `hawking/code/` (Note, you need `hawking.py` to be in your current working directory, as theres some weird pathing issues with the required files for `say.exe`
+- `python hawking.py`
 
 ## Commands
 - `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
