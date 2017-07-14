@@ -1,0 +1,36 @@
+# Don't share tokens!
+token.json
+
+# Don't share and old versions of files
+*old.*
+
+# Ignore these directories
+bin/
+include/
+lib/
+local/
+tmp/
+
+Include/
+Lib/
+Scripts/
+tcl/
+etc/
+share/
+
+# Ignore sublime project files
+*.sublime-project
+*.sublime-workspace
+
+# Ignore gitattributes
+.gitattributes
+
+# Ignore the pip-selfcheck, allegedly it's the result of 
+# something weird happening when you run pip in a VM?
+pip-selfcheck.json
+
+# Ignore .pyc files
+*.pyc
+
+## Ignore my notes
+register.txt
