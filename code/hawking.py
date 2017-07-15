@@ -409,6 +409,18 @@ class SpeechPreset:
         )
         await self.speech.say.callback(self.speech, ctx, message=message)
 
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def whalers(self, ctx):
+        """On the moon!"""
+        message = (
+            "[_<1,13>]we're[_<1,18>]whalers[_<1,17>]on[_<1,18>]the[_<1,20>]moon[_<400,13>]we"
+            "[_<1,20>]carry[_<1,18>]a[_<1,20>]har[_<1,22>]poon[_<1,22>]but there[_<1,23>]aint "
+            "no[_<1,15>]whales[_<1,23>]so we[_<1,22>]tell tall[_<1,18>]tales and[_<1,20>]sing "
+            "our[_<1,18>]whale[_<1,17>]ing[_<1,18>]tune"
+        )
+        await self.speech.say.callback(self.speech, ctx, message=message)
+
 ## Main
 
 def load_json(path):
