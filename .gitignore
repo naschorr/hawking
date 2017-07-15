@@ -10,6 +10,7 @@ include/
 lib/
 local/
 tmp/
+temp/
 
 Include/
 Lib/

@@ -397,6 +397,18 @@ class SpeechPreset:
         )
         await self.speech.say.callback(self.speech, ctx, message=message)
 
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def one(self, ctx):
+        """We are number one!"""
+        message = (
+            "[dah<450,18>][dah<150,25>][dah<75,24>][dah<75,25>][dah<75,24>][dah<75,25>]"
+            "[dah<150,24>][dah<150,25>][dah<300,21>][dah<600,18>][dah<150,18>][dah<150,21>]"
+            "[dah<150,25>][dah<300,26>][dah<300,21>][dah<300,26>][dah<300,28>][w<100,25>]ee"
+            "[ar<100,26>][n<100,25>]a[m<100,26>]r[w<100,25>]on"
+        )
+        await self.speech.say.callback(self.speech, ctx, message=message)
+
 ## Main
 
 def load_json(path):
