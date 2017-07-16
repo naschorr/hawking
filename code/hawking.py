@@ -351,7 +351,7 @@ class Speech:
             ## Todo: filter total_votes by members actually in the channel
             total_votes = len(state.skip_votes)
             total_members = len(await state.get_members()) - 1  # Subtract one for the bot itself
-            vote_percentage = total_members / total_votes
+            vote_percentage = round((total_votes / total_members) * 100)
 
             if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
                 await self.bot.say("Skip vote passed, skipping current speech.")
