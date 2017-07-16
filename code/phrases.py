@@ -195,3 +195,12 @@ class Phrases:
             "[yxar<500,25>hxar<500,25>fih<150,27>del<150,24>diy<150,22>diy<500,20>]"
         )
         await self._say_phrase(ctx, message)
+
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def snake(self, ctx):
+        """!"""
+        message = (
+            "snake? Snayke! SNAAAAAKEE!"
+        )
+        await self._say_phrase(ctx, message)
