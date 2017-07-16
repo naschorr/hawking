@@ -350,7 +350,7 @@ class Speech:
 
             ## Todo: filter total_votes by members actually in the channel
             total_votes = len(state.skip_votes)
-            total_members = len(state.get_members())
+            total_members = len(await state.get_members()) - 1  # Subtract one for the bot itself
             vote_percentage = total_members / total_votes
 
             if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
