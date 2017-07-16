@@ -1,5 +1,5 @@
 # hawking
-A DECTalk interface bot for Discord, designed to do all of the text-to-speech stuff you might've seen in Moonbase Alpha, using existing commands.
+A retro text-to-speech interface bot for Discord, designed to work with all of the stuff you might've seen in Moonbase Alpha, using the existing commands.
 
 ## Installation
 - Make sure you've got Python 3.5 or greater installed
@@ -22,6 +22,6 @@ A DECTalk interface bot for Discord, designed to do all of the text-to-speech st
 - `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 
-Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `SpeechPreset` section in the `\help` screen.
+Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen.
 
 Lastly, be sure to check out the [Moonbase Alpa](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam.

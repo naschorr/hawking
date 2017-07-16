@@ -1,11 +1,14 @@
 import os
+os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
 import subprocess
 import asyncio
 import time
 import json
+
 import discord
 from discord.ext import commands
+from phrases import Phrases
 
 if not discord.opus.is_loaded():
     # the 'opus' library here is opus.dll on windows
@@ -16,37 +19,164 @@ if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
 
 ## Config
-## Todo: fix this hot mess
-ACTIVATION_STRING = "\\"
-DESCRIPTION = "A DECTalk interface for Discord (Alpha)"
-ROOT_DIR = os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:-2])
-TOKEN_JSON = "token.json"
-TOKEN_JSON_PATH = os.sep.join([ROOT_DIR, TOKEN_JSON])
+## Bot Config
+ACTIVATION_STR = "\\"
+DESCRIPTION_STR = "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking"
+## Commands Config
+SKIP_VOTES = 3
+SKIP_PERCENTAGE = 33
+## Base Config
+ROOT_PATH = os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:-2])
+TOKEN_FILE = "token.json"
+TOKEN_FILE_PATH = os.sep.join([ROOT_PATH, TOKEN_FILE])
 TOKEN_KEY = "token"
-DECTALK_DIR_PATH = os.path.dirname(os.path.abspath(__file__))
+## DECTalk Config
+DECTALK_DIR_PATH = os.path.dirname(os.path.abspath(__file__))   ## Same dir as this script
 DECTALK_EXE = "say.exe"
 DECTALK_EXE_PATH = os.sep.join([DECTALK_DIR_PATH, DECTALK_EXE])
-DECTALK_ARGS = "-w"
-DECTALK_PREPEND = "[:phoneme on] "
+DECTALK_OUTPUT_DIR = "temp"
+DECTALK_OUTPUT_DIR_PATH = os.sep.join([ROOT_PATH, DECTALK_OUTPUT_DIR])
+DECTALK_PREPEND = "[:phoneme on]"
 DECTALK_APPEND = ""
-DECTALK_PAUSE_SIM = "    "
-DECTALK_FILE_OUTPUT_FORMAT = "{}.wav"
-TEMP_DIR = "temp"
-TEMP_DIR_PATH = os.sep.join([ROOT_DIR, TEMP_DIR])
-CHAR_LIMIT = 1000
-os.environ = {} # Remove env variables to give os.system a semblance of security
+CHAR_LIMIT = 1500
+NEWLINE_REPLACEMENT = "[_<250,10>]"
+
+
+class DECTalkController:
+    ## Keys
+    OUTPUT_DIR_PATH_KEY = "output_dir_path"
+    ARGS_KEY = "args"
+    PREPEND_KEY = "prepend"
+    APPEND_KEY = "append"
+    CHAR_LIMIT_KEY = "char_limit"
+    NEWLINE_REPLACEMENT_KEY = "newline_replacement"
+
+    ## Config
+    CHAR_LIMIT = CHAR_LIMIT
+    NEWLINE_REPLACEMENT = NEWLINE_REPLACEMENT
+    OUTPUT_EXTENSION = "wav"
+
+
+    def __init__(self, exe_path, **kwargs):
+        self.exe_path = exe_path
+        self.output_dir_path = kwargs.get(self.OUTPUT_DIR_PATH_KEY)
+        self.args = kwargs.get(self.ARGS_KEY, {})
+        self.prepend = kwargs.get(self.PREPEND_KEY)
+        self.append = kwargs.get(self.APPEND_KEY)
+        self.char_limit = kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT)
+        self.newline_replacement = kwargs.get(self.NEWLINE_REPLACEMENT_KEY, self.NEWLINE_REPLACEMENT)
+        self.output_extension = self.OUTPUT_EXTENSION
+
+        self.paths_to_delete = []
+
+        if(self.output_dir_path):
+            self._init_dir()
+
+
+    def _init_dir(self):
+        if(not os.path.exists(self.output_dir_path)):
+            os.makedirs(self.output_dir_path)
+        else:
+            for root, dirs, files in os.walk(self.output_dir_path, topdown=False):
+                for file in files:
+                    os.remove(os.sep.join([root, file]))
+
+
+    def _generate_unique_file_name(self, extension):
+        time_ms = int(time.time() * 1000)
+        file_name = "{}.{}".format(time_ms, extension)
+
+        while(os.path.isfile(file_name)):
+            time_ms -= 1
+            file_name = "{}.{}".format(time_ms, extension)
+
+        return file_name
+
+
+    def check_length(self, message):
+        return (len(message) <= self.char_limit)
+
+
+    def _parse_message(self, message):
+        if(self.newline_replacement):
+            message = message.replace("\n", self.newline_replacement)
+        
+        if(self.prepend):
+            message = self.prepend + message
+
+        if(self.append):
+            message = message + self.append
+
+        message = message.replace('"', "")
+        return message
+
+
+    def delete(self, file_path):
+        ## Basically, windows spits out a 'file in use' error when speeches are deleted after 
+        ## being skipped, probably because of the file being loaded into the ffmpeg player. So
+        ## if the deletion fails, just pop it into a list of paths to delete on the next go around.
+
+        if(os.path.isfile(file_path)):
+            self.paths_to_delete.append(file_path)
+
+        to_delete = []
+        for index, path in enumerate(self.paths_to_delete):
+            try:
+                os.remove(path)
+            except Exception as e:
+                if(file_path != path):
+                    ## If the file to delete isn't the one that's (probably) still loaded, then 
+                    ## definitely display something.
+                    print("Error removing path:", path)
+
+                to_delete.append(path)
+
+        self.paths_to_delete = to_delete[:]
+        return True
+
+
+    async def save(self, message):
+        ## Validate output directory
+        if(not self.output_dir_path):
+            print("Unable to save without output_dir_path set. See {}.__init__".format(self.__name__))
+            return None
+
+        ## Check message size
+        if(not self.check_length(message)):
+            return None
+
+        ## Generate and validate filename
+        output_file_path = os.sep.join([self.output_dir_path, 
+                                        self._generate_unique_file_name(self.output_extension)])
+
+        ## Parse options and message
+        save_option = '-w "{}"'.format(output_file_path)
+        message = self._parse_message(message)
+
+        ## Format and invoke
+        args = '{} {} "{}"'.format(
+            self.exe_path,
+            save_option,
+            message
+        )
+        retval = os.system(args)
+
+        if(retval == 0):
+            return output_file_path
+        else:
+            return None
 
 
 class SpeechEntry:
-    def __init__(self, message, channel, player, file_path):
+    def __init__(self, requester, channel, player, file_path):
+        self.requester = requester
         self.channel = channel
-        self.message = message
         self.player = player
         self.file_path = file_path
 
 
     def __str__(self):
-        return "'{}' in '{}'".format(self.message, self.channel)
+        return "'{}' in '{}' wants '{}'".format(self.requester, self.channel, self.file_path)
 
 
 class SpeechState:
@@ -57,13 +187,36 @@ class SpeechState:
         self.join_channel = join_channel
         self.remove_file = remove_file
         self.next = asyncio.Event()
+        self.skip_votes = set() # set of users that voted to skip
         self.speech_queue = asyncio.Queue()
         self.speech_player = self.bot.loop.create_task(self.speech_player())
 
+    ## Property(s)
 
     @property
     def player(self):
         return self.current_speech.player
+
+    ## Methods
+
+    ## Returns a list of members in the current voice channel
+    async def get_members(self):
+        return self.current_speech.channel.voice_members
+
+
+    ## Returns a bool to determine if the bot is speaking in this state.
+    def is_speaking(self):
+        if(self.voice_client is None or self.current_speech is None):
+            return False
+
+        return not self.player.is_done()
+
+
+    ## Skips the currently playing speech (magic happens in speech_player)
+    async def skip_speech(self):
+        self.skip_votes.clear()
+        if(self.is_speaking()):
+            self.player.stop()
 
 
     ## Triggers the next speech in speech_queue to be played
@@ -85,18 +238,23 @@ class SpeechState:
 
 
 class Speech:
-    def __init__(self, bot):
+    ## Keys
+    SKIP_VOTES_KEY = "skip_votes"
+    SKIP_PERCENTAGE_KEY = "skip_percentage"
+
+    ## Config
+    SKIP_VOTES = SKIP_VOTES
+    SKIP_PERCENTAGE = SKIP_PERCENTAGE
+
+
+    def __init__(self, bot, dectalk_controller, **kwargs):
         self.bot = bot
         self.speech_states = {}
-
-        self.dectalk_exe = DECTALK_EXE_PATH
-        self.dectalk_args = DECTALK_ARGS
-        self.prepend_string = DECTALK_PREPEND
-        self.append_string = DECTALK_APPEND
-        self.temp_dir_path = TEMP_DIR_PATH
-        self.dectalk_pause_sim = DECTALK_PAUSE_SIM
-        self.dectalk_file_output = DECTALK_FILE_OUTPUT_FORMAT
-        self.char_limit = CHAR_LIMIT
+        self.dectalk = dectalk_controller
+        self.save = self.dectalk.save
+        self.delete = self.dectalk.delete
+        self.skip_votes = kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES)
+        self.skip_percentage = kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE)
 
     ## Methods
 
@@ -104,7 +262,7 @@ class Speech:
     def get_speech_state(self, server):
         state = self.speech_states.get(server.id)
         if(state is None):
-            state = SpeechState(self.bot, self.join_channel, self.remove_file)
+            state = SpeechState(self.bot, self.join_channel, self.delete)
             self.speech_states[server.id] = state
 
         return state
@@ -126,51 +284,6 @@ class Speech:
         voice_client = await self.bot.join_voice_channel(channel)
         state = self.get_speech_state(channel.server)
         state.voice_client = voice_client
-
-
-    ## Removes a file located at path
-    def remove_file(self, path):
-        if(os.path.isfile(path)):
-            os.remove(path)
-
-        return True
-
-
-    ## This whole method is kind of bad. todo: fix it
-    async def save_wav(self, message, *args):
-        ## Helps to ensure the system isn't constantly fighting for 'temp.wav'
-        file_uniquify = ""
-        for arg in args:
-            file_uniquify += str(arg).replace(" ", "").lower()
-        file_uniquify += str(int(time.time() * 1000))
-
-        ## Add temp/ if it doesn't exist
-        if(not os.path.exists(self.temp_dir_path)):
-            os.makedirs(self.temp_dir_path)
-
-        ## Build path for .wav file in temp/ folder
-        temp_file_path = os.sep.join([self.temp_dir_path, self.dectalk_file_output.format(file_uniquify)])
-
-        ## Verify that it doesn't already exist
-        self.remove_file(temp_file_path)
-
-        ## Apostrophes trip up the tts
-        args = '{} {} "{}" "{}{}{}"'.format(
-            self.dectalk_exe,
-            self.dectalk_args,  ## Todo: fix this naming
-            temp_file_path,
-            self.prepend_string,
-            message.replace("\n", self.dectalk_pause_sim).replace('"', ""), # Todo: dedicated message parser
-            self.append_string
-        )
-
-        ## Invoke say.exe
-        retval = os.system(args)
-
-        if(retval == 0):
-            return temp_file_path
-        else:
-            return None
 
 
     ## Tries to get the bot to join a channel
@@ -217,10 +330,46 @@ class Speech:
         return await self.join_channel(summoned_channel)
 
 
+    ## Initiate/Continue a vote to skip on the currently playing speech
+    @commands.command(pass_context=True, no_pm=True)
+    async def skip(self, ctx):
+        """Vote to skip the current speech."""
+
+        state = self.get_speech_state(ctx.message.server)
+        if(not state.is_speaking()):
+            await self.bot.say("I'm not speaking at the moment.")
+            return False
+
+        voter = ctx.message.author
+        if(voter == state.current_speech.requester):
+            await self.bot.say("<@{}> skipped their own speech.".format(voter.id))
+            await state.skip_speech()
+            return False
+        elif(voter.id not in state.skip_votes):
+            state.skip_votes.add(voter.id)
+
+            ## Todo: filter total_votes by members actually in the channel
+            total_votes = len(state.skip_votes)
+            total_members = len(state.get_members())
+            vote_percentage = total_members / total_votes
+
+            if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
+                await self.bot.say("Skip vote passed, skipping current speech.")
+                await state.skip_speech()
+                return True
+            else:
+                raw = "Skip vote added, currently at {}/{} or {}%"
+                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage))
+        else:
+            await self.bot.say("<@{}> has already voted!".format(voter.id))
+
+
     ## Starts the TTS process! Creates and stores a ffmpeg player for the message to be played
     @commands.command(pass_context=True, no_pm=True)
     async def say(self, ctx, *, message):
-        """Speaks your text using the DECTalk TTS engine."""
+        """Speaks your text aloud to your channel."""
+
+        ## Todo: look into memoization of speech. Phrases.py's speech is a perfect candidate
 
         ## Check that the requester is in a voice channel
         voice_channel = ctx.message.author.voice_channel
@@ -229,8 +378,8 @@ class Speech:
             return False
 
         ## Make sure the message isn't too long
-        if(len(message) > self.char_limit):
-            await self.bot.say("Keep phrases less than {} characters.".format(self.char_limit))
+        if(not self.dectalk.check_length(message)):
+            await self.bot.say("Keep phrases less than {} characters.".format(self.dectalk.char_limit))
             return False
 
         state = self.get_speech_state(ctx.message.server)
@@ -239,7 +388,7 @@ class Speech:
 
         try:
             ## Create a .wav file of the message
-            wav_path = await self.save_wav(message, ctx.message.server, ctx.message.author)
+            wav_path = await self.save(message)
             if(wav_path):
                 ## Create a player for the .wav
                 player = state.voice_client.create_ffmpeg_player(wav_path, after=state.next_speech)
@@ -248,203 +397,34 @@ class Speech:
             return False
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue
-            await state.speech_queue.put(SpeechEntry(message, voice_channel, player, wav_path))
+            await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
             return True
-
-
-class SpeechPreset:
-    def __init__(self, bot):
-        self.bot = bot
-        self.speech = self.bot.get_cog("Speech")
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def pizza(self, ctx):
-        """Time for some pizza"""
-        message = (
-            "[:nh]I'm gonna eat a pizza. [:dial67589340] Hi, can i order a pizza?"
-            "[:nv]no! [:nh]why? [:nv] cuz you are john madden![:np]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def skeletons(self, ctx):
-        """Spooky and scary"""
-        message = (
-            "[spuh<300,19>kiy<300,19>skeh<300,18>riy<300,18>skeh<300,11>lleh<175,14>tih<200,11>ns]. "
-            "[seh<300,11>nd][shih<100,19>ver<500,19>sdaw<300,18>nyur<300,18>spay<300,11>n]. "
-            "[shriy<300,19>kiy<300,19>ng][skow<300,18>swih<300,18>ll]"
-            "[shah<300,11>kyur<300,14>sow<300,11>ll]"
-            "[siy<300,14>llyur<300,16>duh<300,13>mtuh<300,14>nay<300,11>t]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def taps(self, ctx):
-        """o7"""
-        message = (
-            "[pr<600,18>][pr<200,18>][pr<1800,23>_>pr<600,18>][pr<300,23>][pr<1800,27>]"
-            "[pr<600,18>][pr<300,23>][pr<1200,27>][pr<600,18>][pr<300,23>][pr<1200,27>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def birthday(self, ctx):
-        """A very special day"""
-        message = (
-            "[hxae<300,10>piy<300,10>brr<600,12>th<100>dey<600,10>tuw<600,15>yu<1200,14>_<120>]"
-            "[hxae<300,10>piy<300,10>brr<600,12>th<100>dey<600,10>tuw<600,17>yu<1200,15>_<120>]"
-            "[hxae<300,10>piy<300,10>brr<600,22>th<100>dey<600,19>"
-            "jh<100>aa<600,15>n<100>m<100>ae<600,14>d<50>dih<600,12>n]"
-            "[hxae<300,20>piy<300,20>brr<600,19>th<100>dey<600,15>tuw<600,17>yu<1200,15>_<120>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def mamamia(self, ctx):
-        """Could you handle that, dear?"""
-        message = (
-            "mamma mia, poppa pia, baby got the dy[aa<999,999>]reeeeeeeeeaaaaaaaaaa"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def imperial(self, ctx):
-        """Marching along"""
-        message = (
-            "[dah<600,20>][dah<600,20>][dah<600,20>][dah<500,16>][dah<130,23>][dah<600,20>]"
-            "[dah<500,16>][dah<130,23>][dah<600,20>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def daisy(self, ctx):
-        """I'm afraid I can't do that."""
-        message = (
-            "[dey<600,24>ziy<600,21>dey<600,17>ziy<600,12>gih<200,14>vmiy<200,16>yurr<200,17>"
-            "ah<400,14>nsrr<200,17>duw<1200,12>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def ateam(self, ctx):
-        """I love it when a plan comes together!"""
-        message = (
-            "[dah<300,30>][dah<60,30>][dah<200,25>][dah<1000,30>][dah<200,23>][dah<400,25>]"
-            "[dah<700,18>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def tetris(self, ctx):
-        """I am the man who arranges the blocks."""
-        message = (
-            "[:t 430,500][:t 320,250][:t 350,250][:t 390,500][:t 350,250][:t 330,250][:t 290,500]"
-            "[:t 290,250][:t 350,250][:t 430,500]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def soviet(self, ctx):
-        """From Russia with love"""
-        message = (
-            "[lxao<400,23>lxao<800,28>lxao<600,23>lxao<200,25>lxao<1600,27>lxao<800,25>"
-            "lxao<600,23>lxao<200,21>lxao<1600,23>][lxao<400,16>][lxao<400,16>][lxao<800,18>]"
-            "[lxao<400,18>][lxao<400,20>][lxao<800,21>][lxao<400,21>][lxao<400,23>][lxao<800,25>]"
-            "[lxao<400,27>][lxao<400,28>][lxao<800,30>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def allstar(self, ctx):
-        """It's all ogre now"""
-        message = (
-            "[suh<600,19>bah<300,26>diy<200,23>wow<300,23>]uce[tow<300,21>miy<250,19>]"
-            "[thuh<250,19>wer<450,24>]urd[ih<100,23>]s[gao<250,23>nah<200,21>]roll[miy<200,19>]"
-            "[ay<200,19>][ey<200,26>]int[thuh<200,23>]sharp[eh<200,21>]estool[ih<200,19>]nthuh[sheh<400,16>][eh<300,14>]ed. "
-            "[shiy<300,19>][wah<300,19>][lxuh<200,26>][kih<200,23>][kay<300,23>][nah<300,21>][duh<250,21>]uhm"
-            "[wih<250,19>][fer<250,19>][fih<450,24>]ing[gur<200,23>][ah<250,23>][ner<200,21>][thuh<200,21>]uhm"
-            "[ih<200,19>][thuh<200,19>][shey<400,26>][puh<200,23>]fan[_<50,21>]L[ah<200,19>]ner[for<400,21>][eh<300,14>]ed"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def careless(self, ctx):
-        """I have pop pop in the attic"""
-        message = (
-            "[dah<400,29>dah<200,27>dah<400,22>dah<300,18>dah<500,29>dah<200,27>dah<400,22>dah<400,18>]. "
-            "[dah<400,25>dah<200,23>dah<400,18>dah<300,15>dah<500,25>dah<200,23>dah<400,18>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def cena(self, ctx):
-        """And his name is!"""
-        message = (
-            "[bah<300,20>dah<200,22>dah<200,18>dah<600,20>]. "
-            "[bah<400,23>dah<200,22>dah<200,18>dah<700,20>]"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def one(self, ctx):
-        """We are number one!"""
-        message = (
-            "[dah<450,18>][dah<150,25>][dah<75,24>][dah<75,25>][dah<75,24>][dah<75,25>]"
-            "[dah<150,24>][dah<150,25>][dah<300,21>][dah<600,18>][dah<150,18>][dah<150,21>]"
-            "[dah<150,25>][dah<300,26>][dah<300,21>][dah<300,26>][dah<300,28>][w<100,25>]ee"
-            "[ar<100,26>][n<100,25>]a[m<100,26>]r[w<100,25>]on"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
-
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def whalers(self, ctx):
-        """On the moon!"""
-        message = (
-            "[_<1,13>]we're[_<1,18>]whalers[_<1,17>]on[_<1,18>]the[_<1,20>]moon[_<400,13>]we"
-            "[_<1,20>]carry[_<1,18>]a[_<1,20>]har[_<1,22>]poon[_<1,22>]but there[_<1,23>]aint "
-            "no[_<1,15>]whales[_<1,23>]so we[_<1,22>]tell tall[_<1,18>]tales and[_<1,20>]sing "
-            "our[_<1,18>]whale[_<1,17>]ing[_<1,18>]tune"
-        )
-        await self.speech.say.callback(self.speech, ctx, message=message)
 
 ## Main
 
-def load_json(path):
-    with open(path, "r") as fd:
-        return json.load(fd)
+def get_token():
+    with open(TOKEN_FILE_PATH, "r") as fd:
+        return json.load(fd)[TOKEN_KEY]
 
 
 def main():
-    ## Todo: Customize the help screen (commands.HelpFormatter), remove tts from it
+    ## Todo: Customize the help screen (commands.HelpFormatter)
 
     ## Init the bot
     bot = commands.Bot(
-        command_prefix=commands.when_mentioned_or(ACTIVATION_STRING),
-        description=DESCRIPTION
+        command_prefix=commands.when_mentioned_or(ACTIVATION_STR),
+        description=DESCRIPTION_STR
     )
-    bot.add_cog(Speech(bot))
-    bot.add_cog(SpeechPreset(bot))
+    dectalk_controller = DECTalkController(DECTALK_EXE_PATH, output_dir_path=DECTALK_OUTPUT_DIR_PATH, prepend=DECTALK_PREPEND)
+    bot.add_cog(Speech(bot, dectalk_controller))
+    bot.add_cog(Phrases(bot))
 
     @bot.event
     async def on_ready():
-        print("Logged in as {}, {}".format(bot.user.name, bot.user.id))
+        print("Logged in as '{}' (id:{})".format(bot.user.name, bot.user.id))
 
     ## Blocking execute
-    bot.run(load_json(TOKEN_JSON_PATH)[TOKEN_KEY])
+    bot.run(get_token())
 
 
 if(__name__ == "__main__"):
