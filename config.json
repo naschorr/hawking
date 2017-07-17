@@ -1,0 +1,21 @@
+{
+	"activation_str"			: "\\",
+	"description"				: "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking",
+	"token_file"				: "token.json",
+	"_token_file_path"			: "",
+	"phrases_file"				: "phrases.json",
+	"_phrases_file_path"		: "",
+	"tts_file"					: "say.exe",
+	"_tts_file_path"			: "",
+	"tts_output_dir"			: "temp",
+	"_tts_output_dir_path"		: "",
+
+	"skip_votes"				: "3",
+	"skip_percentage"			: "33",
+
+	"prepend"					: "[:phoneme on]",
+	"append"					: "",
+	"char_limit"				: "1250",
+	"newline_replacement"		: "[_<250,10>]",
+	"output_extension"			: "wav"
+}

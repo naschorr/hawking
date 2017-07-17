@@ -5,9 +5,12 @@ import subprocess
 import asyncio
 import time
 import json
+from math import ceil
 
 import discord
 from discord.ext import commands
+
+import utilities
 from phrases import Phrases
 
 if not discord.opus.is_loaded():
@@ -19,32 +22,10 @@ if not discord.opus.is_loaded():
     discord.opus.load_opus('opus')
 
 ## Config
-## Bot Config
-ACTIVATION_STR = "\\"
-DESCRIPTION_STR = "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking"
-## Commands Config
-SKIP_VOTES = 3
-SKIP_PERCENTAGE = 33
-## Base Config
-ROOT_PATH = os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:-2])
-PHRASES_FILE = "phrases.json"
-PHRASES_FILE_PATH = os.sep.join([ROOT_PATH, PHRASES_FILE])
-TOKEN_FILE = "token.json"
-TOKEN_FILE_PATH = os.sep.join([ROOT_PATH, TOKEN_FILE])
-TOKEN_KEY = "token"
-## DECTalk Config
-DECTALK_DIR_PATH = os.path.dirname(os.path.abspath(__file__))   ## Same dir as this script
-DECTALK_EXE = "say.exe"
-DECTALK_EXE_PATH = os.sep.join([DECTALK_DIR_PATH, DECTALK_EXE])
-DECTALK_OUTPUT_DIR = "temp"
-DECTALK_OUTPUT_DIR_PATH = os.sep.join([ROOT_PATH, DECTALK_OUTPUT_DIR])
-DECTALK_PREPEND = "[:phoneme on]"
-DECTALK_APPEND = ""
-CHAR_LIMIT = 1500
-NEWLINE_REPLACEMENT = "[_<250,10>]"
+CONFIG_OPTIONS = utilities.load_config()
 
 
-class DECTalkController:
+class TTSController:
     ## Keys
     OUTPUT_DIR_PATH_KEY = "output_dir_path"
     ARGS_KEY = "args"
@@ -52,22 +33,25 @@ class DECTalkController:
     APPEND_KEY = "append"
     CHAR_LIMIT_KEY = "char_limit"
     NEWLINE_REPLACEMENT_KEY = "newline_replacement"
+    OUTPUT_EXTENSION_KEY = "output_extension"
 
-    ## Config
-    CHAR_LIMIT = CHAR_LIMIT
-    NEWLINE_REPLACEMENT = NEWLINE_REPLACEMENT
-    OUTPUT_EXTENSION = "wav"
+    ## Defaults
+    PREPEND = CONFIG_OPTIONS.get(PREPEND_KEY, "[:phoneme on]")
+    APPEND = CONFIG_OPTIONS.get(APPEND_KEY, "")
+    CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
+    NEWLINE_REPLACEMENT = CONFIG_OPTIONS.get(NEWLINE_REPLACEMENT_KEY, "[_<250,10>]")
+    OUTPUT_EXTENSION = CONFIG_OPTIONS.get(OUTPUT_EXTENSION_KEY, "wav")
 
 
     def __init__(self, exe_path, **kwargs):
         self.exe_path = exe_path
         self.output_dir_path = kwargs.get(self.OUTPUT_DIR_PATH_KEY)
         self.args = kwargs.get(self.ARGS_KEY, {})
-        self.prepend = kwargs.get(self.PREPEND_KEY)
-        self.append = kwargs.get(self.APPEND_KEY)
-        self.char_limit = kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT)
+        self.prepend = kwargs.get(self.PREPEND_KEY, self.PREPEND)
+        self.append = kwargs.get(self.APPEND_KEY, self.APPEND)
+        self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
         self.newline_replacement = kwargs.get(self.NEWLINE_REPLACEMENT_KEY, self.NEWLINE_REPLACEMENT)
-        self.output_extension = self.OUTPUT_EXTENSION
+        self.output_extension = kwargs.get(self.OUTPUT_EXTENSION_KEY, self.OUTPUT_EXTENSION)
 
         self.paths_to_delete = []
 
@@ -248,19 +232,21 @@ class Speech:
     SKIP_VOTES_KEY = "skip_votes"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
 
-    ## Config
-    SKIP_VOTES = SKIP_VOTES
-    SKIP_PERCENTAGE = SKIP_PERCENTAGE
+    ## Defaults
+    SKIP_VOTES = CONFIG_OPTIONS.get(SKIP_VOTES_KEY, 3)
+    SKIP_PERCENTAGE = CONFIG_OPTIONS.get(SKIP_PERCENTAGE_KEY, 33)
 
 
-    def __init__(self, bot, dectalk_controller, **kwargs):
+    def __init__(self, bot, tts_controller, **kwargs):
+        ## Todo: add admin discord id to config, then have a reload phrases command for admin users only?
+
         self.bot = bot
         self.speech_states = {}
-        self.dectalk = dectalk_controller
-        self.save = self.dectalk.save
-        self.delete = self.dectalk.delete
-        self.skip_votes = kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES)
-        self.skip_percentage = kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE)
+        self.tts_controller = tts_controller
+        self.save = self.tts_controller.save
+        self.delete = self.tts_controller.delete
+        self.skip_votes = int(kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES))
+        self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
 
     ## Methods
 
@@ -357,7 +343,7 @@ class Speech:
             ## Todo: filter total_votes by members actually in the channel
             total_votes = len(state.skip_votes)
             total_members = len(await state.get_members()) - 1  # Subtract one for the bot itself
-            vote_percentage = round((total_votes / total_members) * 100)
+            vote_percentage = ceil((total_votes / total_members) * 100)
 
             if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
                 await self.bot.say("Skip vote passed, skipping current speech.")
@@ -380,12 +366,12 @@ class Speech:
         ## Check that the requester is in a voice channel
         voice_channel = ctx.message.author.voice_channel
         if(voice_channel is None):
-            await self.bot.say("{} isn't in a voice channel.".format(ctx.message.author))
+            await self.bot.say("<@{}> isn't in a voice channel.".format(ctx.message.author.id))
             return False
 
         ## Make sure the message isn't too long
-        if(not self.dectalk.check_length(message)):
-            await self.bot.say("Keep phrases less than {} characters.".format(self.dectalk.char_limit))
+        if(not self.tts_controller.check_length(message)):
+            await self.bot.say("Keep phrases less than {} characters.".format(self.tts_controller.char_limit))
             return False
 
         state = self.get_speech_state(ctx.message.server)
@@ -406,32 +392,82 @@ class Speech:
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
             return True
 
-## Main
+class Hawking:
+    ## Keys and Defaults
+    ## Basically, any given class can be configured by changing the respective value for the
+    ## desired key in config.json (see the Keys section at the top of each class for a list of
+    ## keys). However, if you want to use Hawking as a part of something else, you may want to
+    ## dynamically configure objects as necessary. Thus, you can also instantiate classes with
+    ## keyworded arguments, which will then override any existing defaults, or config.json data.
+    ## The existing defaults in each class are sort of like a fallback, in case the config.json is
+    ## broken in some way.
 
-def get_token():
-    with open(TOKEN_FILE_PATH, "r") as fd:
-        return json.load(fd)[TOKEN_KEY]
+    ## Keys
+    ACTIVATION_STR_KEY = "activation_str"
+    DESCRIPTION_KEY = "description"
+    TOKEN_KEY = "token"
+    TOKEN_FILE_KEY = "token_file"
+    TOKEN_FILE_PATH_KEY = "token_file_path"
+    PHRASES_FILE_KEY = "phrases_file"
+    PHRASES_FILE_PATH_KEY = "phrases_file_path"
+    TTS_FILE_KEY = "tts_file"
+    TTS_FILE_PATH_KEY = "tts_file_path"
+    TTS_OUTPUT_DIR_KEY = "tts_output_dir"
+    TTS_OUTPUT_DIR_PATH_KEY = "tts_output_dir_path"
+
+    ## Defaults
+    ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
+    DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking")
+    TOKEN_FILE = CONFIG_OPTIONS.get(TOKEN_FILE_KEY, "token.json")
+    TOKEN_FILE_PATH = CONFIG_OPTIONS.get(TOKEN_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), TOKEN_FILE]))
+    PHRASES_FILE = CONFIG_OPTIONS.get(PHRASES_FILE_KEY, "phrases.json")
+    PHRASES_FILE_PATH = CONFIG_OPTIONS.get(PHRASES_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FILE]))
+    TTS_FILE = CONFIG_OPTIONS.get(TTS_FILE_KEY, "say.exe")
+    TTS_FILE_PATH = CONFIG_OPTIONS.get(TTS_FILE_PATH_KEY, os.sep.join([os.path.dirname(os.path.abspath(__file__)), TTS_FILE]))
+    TTS_OUTPUT_DIR = CONFIG_OPTIONS.get(TTS_OUTPUT_DIR_KEY, "temp")
+    TTS_OUTPUT_DIR_PATH = CONFIG_OPTIONS.get(TTS_OUTPUT_DIR_PATH_KEY, os.sep.join([utilities.get_root_path(), TTS_OUTPUT_DIR]))
 
 
-def main():
-    ## Todo: Customize the help screen (commands.HelpFormatter)
+    ## Initialize the bot, and add base cogs
+    def __init__(self, **kwargs):
+        self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
+        self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
+        self.token_file_path = kwargs.get(self.TOKEN_FILE_PATH_KEY, self.TOKEN_FILE_PATH)
+        self.phrases_file_path = kwargs.get(self.PHRASES_FILE_PATH_KEY, self.PHRASES_FILE_PATH)
+        self.tts_file_path = kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
+        self.tts_output_dir_path = kwargs.get(self.TTS_OUTPUT_DIR_PATH_KEY, self.TTS_OUTPUT_DIR_PATH)
 
-    ## Init the bot
-    bot = commands.Bot(
-        command_prefix=commands.when_mentioned_or(ACTIVATION_STR),
-        description=DESCRIPTION_STR
-    )
-    dectalk_controller = DECTalkController(DECTALK_EXE_PATH, output_dir_path=DECTALK_OUTPUT_DIR_PATH, prepend=DECTALK_PREPEND)
-    bot.add_cog(Speech(bot, dectalk_controller))
-    bot.add_cog(Phrases(bot, PHRASES_FILE_PATH, pass_context=True, no_pm=True))
+        ## Init the bot
+        self.bot = commands.Bot(
+            command_prefix=commands.when_mentioned_or(self.activation_str),
+            description=self.description
+        )
 
-    @bot.event
-    async def on_ready():
-        print("Logged in as '{}' (id:{})".format(bot.user.name, bot.user.id))
+        ## Prepare the required cogs
+        tts_controller = TTSController(
+            self.tts_file_path,
+            output_dir_path=self.tts_output_dir_path
+        )
+        self.add_cog(Speech(self.bot, tts_controller))
+        self.add_cog(Phrases(self.bot, self.phrases_file_path, pass_context=True, no_pm=True))
 
-    ## Blocking execute
-    bot.run(get_token())
+        @self.bot.event
+        async def on_ready():
+            print("Logged in as '{}' (id:{})".format(self.bot.user.name, self.bot.user.id))
+
+    ## Methods
+
+    ## Add an arbitary cog to the bot
+    def add_cog(self, cls):
+        self.bot.add_cog(cls)
+
+
+    ## Run the bot
+    def run(self):
+        self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
 
 
 if(__name__ == "__main__"):
-    main()
+    hawking = Hawking()
+    # hawking.add_cog(ArbitaryClass(*args, **kwargs))
+    hawking.run()
