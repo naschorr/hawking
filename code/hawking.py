@@ -27,6 +27,8 @@ SKIP_VOTES = 3
 SKIP_PERCENTAGE = 33
 ## Base Config
 ROOT_PATH = os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:-2])
+PHRASES_FILE = "phrases.json"
+PHRASES_FILE_PATH = os.sep.join([ROOT_PATH, PHRASES_FILE])
 TOKEN_FILE = "token.json"
 TOKEN_FILE_PATH = os.sep.join([ROOT_PATH, TOKEN_FILE])
 TOKEN_KEY = "token"
@@ -71,6 +73,10 @@ class DECTalkController:
 
         if(self.output_dir_path):
             self._init_dir()
+
+
+    def __del__(self):
+        self._init_dir()
 
 
     def _init_dir(self):
@@ -417,7 +423,7 @@ def main():
     )
     dectalk_controller = DECTalkController(DECTALK_EXE_PATH, output_dir_path=DECTALK_OUTPUT_DIR_PATH, prepend=DECTALK_PREPEND)
     bot.add_cog(Speech(bot, dectalk_controller))
-    bot.add_cog(Phrases(bot))
+    bot.add_cog(Phrases(bot, PHRASES_FILE_PATH, pass_context=True, no_pm=True))
 
     @bot.event
     async def on_ready():
