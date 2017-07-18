@@ -47,7 +47,10 @@ class Admin:
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             return False
 
-        return self.phrases_cog.reload_phrases()
+        count = self.phrases_cog.reload_phrases()
+        await self.bot.say("Loaded {} phrases.".format(count))
+
+        return (count >= 0)
 
 
     ## Skips the currently playing speech (admin only)

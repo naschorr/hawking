@@ -45,12 +45,13 @@ class Phrases:
                 counter += 1
 
         print("Loaded {} phrases.".format(counter))
+        return counter
 
 
     ## Unloads all phrase commands, then reloads them from the phrases.json file
     def reload_phrases(self):
         self.remove_phrases()
-        self.init_phrases()
+        return self.init_phrases()
 
 
     ## Load phrases from json into a list of phrase objects
