@@ -1,6 +1,3 @@
-# Don't share tokens!
-token.json
-
 # Don't share and old versions of files
 *old.*
 
