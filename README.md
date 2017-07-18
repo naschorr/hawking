@@ -3,8 +3,9 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 
 ## Installation
 - Make sure you've got [Python 3.5](https://www.python.org/downloads/) or greater, and virtualenv installed (`pip install virtualenv`)
-- `virtualenv hawking`
+- `cd` into the directoy that you'd like the project to go
 - `git clone https://github.com/naschorr/hawking`
+- `virtualenv hawking`
 - Activate your newly created virtualenv
 - `pip install -r requirements.txt`
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
