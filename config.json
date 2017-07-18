@@ -1,4 +1,6 @@
 {
+	"admins"					: ["Username#1234"],
+
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking",
 	"token_file"				: "token.json",

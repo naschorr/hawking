@@ -12,6 +12,7 @@ from discord.ext import commands
 
 import utilities
 from phrases import Phrases
+from admin import Admin
 
 if not discord.opus.is_loaded():
     # the 'opus' library here is opus.dll on windows
@@ -450,6 +451,7 @@ class Hawking:
         )
         self.add_cog(Speech(self.bot, tts_controller))
         self.add_cog(Phrases(self.bot, self.phrases_file_path, pass_context=True, no_pm=True))
+        self.add_cog(Admin(self.bot))
 
         @self.bot.event
         async def on_ready():
