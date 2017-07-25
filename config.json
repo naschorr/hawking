@@ -2,7 +2,7 @@
 	"admins"					: ["Username#1234"],
 
 	"activation_str"			: "\\",
-	"description"				: "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking",
+	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
 	"token_file"				: "token.json",
 	"_token_file_path"			: "",
 	"phrases_file"				: "phrases.json",
@@ -19,5 +19,9 @@
 	"append"					: "",
 	"char_limit"				: "1250",
 	"newline_replacement"		: "[_<250,10>]",
-	"output_extension"			: "wav"
+	"output_extension"			: "wav",
+
+	"bpm"						: "100",
+	"octave"					: "2"
+
 }

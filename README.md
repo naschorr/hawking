@@ -24,6 +24,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 These commands allow for the basic operation of the bot, by anyone.
 - `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
 - `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
+- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Currently rewriting to be even more flexible.
 - `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 

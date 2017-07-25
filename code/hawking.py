@@ -12,6 +12,7 @@ from discord.ext import commands
 
 import utilities
 from phrases import Phrases
+from music import Music
 from admin import Admin
 
 if not discord.opus.is_loaded():
@@ -393,6 +394,7 @@ class Speech:
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
             return True
 
+
 class Hawking:
     ## Keys and Defaults
     ## Basically, any given class can be configured by changing the respective value for the
@@ -451,6 +453,7 @@ class Hawking:
         )
         self.add_cog(Speech(self.bot, tts_controller))
         self.add_cog(Phrases(self.bot, self.phrases_file_path, pass_context=True, no_pm=True))
+        self.add_cog(Music(self.bot))
         self.add_cog(Admin(self.bot))
 
         @self.bot.event
