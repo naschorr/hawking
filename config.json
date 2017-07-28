@@ -1,5 +1,6 @@
 {
 	"admins"					: ["Username#1234"],
+	"debug"						: false,
 
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
@@ -22,6 +23,8 @@
 	"output_extension"			: "wav",
 
 	"bpm"						: "100",
-	"octave"					: "2"
-
+	"octave"					: "2",
+	"tone"						: false,
+	"bad"						: false,
+	"bad_percent"				: 10
 }

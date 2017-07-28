@@ -1,5 +1,7 @@
 import re
 import math
+import random
+from collections import OrderedDict
 
 import utilities
 from discord.ext import commands
@@ -9,42 +11,241 @@ CONFIG_OPTIONS = utilities.load_config()
 
 
 class Note:
-    def __init__(self, beat_length, duration, sub_notes, note, sharp=False, octave=4):
+    def __init__(self, beat_length, duration, note, sharp=False, octave=4, sub_notes=[]):
         self.beat_length = beat_length
         self.duration = duration
-        self.sub_notes = sub_notes
         self.note = note
         self.sharp = sharp
         self.octave = octave
+        self.sub_notes = sub_notes
 
 
     def __str__(self):
-        return "{}{}{} {}*{}".format(
+        return "{}{}{} {}*{} [{}]".format(
             self.note,
             self.sharp or "",
             self.octave,
             self.beat_length,
-            self.duration
+            self.duration,
+            ", ".join(self.sub_notes)
         )
 
 
 class MusicParser:
     ## Config
     INVALID_CHARS = ["|", ","]
-    
+    CHAR_REGEX = r"([a-z])"
+    INT_REGEX = r"(\d)"
+    SHARP_REGEX = r"(#)"
+    CATCHALL_REGEX = r"(.?)"
+    FRACTIONAL_REGEX = r"(\/)"
+
+
+    ## Base state that all other states inherit from
+    class BaseState:    # Todo: make virtual
+        def __init__(self, exit_dict={}, error_handler=None):
+            self.exit_dict = exit_dict
+            self.error_handler = error_handler
+
+
+        ## Try to get the first character of a string
+        def emit_char(self, string):
+            try:
+                return string[0]
+            except:
+                return ""
+
+
+        ## Try to get the first character of a string, and return the string that it was emitted from
+        def emit_consume_char(self, string):
+            try:
+                return string[0], string[1:]
+            except:
+                return "", ""
+
+
+        ## Unimplemented state enter handler
+        def enter(self):
+            raise NotImplementedError("State.enter() isn't implemented")
+
+
+        ## State exit handler
+        def exit(self, char, string, **kwargs):
+            for regex_string, handler in self.exit_dict.items():
+                match = re.match(regex_string, char)
+                utilities.debug_print("MATCHING", regex_string, char, handler.__self__.__class__.__name__)
+                if(match):
+                    return handler(string, **kwargs)
+
+            if(self.error_handler):
+                self.error_handler(char, string)
+            return None
+
+
+    ## Initial state
+    class StartState(BaseState):
+        def enter(self, string, **kwargs):
+            char = self.emit_char(string)
+            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs)
+
+            return self.exit(char, string, **kwargs)
+
+
+    ## Duration parsing state
+    class DurationState(BaseState):
+        def enter(self, string, **kwargs):
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+
+            return self.exit(self.emit_char(consumed_str), consumed_str, duration=int(char), **kwargs)
+
+
+    ## Note parsing state
+    class NoteState(BaseState):
+        def enter(self, string, **kwargs):
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+
+            return self.exit(self.emit_char(consumed_str), consumed_str, note=char, **kwargs)
+
+
+    ## Sharp parsing state
+    class SharpState(BaseState):
+        def enter(self, string, **kwargs):
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+
+            return self.exit(self.emit_char(consumed_str), consumed_str, sharp=char, **kwargs)
+
+
+    ## Octave parsing state
+    class OctaveState(BaseState):
+        def enter(self, string, **kwargs):
+            char = self.emit_char(string)
+            parsed_string = string[1:]
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, parsed_string, char), kwargs)
+
+            return self.exit(self.emit_char(consumed_str), consumed_str, octave=int(char), **kwargs)
+
+
+    ## NoteObj creation state
+    class NoteObjState(BaseState):
+        def enter(self, string, **kwargs):
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+
+            beat_length = kwargs.get("beat_length", 0.25)
+            duration = kwargs.get("duration", 1)
+            note = kwargs.get("note")
+            assert note is not None
+            sharp = kwargs.get("sharp", False)
+            octave = kwargs.get("octave", kwargs.get("default_octave", 2))
+
+            note_obj = Note(beat_length, duration, note, sharp, octave, [])
+
+            ## Clean up kwargs for next pass
+            kwargs.pop("note_obj", None)
+            kwargs.pop("duration", None)
+            kwargs.pop("note", None)
+            kwargs.pop("sharp", None)
+            kwargs.pop("octave", None)
+
+            ## Next state
+            return self.exit(char, string, note_obj=note_obj, **kwargs)
+
+
+    ## SubNote creation state
+    class SubNoteState(BaseState):
+        def enter(self, string, **kwargs):
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+
+            note_obj = kwargs.get("note_obj")
+            assert note_obj is not None
+            sub_notes = kwargs.get("sub_notes", [])
+            sub_notes.append(note_obj)
+
+            ## Clean up kwargs for next pass
+            kwargs.pop("note_obj", None)
+            kwargs.pop("sub_notes", None)
+
+            return self.exit(self.emit_char(consumed_str), consumed_str, sub_notes=sub_notes, **kwargs)
+
+
+    ## Final output state
+    class FinalState(BaseState):
+        def enter(self, string, **kwargs):
+            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs)
+
+            note_obj = kwargs.get("note_obj")
+            sub_notes = kwargs.get("sub_notes", [])
+            beat_length = kwargs.get("beat_length", 0.25) / (len(sub_notes) + 1)
+
+            for note in sub_notes:
+                note.beat_length = beat_length
+            note_obj.beat_length = beat_length
+
+            note_obj.sub_notes = sub_notes
+
+            return note_obj
+
+
+    ## Error handling state
+    class ErrorState(BaseState):
+        def enter(self, char, string):
+            utilities.debug_print("Error", char, string)
+            return None
+
 
     def __init__(self, notes, beat_length=0.25, octave=4):
         self.beat_length = beat_length
         self.octave = octave
         self.notes_preparsed = self._notes_preparser(notes)
 
+        self.parse_note = self._init_state_machine()
+
         self.notes = []
         for note in self.notes_preparsed:
-            parsed = self._parse_note(note)
+            parsed = self.parse_note(note, beat_length=self.beat_length, default_octave=self.octave)
             if(parsed):
                 self.notes.append(parsed)
 
     ## Methods
+
+    ## Initialize the note parsing state machine, returning a callable entry point (start.enter())
+    def _init_state_machine(self):
+        ## Init error handler state
+        error_state_dict = {}
+        error_handler = self.ErrorState(error_state_dict, None).enter
+
+        ## Init states
+        start_state = self.StartState({}, error_handler)
+        duration_state = self.DurationState({}, error_handler)
+        note_state = self.NoteState({}, error_handler)
+        sharp_state = self.SharpState({}, error_handler)
+        octave_state = self.OctaveState({}, error_handler)
+        note_obj_state = self.NoteObjState({}, error_handler)
+        sub_note_state = self.SubNoteState({}, error_handler)
+        final_state = self.FinalState({}, error_handler)
+
+        ## Populate state exit_dicts
+        start_state.exit_dict = OrderedDict([(self.INT_REGEX, duration_state.enter),
+                                             (self.CHAR_REGEX, note_state.enter),
+                                             (self.CATCHALL_REGEX, final_state.enter)])
+        duration_state.exit_dict = OrderedDict([(self.CHAR_REGEX, note_state.enter)])
+        note_state.exit_dict = OrderedDict([(self.SHARP_REGEX, sharp_state.enter),
+                                            (self.INT_REGEX, octave_state.enter),
+                                            (self.CATCHALL_REGEX, note_obj_state.enter)])
+        sharp_state.exit_dict = OrderedDict([(self.INT_REGEX, octave_state.enter),
+                                             (self.CATCHALL_REGEX, note_obj_state.enter)])
+        octave_state.exit_dict = OrderedDict([(self.CATCHALL_REGEX, note_obj_state.enter)])
+        note_obj_state.exit_dict = OrderedDict([(self.FRACTIONAL_REGEX, sub_note_state.enter),
+                                                (self.CATCHALL_REGEX, final_state.enter)])
+        sub_note_state.exit_dict = OrderedDict([(self.CATCHALL_REGEX, start_state.enter)])
+
+        ## Return an entry point into the fsm
+        return start_state.enter
+
 
     def _notes_preparser(self, notes):
         ## Remove any invalid characters (usually used for formatting)
@@ -57,31 +258,20 @@ class MusicParser:
         return notes_list
 
 
-    def _parse_note(self, note):
-        ## Todo: fsm?
-        match = re.match(r"^(?:(\d)|([a-z#]+))?([a-z])(#)?(\d)?$", note.strip().lower())
-
-        if(not match):
-            return None
-
-        beat_length = self.beat_length
-        duration = float(match.group(1) or 1)
-        sub_notes = None #parse_sub_notes(list(match.group(2) or ""))
-        note = match.group(3)
-        sharp = True if match.group(4) else False
-        octave = int(match.group(5) or self.octave)
-
-        return Note(beat_length, duration, sub_notes, note, sharp, octave)
-
-
 class Music:
     ## Keys
     BPM_KEY = "bpm"
     OCTAVE_KEY = "octave"
+    TONE_KEY = "tone"
+    BAD_KEY = "bad"
+    BAD_PERCENT_KEY = "bad_percent"
 
     ## Defaults
     BPM = CONFIG_OPTIONS.get(BPM_KEY, 100)
     OCTAVE = CONFIG_OPTIONS.get(OCTAVE_KEY, 2)
+    TONE = CONFIG_OPTIONS.get(TONE_KEY, False)
+    BAD = CONFIG_OPTIONS.get(BAD_KEY, False)
+    BAD_PERCENT = CONFIG_OPTIONS.get(BAD_PERCENT_KEY, 10)
 
     ## Config
     ## todo: fix this
@@ -91,6 +281,7 @@ class Music:
     NOTE_REPLACEMENT = "[laa<{},{}>]"
     REST = "r"
     REST_REPLACEMENT = "[_<{},{}>]"
+    TONE_REPLACEMENT = "[:t <{},{}>]"
     SHARP = "#"
 
 
@@ -100,6 +291,9 @@ class Music:
 
         self.bpm = int(kwargs.get(self.BPM_KEY, self.BPM))
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))
+        self.tone = kwargs.get(self.TONE_KEY, self.TONE)
+        self.bad = kwargs.get(self.BAD_KEY, self.BAD)
+        self.bad_percent = kwargs.get(self.BAD_PERCENT_KEY, self.BAD_PERCENT)
 
         self.pitches = []
         for octave in range(self.OCTAVES):
@@ -147,7 +341,7 @@ class Music:
 
     ## Pulls any music config options (ex. \bpm=N) from the message string
     def _extract_music_configs(self, string):
-        music_config_regex = r"\\([a-z]+)\s?=\s?(\d+)"
+        music_config_regex = r"\\([a-z_]+)\s?=\s?(\d+)"
         music_configs = {}
 
         music_config = re.search(music_config_regex, string)
@@ -163,9 +357,19 @@ class Music:
 
 
     ## Turns a list of Note objects into a string of TTS friendly phonemes
-    def _build_tts_note_string(self, notes):
+    def _build_tts_note_string(self, notes, **configs):
+        use_tones = configs.get(self.TONE_KEY, self.tone)
+        use_bad = configs.get(self.BAD_KEY, self.bad)
+        bad_percent = configs.get(self.BAD_PERCENT_KEY, self.bad_percent)
+
         string = ""
+        note_index = 0
         for note in notes:
+            sub_note_index = 0
+            for sub_note in note.sub_notes:
+                notes.insert(note_index + 1 + sub_note_index, sub_note)
+                sub_note_index += 1
+
             note_str = note.note
             if(note.sharp):
                 note_str += self.SHARP
@@ -182,7 +386,19 @@ class Music:
             else:
                 continue
 
-            string += replacement_str.format(int(note.beat_length * note.duration * 1000), pitch)
+            duration = note.duration
+
+            if(use_bad):
+                pitch_offset_max = pitch * (bad_percent / 100)
+                pitch += random.uniform(-pitch_offset_max, pitch_offset_max)
+                duration_offset_max = duration * (bad_percent / 100)
+                duration += random.uniform(-duration_offset_max, duration_offset_max)
+
+            if(use_tones):
+                string += self.TONE_REPLACEMENT.format(int(pitch), int(note.beat_length * duration * 1000))
+            else:
+                string += replacement_str.format(int(note.beat_length * duration * 1000), int(pitch))
+            note_index += 1
 
         return string
 
@@ -192,18 +408,22 @@ class Music:
     async def music(self, ctx, *, message):
         """Sings the given notes aloud to your voice channel.
 
-        A note can look like any of these:
+        A note (or notes) can look like any of these:
             'a' - Just the 'a' quarter note in the default second octave.
             '2d' - A 'd' quarter note held for two beats, again in the second octave.
             'c#4' - A 'c#' quarter note in the fourth octave.
             '2b#3' - A 'b#' quarter note held for two beats, in the third octave.
             'r' - A quarter rest.
             '4r' - A quarter rest held for four beats.
+            'b/b' - Two 'b' eighth notes.
+            '2c#/d#/a3/f' - A 'c#' sixteenth note held for two beats, a 'd#' sixteenth note, an 'a' sixteenth note in the third octave, and a 'f' sixteenth note.
         
         Formatting:
             Notes (at the moment) have four distinc parts (Duration?)(Note)(Sharp?)(Octave?).
             Only the base note is necessary, everything else can be omitted if necessary (see above examples)
             A single space NEEDS to be inserted between notes.
+            You can chain notes together by inserting a '/' between notes, this lets you create multiple shorter beats.
+            This lets you approximate eighth notes, sixteenth notes, thirty-second notes, and really any other division of notes. (Twelfth, Twentieth, etc)
             You can also use the | character to help with formatting your bars (ex. 'c d e f | r g a b')
 
         Inline Configuration:
@@ -213,25 +433,42 @@ class Music:
             Octave:
                 The '\\octave=N' line can be inserted anywhere to adjust the default octave of notes in that line.
                 N can be any integer between 0 and 9 (inclusive) (ex. '\\octave=1' or '\\octave=3'), however 0 through 4 give the best results.
+            Tones:
+                The '\\tone=N' line can be inserted anywhere to set whether or not to use tones instead of phonemes on that line.
+                N can be either 0 or 1, where 0 disables tones, and 1 enables them.
+            Bad:
+                The '\\bad=N' line can be inserted anywhere to set whether or not to make the notes on that line sound worse (See: https://www.youtube.com/watch?v=KolfEhV-KiA).
+                N can be either 0 or 1, where 0 disables the badness, and 1 enables it.
+            Bad_Percent:
+                The '\\bad_percent=N' line can be inserted anywhere to set the level of badness, when using the \\bad config.
+                N can be any positive integer. It works as a percentage where if N = 0, then it's not at all worse, and N = 100 would be 100% worse.
+                Needs \\bad to be set to have any effect.
 
         Examples:
             My Heart Will Go On (first 7 bars):
                 '\music \bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r'
 
+            Sandstorm (kinda):
+                '\music \bpm=136 \octave=3 \tone=1 b/b/b/b/b b/b/b/b/b/b/b e/e/e/e/e/e/e d/d/d/d/d/d/d a b/b/b/b/b/b b/b/b/b/b/b c# b/b/b/b/b/a'
+
         Defaults:
             bpm = 100
             octave = 2
+            tone = 0
+            bad = 0
+            bad_percent = 10
         """
 
+        ## Todo: preserve the position of tts_configs in the message
         tts_configs, message = self._extract_tts_configs(message)
         music_configs, message = self._extract_music_configs(message)
 
-        self.bpm = music_configs.get(self.BPM_KEY, self.bpm)
-        beat_length = 60 / self.bpm  # for a quarter note
-        self.octave = music_configs.get(self.OCTAVE_KEY, self.octave)
+        bpm = music_configs.get(self.BPM_KEY, self.bpm)
+        beat_length = 60 / bpm  # for a quarter note
+        octave = music_configs.get(self.OCTAVE_KEY, self.octave)
 
-        notes = MusicParser(message, beat_length, self.octave).notes
-        tts_notes = self._build_tts_note_string(notes)
+        notes = MusicParser(message, beat_length, octave).notes
+        tts_notes = self._build_tts_note_string(notes, **music_configs)
 
         say = self.speech_cog.say.callback
         await say(self.speech_cog, ctx, message=" ".join(tts_configs) + tts_notes)
