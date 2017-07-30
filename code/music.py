@@ -121,9 +121,8 @@ class MusicParser:
     ## Octave parsing state
     class OctaveState(BaseState):
         def enter(self, string, **kwargs):
-            char = self.emit_char(string)
-            parsed_string = string[1:]
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, parsed_string, char), kwargs)
+            char, consumed_str = self.emit_consume_char(string)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
 
             return self.exit(self.emit_char(consumed_str), consumed_str, octave=int(char), **kwargs)
 
@@ -181,12 +180,13 @@ class MusicParser:
             sub_notes = kwargs.get("sub_notes", [])
             beat_length = kwargs.get("beat_length", 0.25) / (len(sub_notes) + 1)
 
-            for note in sub_notes:
-                note.beat_length = beat_length
-            note_obj.beat_length = beat_length
+            if(note_obj):
+                for note in sub_notes:
+                    note.beat_length = beat_length
+                note_obj.beat_length = beat_length
 
-            note_obj.sub_notes = sub_notes
-
+                note_obj.sub_notes = sub_notes
+                
             return note_obj
 
 
@@ -206,7 +206,7 @@ class MusicParser:
 
         self.notes = []
         for note in self.notes_preparsed:
-            parsed = self.parse_note(note, beat_length=self.beat_length, default_octave=self.octave)
+            parsed = self.parse_note(note.lower(), beat_length=self.beat_length, default_octave=self.octave)
             if(parsed):
                 self.notes.append(parsed)
 
