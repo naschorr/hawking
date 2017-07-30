@@ -19,10 +19,10 @@ class Phrases:
     DESCRIPTION_KEY = "description"
 
 
-    def __init__(self, bot, phrases_json_path, speech_cog_name="Speech", **command_kwargs):
+    def __init__(self, hawking, bot, phrases_json_path, **command_kwargs):
+        self.hawking = hawking
         self.bot = bot
         self.phrases_json_path = phrases_json_path
-        self.speech_cog = self.bot.get_cog(speech_cog_name)
         self.command_kwargs = command_kwargs
         self.command_names = []
 
@@ -31,6 +31,12 @@ class Phrases:
 
         ## Load and add the phrases
         self.init_phrases()
+
+    ## Properties
+
+    @property
+    def speech_cog(self):
+        return self.hawking.get_speech_cog()
 
     ## Methods
 
@@ -50,7 +56,7 @@ class Phrases:
             else:
                 counter += 1
 
-        print("Loaded {} phrases.".format(counter))
+        print("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
 
 
@@ -126,7 +132,8 @@ class Phrases:
     def _create_phrase_callback(self, message):
         ## Pass a self arg to it now that the command.instance is set to self
         async def _phrase_callback(self, ctx):
-            say = self.speech_cog.say.callback
-            await say(self.speech_cog, ctx, message=message)
+            speech_cog = self.speech_cog
+            say = speech_cog.say.callback
+            await say(speech_cog, ctx, message=message)
 
         return _phrase_callback

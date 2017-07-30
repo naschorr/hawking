@@ -285,9 +285,9 @@ class Music:
     SHARP = "#"
 
 
-    def __init__(self, bot, speech_cog_name="Speech", **kwargs):
+    def __init__(self, hawking, bot, **kwargs):
+        self.hawking = hawking
         self.bot = bot
-        self.speech_cog = self.bot.get_cog(speech_cog_name)
 
         self.bpm = int(kwargs.get(self.BPM_KEY, self.BPM))
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))
@@ -298,6 +298,12 @@ class Music:
         self.pitches = []
         for octave in range(self.OCTAVES):
             self.pitches.append(self._build_pitch_dict(octave))
+
+    ## Properties
+
+    @property
+    def speech_cog(self):
+        return self.hawking.get_speech_cog()
 
     ## Methods
 
@@ -470,5 +476,6 @@ class Music:
         notes = MusicParser(message, beat_length, octave).notes
         tts_notes = self._build_tts_note_string(notes, **music_configs)
 
-        say = self.speech_cog.say.callback
-        await say(self.speech_cog, ctx, message=" ".join(tts_configs) + tts_notes)
+        speech_cog = self.speech_cog
+        say = speech_cog.say.callback
+        await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes)

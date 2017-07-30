@@ -1,6 +1,7 @@
 {
 	"admins"					: ["Username#1234"],
 	"debug"						: false,
+	"announce_updates"			: true,
 
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",

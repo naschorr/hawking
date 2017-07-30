@@ -1,6 +1,3 @@
-import importlib
-from collections import OrderedDict
-
 import utilities
 from discord.ext import commands
 
@@ -11,65 +8,25 @@ CONFIG_OPTIONS = utilities.load_config()
 class Admin:
     ## Keys
     ADMINS_KEY = "admins"
+    ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, bot, speech_cog_name="Speech", phrases_cog_name="Phrases"):
+    def __init__(self, hawking, bot):
+        self.hawking = hawking
         self.bot = bot
-        self.speech_cog_name = speech_cog_name
-        self.phrases_cog_name = phrases_cog_name
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
+        self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
-        ## These cogs are important, so make sure that they're available
-        self.speech_cog = self.bot.get_cog(self.speech_cog_name)
-        self.phrases_cog = self.bot.get_cog(self.phrases_cog_name)
+    ## Properties
 
-        self.modules = OrderedDict()
+    @property
+    def speech_cog(self):
+        return self.hawking.get_speech_cog()
+
+    @property
+    def phrases_cog(self):
+        return self.hawking.get_phrases_cog()
 
     ## Methods
-
-    ## Register an arbitrary cog's module, and everything needed to instantiate it
-    def register_module(self, module, cls, cog_name=None, *cls_args, **cls_kwargs):
-        if(not cog_name):
-            cog_name = cog_instance.__class__.__name__
-
-        self.modules[cog_name] = (module, cls, cls_args, cls_kwargs)
-
-        if(not self.bot.get_cog(cog_name)):
-            cog_cls = getattr(module, cog_name)
-            self.bot.add_cog(cog_cls(*cls_args, **cls_kwargs))
-
-        ## Todo: make this better?
-        if(cog_name == self.speech_cog_name):
-            self.speech_cog = self.bot.get_cog(self.speech_cog_name)
-        elif(cog_name == self.phrases_cog_name):
-            self.phrases_cog = self.bot.get_cog(self.phrases_cog_name)
-
-
-    ## Reloads a module
-    def reload_module(self, module):
-        try:
-            importlib.reload(module)
-        except Exception as e:
-            print("Error: ({}) reloading module: {}".format(e, module))
-            return False
-        else:
-            return True
-
-
-    ## Reloads a cog attached to the bot
-    def reload_cog(self, cog_name):
-        module, cls, cls_args, cls_kwargs = self.modules[cog_name]
-
-        self.bot.remove_cog(cog_name)
-        self.reload_module(module)
-        cog_cls = getattr(module, cog_name)
-        self.bot.add_cog(cog_cls(*cls_args, **cls_kwargs))
-
-        ## Todo: make this better?
-        if(cog_name == self.speech_cog_name):
-            self.speech_cog = self.bot.get_cog(self.speech_cog_name)
-        elif(cog_name == self.phrases_cog_name):
-            self.phrases_cog = self.bot.get_cog(self.phrases_cog_name)
-
 
     ## Checks if a user is a valid admin
     def is_admin(self, name):
@@ -105,7 +62,8 @@ class Admin:
         count = self.phrases_cog.reload_phrases()
         loaded_phrases_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
         await self.bot.say(loaded_phrases_string)
-        await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_phrases_string)
+        if(self.announce_updates):
+            await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_phrases_string)
 
         return (count >= 0)
 
@@ -113,27 +71,19 @@ class Admin:
     ## Tries to reload the addon cogs (admin only)
     @admin.command(pass_context=True, no_pm=True)
     async def reload_cogs(self, ctx):
-        """Reloads the added cogs."""
+        """Reloads the bot's cogs."""
 
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             return False
 
-        counter = 0
-        for cog_name in self.modules:
-            try:
-                self.reload_cog(cog_name)
-            except Exception as e:
-                print("Error: {} when reloading cog: {}".format(e, cog_name))
-            else:
-                counter += 1
-
-        loaded_cogs_string = "Loaded {} cog{}.".format(counter, "s" if counter != 1 else "")
-        print(loaded_cogs_string)
+        count = self.hawking.module_manager.reload_all()
+        loaded_cogs_string = "Loaded {} cog{}.".format(count, "s" if count != 1 else "")
         await self.bot.say(loaded_cogs_string)
-        await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_cogs_string)
+        if(self.announce_updates):
+            await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_cogs_string)
 
-        return (counter >= 0)
+        return (count >= 0)
 
 
     ## Skips the currently playing speech (admin only)
