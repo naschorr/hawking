@@ -32,6 +32,12 @@ class Phrases:
         ## Load and add the phrases
         self.init_phrases()
 
+    ## Methods
+
+    ## Removes all existing phrases when the cog is unloaded
+    def __unload(self):
+        self.remove_phrases()
+
 
     ## Initialize the phrases available to the bot
     def init_phrases(self):
@@ -91,6 +97,7 @@ class Phrases:
     def remove_phrases(self):
         for name in self.command_names:
             self.bot.remove_command(name)
+        self.command_names = []
 
         return True
 
