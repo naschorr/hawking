@@ -1,28 +1,46 @@
 import json
+import os
 from discord.ext import commands
+
+import utilities
+
+## Config
+CONFIG_OPTIONS = utilities.load_config()
 
 
 class Phrase:
-    def __init__(self, name, message, **kwargs):
+    def __init__(self, name, message, is_music=False, **kwargs):
         self.name = name
         self.message = message
+        self.is_music = is_music
         self.kwargs = kwargs
+
+
+    def __str__(self):
+        return "{} music={} {}".format(self.name, self.is_music, self.kwargs)
 
 
 class Phrases:
     ## Keys
     PHRASES_KEY = "phrases"
+    PHRASES_FILE_KEY = "phrases_file"
+    PHRASES_FILE_PATH_KEY = "phrases_file_path"
     NAME_KEY = "name"
     MESSAGE_KEY = "message"
+    IS_MUSIC_KEY = "music"
     HELP_KEY = "help"
     BRIEF_KEY = "brief"
     DESCRIPTION_KEY = "description"
 
+    ## Defaults
+    PHRASES_FILE = CONFIG_OPTIONS.get(PHRASES_FILE_KEY, "phrases.json")
+    PHRASES_FILE_PATH = CONFIG_OPTIONS.get(PHRASES_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FILE]))
 
-    def __init__(self, hawking, bot, phrases_json_path, **command_kwargs):
+
+    def __init__(self, hawking, bot, phrases_json_path=None, **command_kwargs):
         self.hawking = hawking
         self.bot = bot
-        self.phrases_json_path = phrases_json_path
+        self.phrases_json_path = phrases_json_path or self.PHRASES_FILE_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
 
@@ -37,6 +55,10 @@ class Phrases:
     @property
     def speech_cog(self):
         return self.hawking.get_speech_cog()
+
+    @property
+    def music_cog(self):
+        return self.hawking.get_music_cog()
 
     ## Methods
 
@@ -89,14 +111,16 @@ class Phrases:
                     phrase = Phrase(
                         phrase_name,
                         phrase_raw[self.MESSAGE_KEY],
+                        phrase_raw.get(self.IS_MUSIC_KEY, False),
                         **kwargs
                     )
                     phrases.append(phrase)
                     self.command_names.append(phrase_name)
                 except Exception as e:
-                    print("Exception", e, "when loading phases.json. Skipping...")
+                    print("Exception", e, "when loading phrases.json. Skipping...")
 
-        return phrases
+        ## Todo: This doesn't actually result in the phrases in the help menu being sorted?
+        return sorted(phrases, key=lambda phrase: phrase.name)
 
 
     ## Unloads the preset phrases from the bot's command list
@@ -116,24 +140,35 @@ class Phrases:
         ## Manually build command to be added
         command = commands.Command(
             phrase.name,
-            self._create_phrase_callback(phrase.message),
+            self._create_phrase_callback(phrase.message, phrase.is_music),
             **phrase.kwargs,
             **self.command_kwargs
         )
         ## _phrase_callback doesn't have an instance linked to it, 
         ## (not technically a method of Phrases?) so manually insert the correct instance anyway.
-        ## This fixes the broken category label in the help page.
+        ## This also fixes the broken category label in the help page.
         command.instance = self
 
         self.bot.add_command(command)
 
 
     ## Build a dynamic callback to invoke the bot's say method
-    def _create_phrase_callback(self, message):
-        ## Pass a self arg to it now that the command.instance is set to self
+    def _create_phrase_callback(self, message, is_music=False):
+        ## Create a callback for speech.say
         async def _phrase_callback(self, ctx):
+            ## Pass a self arg to it now that the command.instance is set to self
             speech_cog = self.speech_cog
             say = speech_cog.say.callback
             await say(speech_cog, ctx, message=message)
 
-        return _phrase_callback
+        ## Create a callback for music.music
+        async def _music_callback(self, ctx):
+            music_cog = self.music_cog
+            music = music_cog.music.callback
+            await music(music_cog, ctx, message=message)
+
+        ## Return the appropriate callback
+        if(is_music):
+            return _music_callback
+        else:
+            return _phrase_callback

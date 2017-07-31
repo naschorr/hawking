@@ -1,5 +1,5 @@
 import importlib
-
+import sys
 import os
 from collections import OrderedDict
 
@@ -25,14 +25,16 @@ CONFIG_OPTIONS = utilities.load_config()
 
 
 class ModuleEntry:
-    def __init__(self, module, cls, *init_args, **init_kwargs):
-        self.module = module
+    def __init__(self, cls, *init_args, **init_kwargs):
+        self.module = sys.modules[cls.__module__]
         self.cls = cls
         self.name = cls.__name__
         self.args = init_args
         self.kwargs = init_kwargs
 
+    ## Methods
 
+    ## Returns an invokable object to instantiate the class defined in self.cls
     def get_class_callable(self):
         return getattr(self.module, self.name)
 
@@ -42,9 +44,11 @@ class ModuleManager:
         self.bot = bot
         self.modules = OrderedDict()
 
+    ## Methods
 
-    def register(self, module, cls, *init_args, **init_kwargs):
-        module_entry = ModuleEntry(module, cls, *init_args, **init_kwargs)
+    ## Registers a module, class, and args necessary to instantiate the class
+    def register(self, cls, *init_args, **init_kwargs):
+        module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
 
         self.modules[module_entry.name] = module_entry
 
@@ -87,7 +91,7 @@ class ModuleManager:
             else:
                 counter += 1
 
-        print("Loaded {} cog{}.".format(counter, "s" if counter != 1 else ""))
+        print("Loaded {}/{} cogs.".format(counter, len(self.modules)))
         return counter
 
 
@@ -107,25 +111,19 @@ class Hawking:
     TOKEN_KEY = "token"
     TOKEN_FILE_KEY = "token_file"
     TOKEN_FILE_PATH_KEY = "token_file_path"
-    PHRASES_FILE_KEY = "phrases_file"
-    PHRASES_FILE_PATH_KEY = "phrases_file_path"
 
     ## Defaults
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
     DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking")
     TOKEN_FILE = CONFIG_OPTIONS.get(TOKEN_FILE_KEY, "token.json")
     TOKEN_FILE_PATH = CONFIG_OPTIONS.get(TOKEN_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), TOKEN_FILE]))
-    PHRASES_FILE = CONFIG_OPTIONS.get(PHRASES_FILE_KEY, "phrases.json")
-    PHRASES_FILE_PATH = CONFIG_OPTIONS.get(PHRASES_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FILE]))
 
 
     ## Initialize the bot, and add base cogs
     def __init__(self, **kwargs):
-        ## Todo: allow for arbitary module cogs
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.token_file_path = kwargs.get(self.TOKEN_FILE_PATH_KEY, self.TOKEN_FILE_PATH)
-        self.phrases_file_path = kwargs.get(self.PHRASES_FILE_PATH_KEY, self.PHRASES_FILE_PATH)
         ## Todo: pass kwargs to the their modules
 
         ## Init the bot and module manager
@@ -136,12 +134,11 @@ class Hawking:
         self.module_manager = ModuleManager(self.bot)
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
-        self.module_manager.register(speech, speech.Speech, *[self.bot])
-        self.module_manager.register(phrases, phrases.Phrases,
-                                     *[self, self.bot, self.phrases_file_path],
+        self.module_manager.register(speech.Speech, *[self.bot])
+        self.module_manager.register(phrases.Phrases, *[self, self.bot],
                                      **dict(pass_context=True, no_pm=True))
-        self.module_manager.register(music, music.Music, *[self, self.bot])
-        self.module_manager.register(admin, admin.Admin, *[self, self.bot])
+        self.module_manager.register(music.Music, *[self, self.bot])
+        self.module_manager.register(admin.Admin, *[self, self.bot])
 
         ## Give some feedback for when the bot is ready to go
         @self.bot.event
@@ -162,12 +159,22 @@ class Hawking:
 
     ## Returns the bot's speech cog
     def get_speech_cog(self):
-        return self.bot.get_cog(speech.Speech.__name__)
+        return self.bot.get_cog("Speech")
 
 
     ## Returns the bot's phrases cog
     def get_phrases_cog(self):
-        return self.bot.get_cog(phrases.Phrases.__name__)
+        return self.bot.get_cog("Phrases")
+
+
+    ## Returns the bot's music cog
+    def get_music_cog(self):
+        return self.bot.get_cog("Music")
+
+
+    ## Register an arbitrary module with hawking (easy wrapper for self.module_manager.register)
+    def register_module(self, cls, *init_args, **init_kwargs):
+        self.module_manager.register(cls, *init_args, **init_kwargs)
 
 
     ## Run the bot
@@ -177,5 +184,7 @@ class Hawking:
 
 if(__name__ == "__main__"):
     hawking = Hawking()
+    # hawking.register_module(ArbitraryClass(*init_args, **init)kwargs))
+    # or, 
     # hawking.add_cog(ArbitaryClass(*args, **kwargs))
     hawking.run()

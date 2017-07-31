@@ -40,6 +40,7 @@ class MusicParser:
     CATCHALL_REGEX = r"(.?)"
     FRACTIONAL_REGEX = r"(\/)"
 
+    ## Start State Machine Classes
 
     ## Base state that all other states inherit from
     class BaseState:    # Todo: make virtual
@@ -196,6 +197,7 @@ class MusicParser:
             utilities.debug_print("Error", char, string)
             return None
 
+    ## End State Machine Classes
 
     def __init__(self, notes, beat_length=0.25, octave=4):
         self.beat_length = beat_length
@@ -371,15 +373,18 @@ class Music:
         string = ""
         note_index = 0
         for note in notes:
+            ## Push any sub_notes into their appropriate position in the notes list
             sub_note_index = 0
             for sub_note in note.sub_notes:
                 notes.insert(note_index + 1 + sub_note_index, sub_note)
                 sub_note_index += 1
 
+            ## Create a textual representation of the note
             note_str = note.note
             if(note.sharp):
                 note_str += self.SHARP
 
+            ## Select a format string for the type of note
             if(note_str in self.NOTES):
                 replacement_str = self.NOTE_REPLACEMENT
                 try:
@@ -392,14 +397,17 @@ class Music:
             else:
                 continue
 
+            ## Assign a duration of time to hold the note for
             duration = note.duration
 
+            ## Randomize the note's pitch and duration if use_bad is True
             if(use_bad):
                 pitch_offset_max = pitch * (bad_percent / 100)
                 pitch += random.uniform(-pitch_offset_max, pitch_offset_max)
                 duration_offset_max = duration * (bad_percent / 100)
                 duration += random.uniform(-duration_offset_max, duration_offset_max)
 
+            ## Create the TTS friendly string for the note, and use the tone format string if necessary
             if(use_tones):
                 string += self.TONE_REPLACEMENT.format(int(pitch), int(note.beat_length * duration * 1000))
             else:

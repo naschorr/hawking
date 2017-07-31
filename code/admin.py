@@ -60,6 +60,7 @@ class Admin:
             return False
 
         count = self.phrases_cog.reload_phrases()
+
         loaded_phrases_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
         await self.bot.say(loaded_phrases_string)
         if(self.announce_updates):
@@ -78,7 +79,9 @@ class Admin:
             return False
 
         count = self.hawking.module_manager.reload_all()
-        loaded_cogs_string = "Loaded {} cog{}.".format(count, "s" if count != 1 else "")
+        total = len(self.hawking.module_manager.modules)
+
+        loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
         await self.bot.say(loaded_cogs_string)
         if(self.announce_updates):
             await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_cogs_string)
