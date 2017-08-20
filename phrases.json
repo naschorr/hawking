@@ -106,10 +106,9 @@
 			"message"	: "[ae<150,28>nnday<300,30>ssae<300,28>_<300>hxeh<750,37>ey<200,33>eh<750,33>ey<200,28>eh<750,28>ey<400,26>ey<400,25>]\n [hxeh<750,37>ey<200,33>eh<750,33>ey<200,26>eh<750,26>_<750>ay<150,35>sseh<200,37>hxeh<300,33>eh<300,30>]\n [wwah<300,35>ttsgow<300,35>ih<400,37>nnaw<300,33>nn<90>]"
 		},
 		{
-			"name"		: "titanic",
-			"help"		: "An emotional rendition.",
-			"music"		: true,
-			"message"	: "\\bpm=100 \\bad=1 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r"
+			"name"		: "higher",
+			"help"		: "He's got the high ground.",
+			"message"	: "[:np] Everything ends the peaceful is willing to, the geography that I stands compares you superior! [:nh] You underrated my ability. [:np] Is"
 		}
 	]
 }
