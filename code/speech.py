@@ -24,6 +24,7 @@ class TTSController:
     CHAR_LIMIT_KEY = "char_limit"
     NEWLINE_REPLACEMENT_KEY = "newline_replacement"
     OUTPUT_EXTENSION_KEY = "output_extension"
+    WINDOWS_EMULATOR_KEY = "windows_emulator"
 
     ## Defaults
     TTS_FILE = CONFIG_OPTIONS.get(TTS_FILE_KEY, "say.exe")
@@ -35,6 +36,7 @@ class TTSController:
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
     NEWLINE_REPLACEMENT = CONFIG_OPTIONS.get(NEWLINE_REPLACEMENT_KEY, "[_<250,10>]")
     OUTPUT_EXTENSION = CONFIG_OPTIONS.get(OUTPUT_EXTENSION_KEY, "wav")
+    WINDOWS_EMULATOR = CONFIG_OPTIONS.get(WINDOWS_EMULATOR_KEY, "wine")
 
 
     def __init__(self, exe_path=None, **kwargs):
@@ -84,7 +86,7 @@ class TTSController:
     def _parse_message(self, message):
         if(self.newline_replacement):
             message = message.replace("\n", self.newline_replacement)
-        
+
         if(self.prepend):
             message = self.prepend + message
 
@@ -143,6 +145,10 @@ class TTSController:
             save_option,
             message
         )
+	## Prepend the windows emulator if using linux (I'm aware of what WINE means)
+        if(utilities.is_linux()):
+            args = "{} {}".format(self.WINDOWS_EMULATOR, args)
+
         retval = os.system(args)
 
         if(retval == 0):

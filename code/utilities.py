@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 
 ## Config
@@ -6,6 +7,7 @@ CONFIG_OPTIONS = {}         # This'll be populated on import
 DEBUG_KEY = "debug"
 CONFIG_NAME = "config.json"	# The name of the config file
 DIRS_FROM_ROOT = 1			# How many directories away this script is from the root
+PLATFORM = sys.platform
 
 
 def get_root_path():
@@ -25,6 +27,14 @@ def load_config():
 def debug_print(*args, **kwargs):
     if(CONFIG_OPTIONS.get(DEBUG_KEY, False)):
         print(*args, **kwargs)
+
+
+def is_linux():
+    return "linux" in PLATFORM
+
+
+def is_windows():
+    return "win" in PLATFORM
 
 
 CONFIG_OPTIONS = load_config()
