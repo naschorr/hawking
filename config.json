@@ -4,7 +4,7 @@
 	"announce_updates"			: true,
 	"windows_emulator"			: "wine",
 	"xvfb_prepend"			: "DISPLAY=:0.0",
-	"headless"				: true,
+	"headless"				: false,
 
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
