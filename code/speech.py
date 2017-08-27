@@ -24,6 +24,9 @@ class TTSController:
     CHAR_LIMIT_KEY = "char_limit"
     NEWLINE_REPLACEMENT_KEY = "newline_replacement"
     OUTPUT_EXTENSION_KEY = "output_extension"
+    WINDOWS_EMULATOR_KEY = "windows_emulator"
+    XVFB_PREPEND_KEY = "XVFB_prepend"
+    HEADLESS_KEY = "headless"
 
     ## Defaults
     TTS_FILE = CONFIG_OPTIONS.get(TTS_FILE_KEY, "say.exe")
@@ -35,6 +38,9 @@ class TTSController:
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
     NEWLINE_REPLACEMENT = CONFIG_OPTIONS.get(NEWLINE_REPLACEMENT_KEY, "[_<250,10>]")
     OUTPUT_EXTENSION = CONFIG_OPTIONS.get(OUTPUT_EXTENSION_KEY, "wav")
+    WINDOWS_EMULATOR = CONFIG_OPTIONS.get(WINDOWS_EMULATOR_KEY, "wine")
+    XVFB_PREPEND = CONFIG_OPTIONS.get(XVFB_PREPEND_KEY, "DISPLAY=:0.0")
+    HEADLESS = CONFIG_OPTIONS.get(HEADLESS_KEY, False)
 
 
     def __init__(self, exe_path=None, **kwargs):
@@ -46,6 +52,9 @@ class TTSController:
         self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
         self.newline_replacement = kwargs.get(self.NEWLINE_REPLACEMENT_KEY, self.NEWLINE_REPLACEMENT)
         self.output_extension = kwargs.get(self.OUTPUT_EXTENSION_KEY, self.OUTPUT_EXTENSION)
+        self.windows_emulator = kwargs.get(self.WINDOWS_EMULATOR_KEY, self.WINDOWS_EMULATOR)
+        self.xvfb_prepend = kwargs.get(self.XVFB_PREPEND_KEY, self.XVFB_PREPEND)
+        self.is_headless = kwargs.get(self.HEADLESS_KEY, self.HEADLESS)
 
         self.paths_to_delete = []
 
@@ -84,7 +93,7 @@ class TTSController:
     def _parse_message(self, message):
         if(self.newline_replacement):
             message = message.replace("\n", self.newline_replacement)
-        
+
         if(self.prepend):
             message = self.prepend + message
 
@@ -143,6 +152,15 @@ class TTSController:
             save_option,
             message
         )
+
+	## Prepend the windows emulator if using linux (I'm aware of what WINE means)
+        if(utilities.is_linux()):
+            args = "{} {}".format(self.windows_emulator, args)
+
+        ## Prepend the fake display created with Xvfb if running headless
+        if(self.is_headless):
+            args = "{} {}".format(self.xvfb_prepend, args)
+
         retval = os.system(args)
 
         if(retval == 0):

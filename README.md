@@ -14,6 +14,17 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Select your server, and hit "Authorize"
 - Check out `config.json` for any configuration you might want to do. It's set up to work well out of the box, but you may want to add admins, change pathing, or modify the number of votes required for a skip.
 
+#### Windows Installation
+- Nothing else to do! Everything should work just fine.
+
+#### Linux Installation
+- Install [Wine](https://www.winehq.org/) to get the TTS executable working.
+
+#### Headless Installation
+- Install Xvfb with with your preferred package manager (`apt install xvfb` on Ubuntu, for example)
+- Invoke Xvfb automatically on reboot with a cron job (`sudo crontab -e`), by adding `@reboot Xvfb :0 -screen 0 1024x768x16 &` to your list of jobs.
+- Set `headless` to be `true` in `config.json`
+
 ## Usage
 - `cd` into the project's root
 - Activate the virtualenv
@@ -38,3 +49,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen.
 
 Lastly, be sure to check out the [Moonbase Alpa](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam.
+
+---
+Tested on Windows 10, and Ubuntu 16.04.
