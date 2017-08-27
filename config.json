@@ -2,9 +2,9 @@
 	"admins"					: ["Username#1234"],
 	"debug"						: false,
 	"announce_updates"			: true,
-	"windows_emulator"			: "wine",
-	"xvfb_prepend"			: "DISPLAY=:0.0",
-	"headless"				: false,
+	"wine"						: "wine",
+	"xvfb_prepend"				: "DISPLAY=:0.0",
+	"headless"					: false,
 
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
@@ -19,6 +19,8 @@
 
 	"skip_votes"				: "3",
 	"skip_percentage"			: "33",
+	"ffmpeg_before_options"		: "-ac 2",
+	"ffmpeg_options"			: "-loglevel 16",
 
 	"prepend"					: "[:phoneme on]",
 	"append"					: "",

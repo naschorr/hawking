@@ -113,7 +113,7 @@
 		{
 			"name"		: "no",
 			"help"		: "He doesn't want it.",
-			"message"	: "[:dv ap 80 pr 0 hs 125 sm 50] [d<100,90>yu<500,90>] NOT [w<150,90>aa<1500,90>n<150,90>t<200,90>]!"
+			"message"	: "[:dv ap 95 pr 0 hs 125 sm 50] [duw<200>] [nao<200>t<50>] [waa<1500>nt<150>]!"
 		},
 		{
 			"name"		: "salt",
