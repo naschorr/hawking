@@ -119,6 +119,12 @@
 			"name"		: "salt",
 			"help"		: "The zest of life.",
 			"message"	: "The ceiling is salt, the floor is salt, the walls are salt, and too an extent, the air is salt. You breathe that in, and you constantly taste the salt."
+		},
+		{
+			"name"		: "titanic",
+			"help"		: "A heartfelt rendition.",
+			"message"	: "\\music \\bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r",
+			"music"		: true
 		}
 	]
 }
