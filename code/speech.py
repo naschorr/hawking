@@ -6,6 +6,7 @@ import time
 from math import ceil
 
 import utilities
+from discord import errors
 from discord.ext import commands
 
 ## Config
@@ -72,7 +73,10 @@ class TTSController:
         else:
             for root, dirs, files in os.walk(self.output_dir_path, topdown=False):
                 for file in files:
-                    os.remove(os.sep.join([root, file]))
+                    try:
+                        os.remove(os.sep.join([root, file]))
+                    except OSError as e:
+                        utilities.debug_print("Error removing file. ", e)
 
 
     def _generate_unique_file_name(self, extension):
@@ -116,15 +120,15 @@ class TTSController:
         for index, path in enumerate(self.paths_to_delete):
             try:
                 os.remove(path)
+            except FileNotFoundError:
+                ## The goal was to remove the file, and as long as it doesn't exist then we're good.
+                continue
             except Exception as e:
-                if(file_path != path):
-                    ## If the file to delete isn't the one that's (probably) still loaded, then 
-                    ## definitely display something.
-                    print("Error removing path:", path)
-
+                utilities.debug_print("Error deleting file:", path, type(e).__name__, e)
                 to_delete.append(path)
 
         self.paths_to_delete = to_delete[:]
+
         return True
 
 
@@ -153,7 +157,7 @@ class TTSController:
             message
         )
 
-	## Prepend the windows emulator if using linux (I'm aware of what WINE means)
+        ## Prepend the windows emulator if using linux (I'm aware of what WINE means)
         if(utilities.is_linux()):
             args = "{} {}".format(self.windows_emulator, args)
 
@@ -192,7 +196,6 @@ class SpeechState:
         self.skip_votes = set() # set of users that voted to skip
         self.speech_queue = asyncio.Queue()
         self.speech_player = self.bot.loop.create_task(self.speech_player())
-
     ## Property(s)
 
     @property
@@ -241,11 +244,13 @@ class SpeechState:
 
 class Speech:
     ## Keys
+    DELETE_COMMANDS_KEY = "delete_commands"
     SKIP_VOTES_KEY = "skip_votes"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     SPEECH_STATES_KEY = "speech_states"
 
     ## Defaults
+    DELETE_COMMANDS = CONFIG_OPTIONS.get(DELETE_COMMANDS_KEY, False)
     SKIP_VOTES = CONFIG_OPTIONS.get(SKIP_VOTES_KEY, 3)
     SKIP_PERCENTAGE = CONFIG_OPTIONS.get(SKIP_PERCENTAGE_KEY, 33)
 
@@ -256,6 +261,7 @@ class Speech:
         self.speech_states = {}
         self.save = self.tts_controller.save
         self.delete = self.tts_controller.delete
+        self.delete_commands = kwargs.get(self.DELETE_COMMANDS_KEY, self.DELETE_COMMANDS)
         self.skip_votes = int(kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES))
         self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
 
@@ -268,6 +274,7 @@ class Speech:
                 state.speech_player.cancel()
                 if(state.voice_client):
                     self.bot.loop.create_task(state.voice_client.disconnect())
+                #state.speech_player.stop()
             except:
                 pass
 
@@ -317,6 +324,35 @@ class Speech:
         else:
             return True
 
+
+    ## Tries to get the bot to leave a channel
+    async def leave_channel(self, channel):
+        state = self.get_speech_state(channel.server)
+
+        if(state.voice_client):
+            ## Disconnect and un-set the voice client
+            await state.voice_client.disconnect()
+            state.voice_client = None
+            return True
+        else:
+            return False
+
+
+    ## Tries to delete the command message
+    async def attempt_delete_command_message(self, message):
+        if(self.delete_commands):
+            try:
+                await self.bot.delete_message(message)
+            except errors.Forbidden:
+                utilities.debug_print("Bot doesn't have permission to delete the message")
+
+
+    ## Checks if a given command fits into the back of a string (ex. '\say' matches 'say')
+    def is_matching_command(self, string, command):
+        to_check = string[len(command):]
+        return (command == to_check)
+
+
     ## Commands
 
     ## Tries to summon the bot to a user's channel
@@ -329,6 +365,9 @@ class Speech:
         if(summoned_channel is None):
             await self.bot.say("{} isn't in a voice channel.".format(ctx.message.author))
             return False
+
+        ## Attempt to delete the command message
+        await self.attempt_delete_command_message(ctx.message)
 
         return await self.join_channel(summoned_channel)
 
@@ -347,6 +386,8 @@ class Speech:
         if(voter == state.current_speech.requester):
             await self.bot.say("<@{}> skipped their own speech.".format(voter.id))
             await state.skip_speech()
+            ## Attempt to delete the command message
+            await self.attempt_delete_command_message(ctx.message)
             return False
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -361,8 +402,9 @@ class Speech:
                 await state.skip_speech()
                 return True
             else:
-                raw = "Skip vote added, currently at {}/{} or {}%"
-                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage))
+                raw = "Skip vote added, currently at {}/{} or {}%/{}%"
+                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage, self.skip_percentage))
+
         else:
             await self.bot.say("<@{}> has already voted!".format(voter.id))
 
@@ -401,4 +443,8 @@ class Speech:
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
+
+            ## Attempt to delete the command message
+            await self.attempt_delete_command_message(ctx.message)
+
             return True

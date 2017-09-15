@@ -106,3 +106,16 @@ class Admin:
         await self.bot.say("<@{}> has skipped the speech.".format(ctx.message.author.id))
         await state.skip_speech()
         return True
+
+
+    ## Disconnects the bot from their current voice channel
+    @admin.command(pass_context=True, no_pm=True)
+    async def disconnect(self, ctx):
+        """ Disconnect from the current voice channel."""
+
+        if(not self.is_admin(ctx.message.author)):
+            await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            return False
+
+        await self.speech_cog.leave_channel(ctx.message.channel)
+        return True

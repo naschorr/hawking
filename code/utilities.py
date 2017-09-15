@@ -30,11 +30,11 @@ def debug_print(*args, **kwargs):
 
 
 def is_linux():
-    return "linux" in PLATFORM
+    return ("linux" in PLATFORM)
 
 
 def is_windows():
-    return "win" in PLATFORM
+    return ("win" in PLATFORM)
 
 
 CONFIG_OPTIONS = load_config()

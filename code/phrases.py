@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from discord.ext import commands
 
 import utilities
@@ -23,8 +24,9 @@ class Phrase:
 class Phrases:
     ## Keys
     PHRASES_KEY = "phrases"
-    PHRASES_FILE_KEY = "phrases_file"
-    PHRASES_FILE_PATH_KEY = "phrases_file_path"
+    PHRASES_FILE_EXTENSION_KEY = "phrases_file_extension"
+    PHRASES_FOLDER_KEY = "phrases_folder"
+    PHRASES_FOLDER_PATH_KEY = "phrases_folder_path"
     NAME_KEY = "name"
     MESSAGE_KEY = "message"
     IS_MUSIC_KEY = "music"
@@ -33,14 +35,16 @@ class Phrases:
     DESCRIPTION_KEY = "description"
 
     ## Defaults
-    PHRASES_FILE = CONFIG_OPTIONS.get(PHRASES_FILE_KEY, "phrases.json")
-    PHRASES_FILE_PATH = CONFIG_OPTIONS.get(PHRASES_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FILE]))
+    PHRASES_FILE_EXTENSION = CONFIG_OPTIONS.get(PHRASES_FILE_EXTENSION_KEY, ".json")
+    PHRASES_FOLDER = CONFIG_OPTIONS.get(PHRASES_FOLDER_KEY, "phrases")
+    PHRASES_FOLDER_PATH = CONFIG_OPTIONS.get(PHRASES_FOLDER_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FOLDER]))
 
 
-    def __init__(self, hawking, bot, phrases_json_path=None, **command_kwargs):
+    def __init__(self, hawking, bot, phrases_folder_path=None, **command_kwargs):
         self.hawking = hawking
         self.bot = bot
-        self.phrases_json_path = phrases_json_path or self.PHRASES_FILE_PATH
+        self.phrases_file_extension = self.PHRASES_FILE_EXTENSION
+        self.phrases_folder_path = phrases_folder_path or self.PHRASES_FOLDER_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
 
@@ -67,16 +71,33 @@ class Phrases:
         self.remove_phrases()
 
 
+    ## Searches the phrases folder for .json files that can potentially contain phrases.
+    def scan_phrases(self, path_to_scan):
+        def is_phrase_file(file_path):
+            to_check = file_path[-len(self.phrases_file_extension):]
+            return (to_check == self.phrases_file_extension)
+
+        phrase_files = []
+        for file in os.listdir(path_to_scan):
+            if(is_phrase_file(file)):
+                phrase_files.append(os.sep.join([path_to_scan, file]))
+
+        return phrase_files
+
+
     ## Initialize the phrases available to the bot
     def init_phrases(self):
+        phrase_file_paths = self.scan_phrases(self.phrases_folder_path)
+
         counter = 0
-        for phrase in self.load_phrases(self.phrases_json_path):
-            try:
-                self.add_phrase(phrase)
-            except TypeError as e:
-                print(e, "Skipping...")
-            else:
-                counter += 1
+        for phrase_file_path in phrase_file_paths:
+            for phrase in self.load_phrases(phrase_file_path):
+                try:
+                    self.add_phrase(phrase)
+                except TypeError as e:
+                    print(e, "Skipping...")
+                else:
+                    counter += 1
 
         print("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
@@ -172,3 +193,13 @@ class Phrases:
             return _music_callback
         else:
             return _phrase_callback
+
+
+    ## Says a random phrase from the added phrases
+    @commands.command(pass_context=True, no_pm=True)
+    async def random(self, ctx):
+        """Says a random phrase from the list of phrases."""
+
+        random_phrase = random.choice(self.command_names)
+        command = self.bot.get_command(random_phrase)
+        await command.callback(self, ctx)

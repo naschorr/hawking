@@ -113,7 +113,43 @@
 		{
 			"name"		: "no",
 			"help"		: "He doesn't want it.",
-			"message"	: "[:dv ap 80 pr 0 hs 125 sm 50] [d<100,90>yu<500,90>] NOT [w<150,90>aa<1500,90>n<150,90>t<200,90>]!"
+			"message"	: "[:dv ap 95 pr 0 hs 125 sm 50] [duw<200>] [nao<200>t<50>] [waa<1500>nt<150>]!"
+		},
+		{
+			"name"		: "salt",
+			"help"		: "The zest of life.",
+			"message"	: "The ceiling is salt, the floor is salt, the walls are salt, and too an extent, the air is salt. You breathe that in, and you constantly taste the salt."
+		},
+		{
+			"name"		: "titanic",
+			"help"		: "A heartfelt rendition.",
+			"message"	: "\\music \\bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r",
+			"music"		: true
+		},
+		{
+			"name"		: "wake",
+			"help"		: "I just can't.",
+			"message"	: "[:np] Wake me up. [:nw] Wake me up inside. [:np] Can't wake up! [:nw] Wake me up inside. [:np] [sey<800>v<200>_<150>miy<1000>eh<10>]!"
+		},
+		{
+			"name"		: "ravioli",
+			"help"		: "He needs it!",
+			"message"	: "[:rate 300] Ravioli, ravioli, give me the form u oli"
+		},
+		{
+			"name"		: "roflcopter",
+			"help"		: "Now how will you get the easter egg?",
+			"message"	: "My rawfulcopter, it goes schwah schwah schwah"
+		},
+		{
+			"name"		: "koolaid",
+			"help"		: "An excellent prize.",
+			"message"	: "Today winna will receive the gift of KoolAid! Now available in all five food groups: red, urnge, green, blue, and turkwaz. Because, you always need mo KoolAid!"
+		},
+		{
+			"name"		: "secrets",
+			"help"		: "execute hack.exe",
+			"message"	: "I've hacked into the most secret government and corporate secrets!"
 		}
 	]
 }

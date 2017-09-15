@@ -30,5 +30,15 @@ pip-selfcheck.json
 # Ignore .pyc files
 *.pyc
 
-## Ignore my notes
+# Ignore venv files
+pyvenv.cfg
+
+# Ignore my notes
 register.txt
+
+# Ignore the token
+token.json
+
+# Ignore misc phrase files, but include default phrases
+phrases/*
+!phrases/phrases.json
