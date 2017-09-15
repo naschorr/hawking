@@ -6,8 +6,6 @@
 	"wine"						: "wine",
 	"xvfb_prepend"				: "DISPLAY=:0.0",
 	"headless"					: false,
-	"modules_folder"			: "modules",
-	"_modules_folder_path"		: "",
 
 	"activation_str"			: "\\",
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
