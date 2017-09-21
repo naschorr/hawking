@@ -96,19 +96,9 @@
 			"message"	: "[trae<400,17>nkwih<200,12>lxae<400,15>zah<200,10>for<500,12>ih<400,15>st]\n [bah<200,10>tah<200,12>fay<600,13>r<200>_<600>wih<200,15>dhih<600,10>n]\n [wah<200,17>ns<200>yu<200,12>fay<400,15>ndyxor<200,10>seh<400,12>ntrr<400,15>]\n [yu<200,10>ar<200,12>shrr<800,13>_<400>tuw<200,15>wih<600>n]\n [yxor<200,15>ah<200>spay<400,17>nlxih<400>spey<400>lx_<200,20>pah<200,22>theh<200,19>dih<200>klxao<400>t]\n [ae<200,20>ndyu<200,22>hxae<600,24>vih<200,25>ntgao<400,24>tah<200,15>klxuw<800,17>]\n [sah<150,25>mhxaw<200,24>ay<1000,20>lx_<200>mey<200,17>kah<200,24>mae<600,22>n_<600>aw<200,20>tah<200,19>vyu<200,20>uw<1200,17>]"
 		},
 		{
-			"name"		: "oh",
-			"help"		: "Oh you!",
-			"message"	: "[ow<2000,100>yu<2000,500>]"
-		},
-		{
 			"name"		: "hey",
 			"help"		: "What's going on?",
 			"message"	: "[ae<150,28>nnday<300,30>ssae<300,28>_<300>hxeh<750,37>ey<200,33>eh<750,33>ey<200,28>eh<750,28>ey<400,26>ey<400,25>]\n [hxeh<750,37>ey<200,33>eh<750,33>ey<200,26>eh<750,26>_<750>ay<150,35>sseh<200,37>hxeh<300,33>eh<300,30>]\n [wwah<300,35>ttsgow<300,35>ih<400,37>nnaw<300,33>nn<90>]"
-		},
-		{
-			"name"		: "higher",
-			"help"		: "He's got the high ground.",
-			"message"	: "[:np] Everything ends the peaceful is willing to, the geography that I stands compares you superior! [:nh] You underrated my ability. [:np] Is"
 		},
 		{
 			"name"		: "no",
@@ -145,11 +135,6 @@
 			"name"		: "koolaid",
 			"help"		: "An excellent prize.",
 			"message"	: "Today winna will receive the gift of KoolAid! Now available in all five food groups: red, urnge, green, blue, and turkwaz. Because, you always need mo KoolAid!"
-		},
-		{
-			"name"		: "secrets",
-			"help"		: "execute hack.exe",
-			"message"	: "I've hacked into the most secret government and corporate secrets!"
 		}
 	]
 }
