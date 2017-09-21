@@ -76,7 +76,7 @@ class TTSController:
                     try:
                         os.remove(os.sep.join([root, file]))
                     except OSError as e:
-                        utilities.debug_print("Error removing file. ", e)
+                        utilities.debug_print("Error removing file: {}".format(file), e, debug_level=2)
 
 
     def _generate_unique_file_name(self, extension):
@@ -124,7 +124,7 @@ class TTSController:
                 ## The goal was to remove the file, and as long as it doesn't exist then we're good.
                 continue
             except Exception as e:
-                utilities.debug_print("Error deleting file:", path, type(e).__name__, e)
+                utilities.debug_print("Error deleting file:", path, type(e).__name__, e, debug_level=1)
                 to_delete.append(path)
 
         self.paths_to_delete = to_delete[:]
@@ -352,7 +352,7 @@ class Speech:
             try:
                 await self.bot.delete_message(message)
             except errors.Forbidden:
-                utilities.debug_print("Bot doesn't have permission to delete the message")
+                utilities.debug_print("Bot doesn't have permission to delete the message", debug_level=3)
 
 
     ## Checks if a given command fits into the back of a string (ex. '\say' matches 'say')

@@ -183,7 +183,12 @@ class Hawking:
 
     ## Run the bot
     def run(self):
-        self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
+        ## Keep bot going despite any misc service errors
+        try:
+            self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
+        except Exception as e:
+            utilities.debug_print("Critical exception when running bot", e, debug_level=0)
+            self.run()
 
 
 if(__name__ == "__main__"):

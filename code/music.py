@@ -74,7 +74,7 @@ class MusicParser:
         def exit(self, char, string, **kwargs):
             for regex_string, handler in self.exit_dict.items():
                 match = re.match(regex_string, char)
-                utilities.debug_print("MATCHING", regex_string, char, handler.__self__.__class__.__name__)
+                utilities.debug_print("MATCHING", regex_string, char, handler.__self__.__class__.__name__, debug_level=4)
                 if(match):
                     return handler(string, **kwargs)
 
@@ -87,7 +87,7 @@ class MusicParser:
     class StartState(BaseState):
         def enter(self, string, **kwargs):
             char = self.emit_char(string)
-            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs)
+            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs, debug_level=4)
 
             return self.exit(char, string, **kwargs)
 
@@ -96,7 +96,7 @@ class MusicParser:
     class DurationState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             return self.exit(self.emit_char(consumed_str), consumed_str, duration=int(char), **kwargs)
 
@@ -105,7 +105,7 @@ class MusicParser:
     class NoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             return self.exit(self.emit_char(consumed_str), consumed_str, note=char, **kwargs)
 
@@ -114,7 +114,7 @@ class MusicParser:
     class SharpState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             return self.exit(self.emit_char(consumed_str), consumed_str, sharp=char, **kwargs)
 
@@ -123,7 +123,7 @@ class MusicParser:
     class OctaveState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             return self.exit(self.emit_char(consumed_str), consumed_str, octave=int(char), **kwargs)
 
@@ -132,7 +132,7 @@ class MusicParser:
     class NoteObjState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             beat_length = kwargs.get("beat_length", 0.25)
             duration = kwargs.get("duration", 1)
@@ -158,7 +158,7 @@ class MusicParser:
     class SubNoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs)
+            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
 
             note_obj = kwargs.get("note_obj")
             assert note_obj is not None
@@ -175,7 +175,7 @@ class MusicParser:
     ## Final output state
     class FinalState(BaseState):
         def enter(self, string, **kwargs):
-            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs)
+            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs, debug_level=4)
 
             note_obj = kwargs.get("note_obj")
             sub_notes = kwargs.get("sub_notes", [])
@@ -194,7 +194,7 @@ class MusicParser:
     ## Error handling state
     class ErrorState(BaseState):
         def enter(self, char, string):
-            utilities.debug_print("Error", char, string)
+            utilities.debug_print("Error", char, string, debug_level=4)
             return None
 
     ## End State Machine Classes
