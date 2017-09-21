@@ -95,7 +95,7 @@ class Phrases:
                 try:
                     self.add_phrase(phrase)
                 except TypeError as e:
-                    print(e, "Skipping...")
+                    utilities.debug_print(e, "Skipping...", debug_level=3)
                 else:
                     counter += 1
 
@@ -138,7 +138,7 @@ class Phrases:
                     phrases.append(phrase)
                     self.command_names.append(phrase_name)
                 except Exception as e:
-                    print("Exception", e, "when loading phrases.json. Skipping...")
+                    utilities.debug_print("Error loading {} from {}. Skipping...".format(phrase_raw, fd), e, debug_level=3)
 
         ## Todo: This doesn't actually result in the phrases in the help menu being sorted?
         return sorted(phrases, key=lambda phrase: phrase.name)
