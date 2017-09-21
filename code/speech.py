@@ -132,14 +132,14 @@ class TTSController:
         return True
 
 
-    async def save(self, message):
+    async def save(self, message, ignore_char_limit=False):
         ## Validate output directory
         if(not self.output_dir_path):
-            print("Unable to save without output_dir_path set. See {}.__init__".format(self.__name__))
+            utilities.debug_print("Unable to save without output_dir_path set. See {}.__init__".format(self.__name__), debug_level=0)
             return None
 
         ## Check message size
-        if(not self.check_length(message)):
+        if(not self.check_length(message) and not ignore_char_limit):
             return None
 
         ## Generate and validate filename
@@ -318,7 +318,7 @@ class Speech:
             try:
                 await state.voice_client.move_to(channel)
             except Exception as e:
-                print("Voice client exists", e)
+                utilities.debug_print("Voice client exists", e, debug_level=2)
                 return False
             else:
                 return True
@@ -327,7 +327,7 @@ class Speech:
         try:
             await self.create_voice_client(channel)
         except (discord.ClientException, discord.InvalidArgument) as e:
-            print("Voice client doesn't exist", e)
+            utilities.debug_print("Voice client doesn't exist", e, debug_level=2)
             return False
         else:
             return True
@@ -419,7 +419,7 @@ class Speech:
 
     ## Starts the TTS process! Creates and stores a ffmpeg player for the message to be played
     @commands.command(pass_context=True, no_pm=True)
-    async def say(self, ctx, *, message):
+    async def say(self, ctx, *, message, ignore_char_limit=False):
         """Speaks your text aloud to your channel."""
 
         ## Todo: look into memoization of speech. Phrases.py's speech is a perfect candidate
@@ -431,17 +431,18 @@ class Speech:
             return False
 
         ## Make sure the message isn't too long
-        if(not self.tts_controller.check_length(message)):
+        if(not self.tts_controller.check_length(message) and not ignore_char_limit):
             await self.bot.say("Keep phrases less than {} characters.".format(self.tts_controller.char_limit))
             return False
 
         state = self.get_speech_state(ctx.message.server)
         if(state.voice_client is None):
+            ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
 
         try:
             ## Create a .wav file of the message
-            wav_path = await self.save(message)
+            wav_path = await self.save(message, ignore_char_limit)
             if(wav_path):
                 ## Create a player for the .wav
                 player = state.voice_client.create_ffmpeg_player(
@@ -450,8 +451,11 @@ class Speech:
                     options=self.ffmpeg_options,
                     after=state.next_speech
                 )
+            else:
+                raise RuntimeError("Unable to save a proper .wav file.")
         except Exception as e:
-            print("Exception in say():", e)
+            utilities.debug_print("Exception in say():", e, debug_level=0)
+            await self.bot.say("Unable to say the last message. Sorry, <@{}>.".format(ctx.message.author.id))
             return False
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue

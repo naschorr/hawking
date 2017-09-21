@@ -419,7 +419,7 @@ class Music:
     ## Commands
 
     @commands.command(pass_context=True, no_pm=True, brief="Sings the given notes aloud!")
-    async def music(self, ctx, *, message):
+    async def music(self, ctx, *, message, ignore_char_limit=False):
         """Sings the given notes aloud to your voice channel.
 
         A note (or notes) can look like any of these:
@@ -486,4 +486,4 @@ class Music:
 
         speech_cog = self.speech_cog
         say = speech_cog.say.callback
-        await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes)
+        await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)

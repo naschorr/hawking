@@ -180,13 +180,13 @@ class Phrases:
             ## Pass a self arg to it now that the command.instance is set to self
             speech_cog = self.speech_cog
             say = speech_cog.say.callback
-            await say(speech_cog, ctx, message=message)
+            await say(speech_cog, ctx, message=message, ignore_char_limit=True)
 
         ## Create a callback for music.music
         async def _music_callback(self, ctx):
             music_cog = self.music_cog
             music = music_cog.music.callback
-            await music(music_cog, ctx, message=message)
+            await music(music_cog, ctx, message=message, ignore_char_limit=True)
 
         ## Return the appropriate callback
         if(is_music):

@@ -37,13 +37,13 @@ def debug_print(*args, **kwargs):
     4 - For debugging only
     """
 
-    ## Clean up the kwargs that'll be passed onto the print function
+    ## Read and clean up the kwargs that'll be passed onto the print function
     debug_print_level = kwargs.get(DEBUG_LEVEL_KEY, 0)
     if(DEBUG_LEVEL_KEY in kwargs):
         del kwargs[DEBUG_LEVEL_KEY]
 
     ## Compare and print the message if necessary
-    if(debug_print_level >= CONFIG_OPTIONS.get(DEBUG_LEVEL_KEY, 0)):
+    if(debug_print_level <= CONFIG_OPTIONS.get(DEBUG_LEVEL_KEY, 0)):
         print(*args, **kwargs)
 
 
