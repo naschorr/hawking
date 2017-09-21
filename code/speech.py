@@ -25,7 +25,7 @@ class TTSController:
     CHAR_LIMIT_KEY = "char_limit"
     NEWLINE_REPLACEMENT_KEY = "newline_replacement"
     OUTPUT_EXTENSION_KEY = "output_extension"
-    WINDOWS_EMULATOR_KEY = "windows_emulator"
+    WINE_KEY = "wine"
     XVFB_PREPEND_KEY = "XVFB_prepend"
     HEADLESS_KEY = "headless"
 
@@ -39,7 +39,7 @@ class TTSController:
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
     NEWLINE_REPLACEMENT = CONFIG_OPTIONS.get(NEWLINE_REPLACEMENT_KEY, "[_<250,10>]")
     OUTPUT_EXTENSION = CONFIG_OPTIONS.get(OUTPUT_EXTENSION_KEY, "wav")
-    WINDOWS_EMULATOR = CONFIG_OPTIONS.get(WINDOWS_EMULATOR_KEY, "wine")
+    WINE = CONFIG_OPTIONS.get(WINE_KEY, "wine")
     XVFB_PREPEND = CONFIG_OPTIONS.get(XVFB_PREPEND_KEY, "DISPLAY=:0.0")
     HEADLESS = CONFIG_OPTIONS.get(HEADLESS_KEY, False)
 
@@ -53,7 +53,7 @@ class TTSController:
         self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
         self.newline_replacement = kwargs.get(self.NEWLINE_REPLACEMENT_KEY, self.NEWLINE_REPLACEMENT)
         self.output_extension = kwargs.get(self.OUTPUT_EXTENSION_KEY, self.OUTPUT_EXTENSION)
-        self.windows_emulator = kwargs.get(self.WINDOWS_EMULATOR_KEY, self.WINDOWS_EMULATOR)
+        self.wine = kwargs.get(self.WINE_KEY, self.WINE)
         self.xvfb_prepend = kwargs.get(self.XVFB_PREPEND_KEY, self.XVFB_PREPEND)
         self.is_headless = kwargs.get(self.HEADLESS_KEY, self.HEADLESS)
 
@@ -159,7 +159,7 @@ class TTSController:
 
         ## Prepend the windows emulator if using linux (I'm aware of what WINE means)
         if(utilities.is_linux()):
-            args = "{} {}".format(self.windows_emulator, args)
+            args = "{} {}".format(self.wine, args)
 
         ## Prepend the fake display created with Xvfb if running headless
         if(self.is_headless):
@@ -248,11 +248,17 @@ class Speech:
     SKIP_VOTES_KEY = "skip_votes"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     SPEECH_STATES_KEY = "speech_states"
+    FFMPEG_BEFORE_OPTIONS_KEY = "ffmpeg_before_options"
+    FFMPEG_OPTIONS_KEY = "ffmpeg_options"
 
     ## Defaults
     DELETE_COMMANDS = CONFIG_OPTIONS.get(DELETE_COMMANDS_KEY, False)
     SKIP_VOTES = CONFIG_OPTIONS.get(SKIP_VOTES_KEY, 3)
     SKIP_PERCENTAGE = CONFIG_OPTIONS.get(SKIP_PERCENTAGE_KEY, 33)
+    # Before options are command line options (ex. "-ac 2") inserted before FFMpeg's -i flag
+    FFMPEG_BEFORE_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_BEFORE_OPTIONS_KEY, "")
+    # Options are command line options inserted after FFMpeg's -i flag
+    FFMPEG_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_OPTIONS_KEY, "")
 
 
     def __init__(self, bot, tts_controller=None, **kwargs):
@@ -264,6 +270,8 @@ class Speech:
         self.delete_commands = kwargs.get(self.DELETE_COMMANDS_KEY, self.DELETE_COMMANDS)
         self.skip_votes = int(kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES))
         self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
+        self.ffmpeg_before_options = kwargs.get(self.FFMPEG_BEFORE_OPTIONS_KEY, self.FFMPEG_BEFORE_OPTIONS)
+        self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
 
     ## Methods
 
@@ -436,7 +444,12 @@ class Speech:
             wav_path = await self.save(message)
             if(wav_path):
                 ## Create a player for the .wav
-                player = state.voice_client.create_ffmpeg_player(wav_path, after=state.next_speech)
+                player = state.voice_client.create_ffmpeg_player(
+                    wav_path,
+                    before_options=self.ffmpeg_before_options,
+                    options=self.ffmpeg_options,
+                    after=state.next_speech
+                )
         except Exception as e:
             print("Exception in say():", e)
             return False

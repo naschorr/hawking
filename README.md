@@ -46,9 +46,10 @@ Admin commands allow for some users to have a little more control over the bot. 
 - `\admin reload_cogs` - Unloads, and then reloads the cogs registered to the bot (see admin.py's register_module() method). Useful for debugging.
 - `\help admin` - Show the help screen for the admin commands.
 
+
+## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen.
 
 Lastly, be sure to check out the [Moonbase Alpa](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam.
 
----
 Tested on Windows 10, and Ubuntu 16.04.

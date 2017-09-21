@@ -1,6 +1,6 @@
 {
 	"admins"					: ["Username#1234"],
-	"debug"						: true,
+	"debug_level"				: 1,
 	"announce_updates"			: true,
 	"delete_commands"			: true,
 	"wine"						: "wine",
@@ -21,6 +21,8 @@
 
 	"skip_votes"				: "3",
 	"skip_percentage"			: "33",
+	"ffmpeg_before_options"		: "-ac 2",
+	"ffmpeg_options"			: "-loglevel 16",
 
 	"prepend"					: "[:phoneme on]",
 	"append"					: "",
