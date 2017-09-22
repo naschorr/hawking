@@ -196,6 +196,8 @@ class SpeechState:
         self.skip_votes = set() # set of users that voted to skip
         self.speech_queue = asyncio.Queue()
         self.speech_player = self.bot.loop.create_task(self.speech_player())
+        self.last_speech_time = self.get_current_time()
+
     ## Property(s)
 
     @property
@@ -203,6 +205,11 @@ class SpeechState:
         return self.current_speech.player
 
     ## Methods
+
+    ## Calculates the current UTC time in seconds
+    def get_current_time(self):
+        return int(time.time())
+
 
     ## Returns a list of members in the current voice channel
     async def get_members(self):
@@ -238,6 +245,7 @@ class SpeechState:
             self.next.clear()
             self.current_speech = await self.speech_queue.get()
             await self.join_channel(self.current_speech.channel)
+            self.last_speech_time = self.get_current_time()
             self.current_speech.player.start()
             await self.next.wait()
 
@@ -250,6 +258,7 @@ class Speech:
     SPEECH_STATES_KEY = "speech_states"
     FFMPEG_BEFORE_OPTIONS_KEY = "ffmpeg_before_options"
     FFMPEG_OPTIONS_KEY = "ffmpeg_options"
+    CHANNEL_TIMEOUT_KEY = "channel_timeout"
 
     ## Defaults
     DELETE_COMMANDS = CONFIG_OPTIONS.get(DELETE_COMMANDS_KEY, False)
@@ -259,6 +268,7 @@ class Speech:
     FFMPEG_BEFORE_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_BEFORE_OPTIONS_KEY, "")
     # Options are command line options inserted after FFMpeg's -i flag
     FFMPEG_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_OPTIONS_KEY, "")
+    CHANNEL_TIMEOUT = CONFIG_OPTIONS.get(CHANNEL_TIMEOUT_KEY, 15 * 60)
 
 
     def __init__(self, bot, tts_controller=None, **kwargs):
@@ -272,6 +282,7 @@ class Speech:
         self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
         self.ffmpeg_before_options = kwargs.get(self.FFMPEG_BEFORE_OPTIONS_KEY, self.FFMPEG_BEFORE_OPTIONS)
         self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
+        self.channel_timeout = kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT)
 
     ## Methods
 
@@ -333,8 +344,9 @@ class Speech:
             return True
 
 
-    ## Tries to get the bot to leave a channel
+    ## Tries to get the bot to leave a state's channel
     async def leave_channel(self, channel):
+        ## Todo: the channel and state manipulation for this method is no bueno. Move to kwargs or something
         state = self.get_speech_state(channel.server)
 
         if(state.voice_client):
@@ -353,6 +365,14 @@ class Speech:
                 await self.bot.delete_message(message)
             except errors.Forbidden:
                 utilities.debug_print("Bot doesn't have permission to delete the message", debug_level=3)
+
+
+    ## Tries to disonnect the bot from the given state's voice channel if it hasn't been used in a while.
+    async def attempt_leave_channel(self, state):
+        await asyncio.sleep(self.channel_timeout)
+        if(state.last_speech_time + self.channel_timeout <= state.get_current_time() and state.voice_client):
+            utilities.debug_print("Leaving channel", debug_level=4)
+            await self.leave_channel(state.voice_client.channel)
 
 
     ## Checks if a given command fits into the back of a string (ex. '\say' matches 'say')
@@ -460,6 +480,9 @@ class Speech:
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
+
+            ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
+            await self.attempt_leave_channel(state)
 
             ## Attempt to delete the command message
             await self.attempt_delete_command_message(ctx.message)

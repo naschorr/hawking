@@ -23,6 +23,7 @@
 	"skip_percentage"			: "33",
 	"ffmpeg_before_options"		: "-ac 2",
 	"ffmpeg_options"			: "-loglevel 16",
+	"channel_timeout"			: 900,
 
 	"prepend"					: "[:phoneme on]",
 	"append"					: "",
