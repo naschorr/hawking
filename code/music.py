@@ -295,7 +295,7 @@ class Music:
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))
         self.tone = kwargs.get(self.TONE_KEY, self.TONE)
         self.bad = kwargs.get(self.BAD_KEY, self.BAD)
-        self.bad_percent = kwargs.get(self.BAD_PERCENT_KEY, self.BAD_PERCENT)
+        self.bad_percent = int(kwargs.get(self.BAD_PERCENT_KEY, self.BAD_PERCENT))
 
         self.pitches = []
         for octave in range(self.OCTAVES):

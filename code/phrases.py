@@ -1,6 +1,7 @@
 import json
 import os
 import random
+from discord import errors
 from discord.ext import commands
 
 import utilities
@@ -94,8 +95,8 @@ class Phrases:
             for phrase in self.load_phrases(phrase_file_path):
                 try:
                     self.add_phrase(phrase)
-                except TypeError as e:
-                    utilities.debug_print(e, "Skipping...", debug_level=3)
+                except Exception as e:
+                    utilities.debug_print(e, "Skipping...", debug_level=2)
                 else:
                     counter += 1
 

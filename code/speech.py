@@ -282,7 +282,7 @@ class Speech:
         self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
         self.ffmpeg_before_options = kwargs.get(self.FFMPEG_BEFORE_OPTIONS_KEY, self.FFMPEG_BEFORE_OPTIONS)
         self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
-        self.channel_timeout = kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT)
+        self.channel_timeout = int(kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT))
 
     ## Methods
 

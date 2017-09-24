@@ -19,20 +19,20 @@
 	"tts_output_dir"			: "temp",
 	"_tts_output_dir_path"		: "",
 
-	"skip_votes"				: "3",
-	"skip_percentage"			: "33",
+	"skip_votes"				: 3,
+	"skip_percentage"			: 33,
 	"ffmpeg_before_options"		: "-ac 2",
 	"ffmpeg_options"			: "-loglevel 16",
 	"channel_timeout"			: 900,
 
 	"prepend"					: "[:phoneme on]",
 	"append"					: "",
-	"char_limit"				: "1250",
+	"char_limit"				: 1250,
 	"newline_replacement"		: "[_<250,10>]",
 	"output_extension"			: "wav",
 
-	"bpm"						: "100",
-	"octave"					: "2",
+	"bpm"						: 100,
+	"octave"					: 2,
 	"tone"						: false,
 	"bad"						: false,
 	"bad_percent"				: 10
