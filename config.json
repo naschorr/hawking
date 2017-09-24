@@ -11,7 +11,7 @@
 	"description"				: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
 	"token_file"				: "token.json",
 	"_token_file_path"			: "",
-	"phrases_file_extension"	: ".json",
+	"phrases_file_extension"	: "json",
 	"phrases_folder"			: "phrases",
 	"_phrases_folder_path"		: "",
 	"tts_file"					: "say.exe",
