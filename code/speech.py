@@ -1,6 +1,7 @@
 import os
 os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
+import re
 import asyncio
 import time
 from math import ceil
@@ -381,6 +382,16 @@ class Speech:
         return (command == to_check)
 
 
+    ## Replaces user.id mention strings with their actual names
+    def replace_mention_with_username(self, mentions, string):
+        for user in mentions:
+            match = re.search("<@!?({})>".format(user.id), string)
+            if(match):
+                start, end = match.span(0)
+                string = string[:start] + user.name + string[end:]
+
+        return string
+
     ## Commands
 
     ## Tries to summon the bot to a user's channel
@@ -459,6 +470,8 @@ class Speech:
         if(state.voice_client is None):
             ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
+
+        message = self.replace_mention_with_username(ctx.message.mentions, message)
 
         try:
             ## Create a .wav file of the message
