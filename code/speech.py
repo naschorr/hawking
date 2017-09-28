@@ -383,12 +383,23 @@ class Speech:
 
 
     ## Replaces user.id mention strings with their actual names
-    def replace_mention_with_username(self, mentions, string):
-        for user in mentions:
-            match = re.search("<@!?({})>".format(user.id), string)
+    def replace_mentions(self, message_ctx, string):
+        def replace_id_with_string(string, discord_id, replacement):
+            match = re.search("<@[!|&]?({})>".format(discord_id), string)
             if(match):
                 start, end = match.span(0)
-                string = string[:start] + user.name + string[end:]
+                string = string[:start] + replacement + string[end:]
+
+            return string
+
+        for user in message_ctx.mentions:
+            string = replace_id_with_string(string, user.id, user.nick if user.nick else user.name)
+
+        for channel in message_ctx.channel_mentions:
+            string = replace_id_with_string(string, channel.id, channel.name)
+
+        for role in message_ctx.role_mentions:
+            string = replace_id_with_string(string, role.id, role.name)
 
         return string
 
@@ -471,7 +482,7 @@ class Speech:
             ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
 
-        message = self.replace_mention_with_username(ctx.message.mentions, message)
+        message = self.replace_mentions(ctx.message, message)
 
         try:
             ## Create a .wav file of the message
