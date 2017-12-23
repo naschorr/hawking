@@ -11,9 +11,11 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Make sure you've got [Python 3.5](https://www.python.org/downloads/) or greater, and virtualenv installed (`pip install virtualenv`)
 - `cd` into the directory that you'd like the project to go
 - `git clone https://github.com/naschorr/hawking`
-- `virtualenv hawking`
-- Activate your newly created virtualenv
+- `python3 -m venv hawing/`
+    + You may need to run: `apt install python3-venv` to enable virtual environments for Python 3
+- Activate your newly created venv
 - `pip install -r requirements.txt`
+    + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.5-dev` to install some supplemental features for the setup process.
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
 - Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `hawking/token.json`
 - Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=0`, but make sure to replace CLIENT_ID with your bot's client id.
@@ -25,6 +27,9 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 
 #### Linux Installation
 - Install [Wine](https://www.winehq.org/) to get the text-to-speech executable working.
+    + `dpkg --add-architecture i386`
+    + `apt-get update`
+    + `apt-get install wine`
 
 #### Headless Installation
 - Install Xvfb with with your preferred package manager (`apt install xvfb` on Ubuntu, for example)
@@ -34,7 +39,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 
 ## Usage
 - `cd` into the project's root
-- Activate the virtualenv
+- Activate the venv
 - `cd` into `hawking/code/` (Note, you need `hawking.py` to be in your current working directory, as theres some weird pathing issues with the required files for `say.exe`
 - `python hawking.py`
 

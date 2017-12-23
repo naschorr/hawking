@@ -1,6 +1,7 @@
 import os
 os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
+import re
 import asyncio
 import time
 from math import ceil
@@ -381,6 +382,27 @@ class Speech:
         return (command == to_check)
 
 
+    ## Replaces user.id mention strings with their actual names
+    def replace_mentions(self, message_ctx, string):
+        def replace_id_with_string(string, discord_id, replacement):
+            match = re.search("<@[!|&]?({})>".format(discord_id), string)
+            if(match):
+                start, end = match.span(0)
+                string = string[:start] + replacement + string[end:]
+
+            return string
+
+        for user in message_ctx.mentions:
+            string = replace_id_with_string(string, user.id, user.nick if user.nick else user.name)
+
+        for channel in message_ctx.channel_mentions:
+            string = replace_id_with_string(string, channel.id, channel.name)
+
+        for role in message_ctx.role_mentions:
+            string = replace_id_with_string(string, role.id, role.name)
+
+        return string
+
     ## Commands
 
     ## Tries to summon the bot to a user's channel
@@ -459,6 +481,8 @@ class Speech:
         if(state.voice_client is None):
             ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
+
+        message = self.replace_mentions(ctx.message, message)
 
         try:
             ## Create a .wav file of the message
