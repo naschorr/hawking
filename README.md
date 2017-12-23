@@ -1,6 +1,12 @@
 # hawking
 A retro text-to-speech interface bot for Discord, designed to work with all of the stuff you might've seen in Moonbase Alpha, using the existing commands.
 
+## Activation
+- Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=0) on Discord's site.
+- Select the server that you want Hawking to be added to.
+- Hit the "Authorize" button.
+- Start speaking! (you should check out the **Usage** and **Commands** sections of this readme, first)
+
 ## Installation
 - Make sure you've got [Python 3.5](https://www.python.org/downloads/) or greater, and virtualenv installed (`pip install virtualenv`)
 - `cd` into the directory that you'd like the project to go
@@ -93,7 +99,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **bad_percent** - Int - The percentage that the `bad` command makes music worse by.
 
 ## Lastly...
-Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen.
+Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
 
 Lastly, be sure to check out the [Moonbase Alpha](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam.
 
