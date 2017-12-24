@@ -4,9 +4,11 @@ import sys
 import re
 import asyncio
 import time
+import inspect
 from math import ceil
 
 import utilities
+import dynamo_helper
 from discord import errors
 from discord.ext import commands
 
@@ -285,6 +287,8 @@ class Speech:
         self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
         self.channel_timeout = int(kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT))
 
+        self.dynamo_db = dynamo_helper.DynamoHelper()
+
     ## Methods
 
     ## Removes the players in all of the speech_states, and disconnects any voice_clients
@@ -470,11 +474,13 @@ class Speech:
         voice_channel = ctx.message.author.voice_channel
         if(voice_channel is None):
             await self.bot.say("<@{}> isn't in a voice channel.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         ## Make sure the message isn't too long
         if(not self.tts_controller.check_length(message) and not ignore_char_limit):
             await self.bot.say("Keep phrases less than {} characters.".format(self.tts_controller.char_limit))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         state = self.get_speech_state(ctx.message.server)
@@ -500,10 +506,12 @@ class Speech:
         except Exception as e:
             utilities.debug_print("Exception in say():", e, debug_level=0)
             await self.bot.say("Unable to say the last message. Sorry, <@{}>.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
             ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
             await self.attempt_leave_channel(state)

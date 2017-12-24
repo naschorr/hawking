@@ -1,9 +1,11 @@
 import re
 import math
 import random
+import inspect
 from collections import OrderedDict
 
 import utilities
+import dynamo_helper
 from discord.ext import commands
 
 ## Config
@@ -18,6 +20,8 @@ class Note:
         self.sharp = sharp
         self.octave = octave
         self.sub_notes = sub_notes
+
+        self.dynamo_db = dynamo_helper.DynamoHelper()
 
 
     def __str__(self):
@@ -487,3 +491,4 @@ class Music:
         speech_cog = self.speech_cog
         say = speech_cog.say.callback
         await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
+        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))

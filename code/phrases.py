@@ -5,6 +5,7 @@ from discord import errors
 from discord.ext import commands
 
 import utilities
+import dynamo_helper
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -48,6 +49,8 @@ class Phrases:
         self.phrases_folder_path = phrases_folder_path or self.PHRASES_FOLDER_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
+
+        self.dynamo_db = dynamo_helper.DynamoHelper()
 
         ## Make sure context is always passed to the callbacks
         self.command_kwargs["pass_context"] = True
@@ -182,12 +185,14 @@ class Phrases:
             speech_cog = self.speech_cog
             say = speech_cog.say.callback
             await say(speech_cog, ctx, message=message, ignore_char_limit=True)
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, "phrase", True))
 
         ## Create a callback for music.music
         async def _music_callback(self, ctx):
             music_cog = self.music_cog
             music = music_cog.music.callback
             await music(music_cog, ctx, message=message, ignore_char_limit=True)
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, "music-phrase", True))
 
         ## Return the appropriate callback
         if(is_music):
