@@ -1,11 +1,13 @@
 import os
 os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
+import re
 import asyncio
 import time
 from math import ceil
 
 import utilities
+from discord import errors
 from discord.ext import commands
 
 ## Config
@@ -24,7 +26,7 @@ class TTSController:
     CHAR_LIMIT_KEY = "char_limit"
     NEWLINE_REPLACEMENT_KEY = "newline_replacement"
     OUTPUT_EXTENSION_KEY = "output_extension"
-    WINDOWS_EMULATOR_KEY = "windows_emulator"
+    WINE_KEY = "wine"
     XVFB_PREPEND_KEY = "XVFB_prepend"
     HEADLESS_KEY = "headless"
 
@@ -38,7 +40,7 @@ class TTSController:
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
     NEWLINE_REPLACEMENT = CONFIG_OPTIONS.get(NEWLINE_REPLACEMENT_KEY, "[_<250,10>]")
     OUTPUT_EXTENSION = CONFIG_OPTIONS.get(OUTPUT_EXTENSION_KEY, "wav")
-    WINDOWS_EMULATOR = CONFIG_OPTIONS.get(WINDOWS_EMULATOR_KEY, "wine")
+    WINE = CONFIG_OPTIONS.get(WINE_KEY, "wine")
     XVFB_PREPEND = CONFIG_OPTIONS.get(XVFB_PREPEND_KEY, "DISPLAY=:0.0")
     HEADLESS = CONFIG_OPTIONS.get(HEADLESS_KEY, False)
 
@@ -52,7 +54,7 @@ class TTSController:
         self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
         self.newline_replacement = kwargs.get(self.NEWLINE_REPLACEMENT_KEY, self.NEWLINE_REPLACEMENT)
         self.output_extension = kwargs.get(self.OUTPUT_EXTENSION_KEY, self.OUTPUT_EXTENSION)
-        self.windows_emulator = kwargs.get(self.WINDOWS_EMULATOR_KEY, self.WINDOWS_EMULATOR)
+        self.wine = kwargs.get(self.WINE_KEY, self.WINE)
         self.xvfb_prepend = kwargs.get(self.XVFB_PREPEND_KEY, self.XVFB_PREPEND)
         self.is_headless = kwargs.get(self.HEADLESS_KEY, self.HEADLESS)
 
@@ -72,7 +74,10 @@ class TTSController:
         else:
             for root, dirs, files in os.walk(self.output_dir_path, topdown=False):
                 for file in files:
-                    os.remove(os.sep.join([root, file]))
+                    try:
+                        os.remove(os.sep.join([root, file]))
+                    except OSError as e:
+                        utilities.debug_print("Error removing file: {}".format(file), e, debug_level=2)
 
 
     def _generate_unique_file_name(self, extension):
@@ -116,26 +121,26 @@ class TTSController:
         for index, path in enumerate(self.paths_to_delete):
             try:
                 os.remove(path)
+            except FileNotFoundError:
+                ## The goal was to remove the file, and as long as it doesn't exist then we're good.
+                continue
             except Exception as e:
-                if(file_path != path):
-                    ## If the file to delete isn't the one that's (probably) still loaded, then 
-                    ## definitely display something.
-                    print("Error removing path:", path)
-
+                utilities.debug_print("Error deleting file:", path, type(e).__name__, e, debug_level=1)
                 to_delete.append(path)
 
         self.paths_to_delete = to_delete[:]
+
         return True
 
 
-    async def save(self, message):
+    async def save(self, message, ignore_char_limit=False):
         ## Validate output directory
         if(not self.output_dir_path):
-            print("Unable to save without output_dir_path set. See {}.__init__".format(self.__name__))
+            utilities.debug_print("Unable to save without output_dir_path set. See {}.__init__".format(self.__name__), debug_level=0)
             return None
 
         ## Check message size
-        if(not self.check_length(message)):
+        if(not self.check_length(message) and not ignore_char_limit):
             return None
 
         ## Generate and validate filename
@@ -153,9 +158,9 @@ class TTSController:
             message
         )
 
-	## Prepend the windows emulator if using linux (I'm aware of what WINE means)
+        ## Prepend the windows emulator if using linux (I'm aware of what WINE means)
         if(utilities.is_linux()):
-            args = "{} {}".format(self.windows_emulator, args)
+            args = "{} {}".format(self.wine, args)
 
         ## Prepend the fake display created with Xvfb if running headless
         if(self.is_headless):
@@ -192,6 +197,7 @@ class SpeechState:
         self.skip_votes = set() # set of users that voted to skip
         self.speech_queue = asyncio.Queue()
         self.speech_player = self.bot.loop.create_task(self.speech_player())
+        self.last_speech_time = self.get_current_time()
 
     ## Property(s)
 
@@ -200,6 +206,11 @@ class SpeechState:
         return self.current_speech.player
 
     ## Methods
+
+    ## Calculates the current UTC time in seconds
+    def get_current_time(self):
+        return int(time.time())
+
 
     ## Returns a list of members in the current voice channel
     async def get_members(self):
@@ -235,19 +246,30 @@ class SpeechState:
             self.next.clear()
             self.current_speech = await self.speech_queue.get()
             await self.join_channel(self.current_speech.channel)
+            self.last_speech_time = self.get_current_time()
             self.current_speech.player.start()
             await self.next.wait()
 
 
 class Speech:
     ## Keys
+    DELETE_COMMANDS_KEY = "delete_commands"
     SKIP_VOTES_KEY = "skip_votes"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     SPEECH_STATES_KEY = "speech_states"
+    FFMPEG_BEFORE_OPTIONS_KEY = "ffmpeg_before_options"
+    FFMPEG_OPTIONS_KEY = "ffmpeg_options"
+    CHANNEL_TIMEOUT_KEY = "channel_timeout"
 
     ## Defaults
+    DELETE_COMMANDS = CONFIG_OPTIONS.get(DELETE_COMMANDS_KEY, False)
     SKIP_VOTES = CONFIG_OPTIONS.get(SKIP_VOTES_KEY, 3)
     SKIP_PERCENTAGE = CONFIG_OPTIONS.get(SKIP_PERCENTAGE_KEY, 33)
+    # Before options are command line options (ex. "-ac 2") inserted before FFMpeg's -i flag
+    FFMPEG_BEFORE_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_BEFORE_OPTIONS_KEY, "")
+    # Options are command line options inserted after FFMpeg's -i flag
+    FFMPEG_OPTIONS = CONFIG_OPTIONS.get(FFMPEG_OPTIONS_KEY, "")
+    CHANNEL_TIMEOUT = CONFIG_OPTIONS.get(CHANNEL_TIMEOUT_KEY, 15 * 60)
 
 
     def __init__(self, bot, tts_controller=None, **kwargs):
@@ -256,8 +278,12 @@ class Speech:
         self.speech_states = {}
         self.save = self.tts_controller.save
         self.delete = self.tts_controller.delete
+        self.delete_commands = kwargs.get(self.DELETE_COMMANDS_KEY, self.DELETE_COMMANDS)
         self.skip_votes = int(kwargs.get(self.SKIP_VOTES_KEY, self.SKIP_VOTES))
         self.skip_percentage = int(kwargs.get(self.SKIP_PERCENTAGE_KEY, self.SKIP_PERCENTAGE))
+        self.ffmpeg_before_options = kwargs.get(self.FFMPEG_BEFORE_OPTIONS_KEY, self.FFMPEG_BEFORE_OPTIONS)
+        self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
+        self.channel_timeout = int(kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT))
 
     ## Methods
 
@@ -268,6 +294,7 @@ class Speech:
                 state.speech_player.cancel()
                 if(state.voice_client):
                     self.bot.loop.create_task(state.voice_client.disconnect())
+                #state.speech_player.stop()
             except:
                 pass
 
@@ -303,7 +330,7 @@ class Speech:
             try:
                 await state.voice_client.move_to(channel)
             except Exception as e:
-                print("Voice client exists", e)
+                utilities.debug_print("Voice client exists", e, debug_level=2)
                 return False
             else:
                 return True
@@ -312,10 +339,69 @@ class Speech:
         try:
             await self.create_voice_client(channel)
         except (discord.ClientException, discord.InvalidArgument) as e:
-            print("Voice client doesn't exist", e)
+            utilities.debug_print("Voice client doesn't exist", e, debug_level=2)
             return False
         else:
             return True
+
+
+    ## Tries to get the bot to leave a state's channel
+    async def leave_channel(self, channel):
+        ## Todo: the channel and state manipulation for this method is no bueno. Move to kwargs or something
+        state = self.get_speech_state(channel.server)
+
+        if(state.voice_client):
+            ## Disconnect and un-set the voice client
+            await state.voice_client.disconnect()
+            state.voice_client = None
+            return True
+        else:
+            return False
+
+
+    ## Tries to delete the command message
+    async def attempt_delete_command_message(self, message):
+        if(self.delete_commands):
+            try:
+                await self.bot.delete_message(message)
+            except errors.Forbidden:
+                utilities.debug_print("Bot doesn't have permission to delete the message", debug_level=3)
+
+
+    ## Tries to disonnect the bot from the given state's voice channel if it hasn't been used in a while.
+    async def attempt_leave_channel(self, state):
+        await asyncio.sleep(self.channel_timeout)
+        if(state.last_speech_time + self.channel_timeout <= state.get_current_time() and state.voice_client):
+            utilities.debug_print("Leaving channel", debug_level=4)
+            await self.leave_channel(state.voice_client.channel)
+
+
+    ## Checks if a given command fits into the back of a string (ex. '\say' matches 'say')
+    def is_matching_command(self, string, command):
+        to_check = string[len(command):]
+        return (command == to_check)
+
+
+    ## Replaces user.id mention strings with their actual names
+    def replace_mentions(self, message_ctx, string):
+        def replace_id_with_string(string, discord_id, replacement):
+            match = re.search("<@[!|&]?({})>".format(discord_id), string)
+            if(match):
+                start, end = match.span(0)
+                string = string[:start] + replacement + string[end:]
+
+            return string
+
+        for user in message_ctx.mentions:
+            string = replace_id_with_string(string, user.id, user.nick if user.nick else user.name)
+
+        for channel in message_ctx.channel_mentions:
+            string = replace_id_with_string(string, channel.id, channel.name)
+
+        for role in message_ctx.role_mentions:
+            string = replace_id_with_string(string, role.id, role.name)
+
+        return string
 
     ## Commands
 
@@ -329,6 +415,9 @@ class Speech:
         if(summoned_channel is None):
             await self.bot.say("{} isn't in a voice channel.".format(ctx.message.author))
             return False
+
+        ## Attempt to delete the command message
+        await self.attempt_delete_command_message(ctx.message)
 
         return await self.join_channel(summoned_channel)
 
@@ -347,6 +436,8 @@ class Speech:
         if(voter == state.current_speech.requester):
             await self.bot.say("<@{}> skipped their own speech.".format(voter.id))
             await state.skip_speech()
+            ## Attempt to delete the command message
+            await self.attempt_delete_command_message(ctx.message)
             return False
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -361,15 +452,16 @@ class Speech:
                 await state.skip_speech()
                 return True
             else:
-                raw = "Skip vote added, currently at {}/{} or {}%"
-                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage))
+                raw = "Skip vote added, currently at {}/{} or {}%/{}%"
+                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage, self.skip_percentage))
+
         else:
             await self.bot.say("<@{}> has already voted!".format(voter.id))
 
 
     ## Starts the TTS process! Creates and stores a ffmpeg player for the message to be played
     @commands.command(pass_context=True, no_pm=True)
-    async def say(self, ctx, *, message):
+    async def say(self, ctx, *, message, ignore_char_limit=False):
         """Speaks your text aloud to your channel."""
 
         ## Todo: look into memoization of speech. Phrases.py's speech is a perfect candidate
@@ -381,24 +473,42 @@ class Speech:
             return False
 
         ## Make sure the message isn't too long
-        if(not self.tts_controller.check_length(message)):
+        if(not self.tts_controller.check_length(message) and not ignore_char_limit):
             await self.bot.say("Keep phrases less than {} characters.".format(self.tts_controller.char_limit))
             return False
 
         state = self.get_speech_state(ctx.message.server)
         if(state.voice_client is None):
+            ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
+
+        message = self.replace_mentions(ctx.message, message)
 
         try:
             ## Create a .wav file of the message
-            wav_path = await self.save(message)
+            wav_path = await self.save(message, ignore_char_limit)
             if(wav_path):
                 ## Create a player for the .wav
-                player = state.voice_client.create_ffmpeg_player(wav_path, after=state.next_speech)
+                player = state.voice_client.create_ffmpeg_player(
+                    wav_path,
+                    before_options=self.ffmpeg_before_options,
+                    options=self.ffmpeg_options,
+                    after=state.next_speech
+                )
+            else:
+                raise RuntimeError("Unable to save a proper .wav file.")
         except Exception as e:
-            print("Exception in say():", e)
+            utilities.debug_print("Exception in say():", e, debug_level=0)
+            await self.bot.say("Unable to say the last message. Sorry, <@{}>.".format(ctx.message.author.id))
             return False
         else:
             ## On successful player creation, build a SpeechEntry and push it into the queue
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
+
+            ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
+            await self.attempt_leave_channel(state)
+
+            ## Attempt to delete the command message
+            await self.attempt_delete_command_message(ctx.message)
+
             return True

@@ -40,7 +40,8 @@ class ModuleEntry:
 
 
 class ModuleManager:
-    def __init__(self, bot):
+    def __init__(self, hawking, bot):
+        self.hawking = hawking
         self.bot = bot
         self.modules = OrderedDict()
 
@@ -48,6 +49,9 @@ class ModuleManager:
 
     ## Registers a module, class, and args necessary to instantiate the class
     def register(self, cls, *init_args, **init_kwargs):
+        if(not init_args):
+            init_args = [self.hawking, self.bot]
+
         module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
 
         self.modules[module_entry.name] = module_entry
@@ -131,7 +135,7 @@ class Hawking:
             command_prefix=commands.when_mentioned_or(self.activation_str),
             description=self.description
         )
-        self.module_manager = ModuleManager(self.bot)
+        self.module_manager = ModuleManager(self, self.bot)
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
         self.module_manager.register(speech.Speech, *[self.bot])
@@ -179,7 +183,12 @@ class Hawking:
 
     ## Run the bot
     def run(self):
-        self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
+        ## Keep bot going despite any misc service errors
+        try:
+            self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
+        except Exception as e:
+            utilities.debug_print("Critical exception when running bot", e, debug_level=0)
+            self.run()
 
 
 if(__name__ == "__main__"):

@@ -23,12 +23,21 @@ share/
 # Ignore gitattributes
 .gitattributes
 
-# Ignore the pip-selfcheck, allegedly it's the result of 
-# something weird happening when you run pip in a VM?
+# Ignore the pip-selfcheck
 pip-selfcheck.json
 
 # Ignore .pyc files
 *.pyc
 
-## Ignore my notes
-register.txt
+# Ignore venv files
+pyvenv.cfg
+
+# Ignore my notes
+voices.txt
+
+# Ignore the token
+token.json
+
+# Ignore misc phrase files, but include default phrases
+phrases/*
+!phrases/phrases.json
