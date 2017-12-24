@@ -61,9 +61,9 @@ Admin commands allow for some users to have a little more control over the bot. 
 
 ## Configuration `config.json`
 - **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
-- **debug_level** - Int - The maximum threshold for printing debug statements to the terminal. Debug statements with a level of `0` are the most important, while staements with a level of `4` are the least important. See `debug_print()` in `utilities.py`.
+- **debug_level** - Int - The maximum threshold for printing debug statements to the terminal. Debug statements with a level of `0` are the most important, while statements with a level of `4` are the least important. See `debug_print()` in `utilities.py`.
 - **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
-- **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot's `Manage Messages` permission is enabled.
+- **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
 - **wine** - String - The command to invoke Wine on your system. Linux only.
 - **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
 - **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
