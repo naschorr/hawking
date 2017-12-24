@@ -135,11 +135,14 @@
 			"name"		: "koolaid",
 			"help"		: "An excellent prize.",
 			"message"	: "Today winna will receive the gift of KoolAid! Now available in all five food groups: red, urnge, green, blue, and turkwaz. Because, you always need mo KoolAid!"
+<<<<<<< HEAD:phrases/phrases.json
 		},
 		{
 			"name"		: "mad",
 			"help"		: "Is only game.",
 			"message"	: "[:nr] [:dv hs 85] Its only game, why you hef to be mad?"
+=======
+>>>>>>> a5760a7f5b57241e4c2543b0a71ed4210d93257e:phrases/phrases.json
 		}
 	]
 }
