@@ -418,7 +418,10 @@ class Speech:
         summoned_channel = ctx.message.author.voice_channel
         if(summoned_channel is None):
             await self.bot.say("{} isn't in a voice channel.".format(ctx.message.author))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
+        else:
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         ## Attempt to delete the command message
         await self.attempt_delete_command_message(ctx.message)
@@ -434,7 +437,10 @@ class Speech:
         state = self.get_speech_state(ctx.message.server)
         if(not state.is_speaking()):
             await self.bot.say("I'm not speaking at the moment.")
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
+        else:
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         voter = ctx.message.author
         if(voter == state.current_speech.requester):
