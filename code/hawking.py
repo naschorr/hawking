@@ -187,8 +187,10 @@ class Hawking:
         ## Keep bot going despite any misc service errors
         try:
             self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
+        except RuntimeError as e:
+            utilities.debug_print("Critical Runtime Error when running bot:", e, debug_level=0)
         except Exception as e:
-            utilities.debug_print("Critical exception when running bot", e, debug_level=0)
+            utilities.debug_print("Critical exception when running bot:", e, debug_level=0)
             time.sleep(1)
             self.run()
 
@@ -196,6 +198,6 @@ class Hawking:
 if(__name__ == "__main__"):
     hawking = Hawking()
     # hawking.register_module(ArbitraryClass(*init_args, **init)kwargs))
-    # or, 
+    # or,
     # hawking.add_cog(ArbitaryClass(*args, **kwargs))
     hawking.run()

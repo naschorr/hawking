@@ -519,10 +519,10 @@ class Speech:
             await state.speech_queue.put(SpeechEntry(ctx.message.author, voice_channel, player, wav_path))
             self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
-            ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
-            await self.attempt_leave_channel(state)
-
             ## Attempt to delete the command message
             await self.attempt_delete_command_message(ctx.message)
+
+            ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
+            await self.attempt_leave_channel(state)
 
             return True
