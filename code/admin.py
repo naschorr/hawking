@@ -43,7 +43,7 @@ class Admin:
     @commands.group(pass_context=True, no_pm=True, hidden=True)
     async def admin(self, ctx):
         """Root command for the admin-only commands"""
-    
+
         if(ctx.invoked_subcommand is None):
             if(self.is_admin(ctx.message.author)):
                 await self.bot.say("Missing subcommand.")

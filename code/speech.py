@@ -386,10 +386,6 @@ class Speech:
         return (command == to_check)
 
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> master
     ## Replaces user.id mention strings with their actual names
     def replace_mentions(self, message_ctx, string):
         def replace_id_with_string(string, discord_id, replacement):
@@ -411,11 +407,6 @@ class Speech:
 
         return string
 
-<<<<<<< HEAD
-=======
->>>>>>> a5760a7f5b57241e4c2543b0a71ed4210d93257e
-=======
->>>>>>> master
     ## Commands
 
     ## Tries to summon the bot to a user's channel
@@ -427,7 +418,10 @@ class Speech:
         summoned_channel = ctx.message.author.voice_channel
         if(summoned_channel is None):
             await self.bot.say("{} isn't in a voice channel.".format(ctx.message.author))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
+        else:
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         ## Attempt to delete the command message
         await self.attempt_delete_command_message(ctx.message)
@@ -443,7 +437,10 @@ class Speech:
         state = self.get_speech_state(ctx.message.server)
         if(not state.is_speaking()):
             await self.bot.say("I'm not speaking at the moment.")
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
+        else:
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         voter = ctx.message.author
         if(voter == state.current_speech.requester):
