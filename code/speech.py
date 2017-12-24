@@ -383,6 +383,9 @@ class Speech:
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> master
     ## Replaces user.id mention strings with their actual names
     def replace_mentions(self, message_ctx, string):
         def replace_id_with_string(string, discord_id, replacement):
@@ -404,8 +407,11 @@ class Speech:
 
         return string
 
+<<<<<<< HEAD
 =======
 >>>>>>> a5760a7f5b57241e4c2543b0a71ed4210d93257e
+=======
+>>>>>>> master
     ## Commands
 
     ## Tries to summon the bot to a user's channel
