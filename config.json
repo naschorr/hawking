@@ -8,7 +8,7 @@
     "headless"                  : false,
 
     "activation_str"            : "\\",
-    "description"            	: "A retro TTS bot for Discord (Alpha)\nVisit https://github.com/naschorr/hawking",
+    "description"            	: "A retro TTS bot for Discord (Beta)\nVisit https://github.com/naschorr/hawking",
     "token_file"            	: "token.json",
     "_token_file_path"          : "",
     "phrases_file_extension"	: "json",
@@ -37,7 +37,7 @@
     "bad"            			: false,
     "bad_percent"            	: 10,
 
-    "boto_enable"            	: true,
+    "boto_enable"            	: false,
     "boto_resource"            	: "dynamodb",
     "boto_region_name"          : "us-east-2",
     "boto_table_name"           : "Hawking",
