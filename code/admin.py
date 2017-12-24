@@ -1,4 +1,7 @@
+import inspect
+
 import utilities
+import dynamo_helper
 from discord.ext import commands
 
 ## Config
@@ -15,6 +18,8 @@ class Admin:
         self.bot = bot
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
+
+        self.dynamo_db = dynamo_helper.DynamoHelper()
 
     ## Properties
 
@@ -41,7 +46,7 @@ class Admin:
     
         if(ctx.invoked_subcommand is None):
             if(self.is_admin(ctx.message.author)):
-                await self.bot.say("Missing subcommand.".format(ctx.message.author.id))
+                await self.bot.say("Missing subcommand.")
                 return True
             else:
                 await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
@@ -57,6 +62,7 @@ class Admin:
 
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         count = self.phrases_cog.reload_phrases()
@@ -66,6 +72,7 @@ class Admin:
         if(self.announce_updates):
             await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_phrases_string)
 
+        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -76,6 +83,7 @@ class Admin:
 
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         count = self.hawking.module_manager.reload_all()
@@ -86,6 +94,7 @@ class Admin:
         if(self.announce_updates):
             await self.speech_cog.say.callback(self.speech_cog, ctx, message=loaded_cogs_string)
 
+        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -96,15 +105,18 @@ class Admin:
 
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         state = self.speech_cog.get_speech_state(ctx.message.server)
         if(not state.is_speaking()):
             await self.bot.say("I'm not speaking at the moment.")
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         await self.bot.say("<@{}> has skipped the speech.".format(ctx.message.author.id))
         await state.skip_speech()
+        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True
 
 
@@ -115,7 +127,9 @@ class Admin:
 
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         await self.speech_cog.leave_channel(ctx.message.channel)
+        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True

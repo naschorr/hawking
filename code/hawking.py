@@ -1,6 +1,7 @@
 import importlib
 import sys
 import os
+import time
 from collections import OrderedDict
 
 import discord
@@ -188,6 +189,7 @@ class Hawking:
             self.bot.run(utilities.load_json(self.token_file_path)[self.TOKEN_KEY])
         except Exception as e:
             utilities.debug_print("Critical exception when running bot", e, debug_level=0)
+            time.sleep(1)
             self.run()
 
 
