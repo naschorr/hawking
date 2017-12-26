@@ -111,6 +111,7 @@ class Hawking:
     ## broken in some way.
 
     ## Keys
+    VERSION_KEY = "version"
     ACTIVATION_STR_KEY = "activation_str"
     DESCRIPTION_KEY = "description"
     TOKEN_KEY = "token"
@@ -118,6 +119,7 @@ class Hawking:
     TOKEN_FILE_PATH_KEY = "token_file_path"
 
     ## Defaults
+    VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
     DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord (Alpha)\n Visit https://github.com/naschorr/hawking")
     TOKEN_FILE = CONFIG_OPTIONS.get(TOKEN_FILE_KEY, "token.json")
@@ -148,7 +150,7 @@ class Hawking:
         ## Give some feedback for when the bot is ready to go
         @self.bot.event
         async def on_ready():
-            print("Logged in as '{}' (id:{})".format(self.bot.user.name, self.bot.user.id))
+            print("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.VERSION, self.bot.user.id))
 
     ## Methods
 
