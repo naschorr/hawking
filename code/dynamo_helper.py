@@ -9,10 +9,18 @@ CONFIG_OPTIONS = utilities.load_config()
 
 class DynamoItem:
     def __init__(self, discord_context, query, command, is_valid):
-        self.user = int(discord_context.message.author.id)
+        author = discord_context.message.author
+        channel = discord_context.message.channel
+        server = discord_context.message.server
+
+        self.user_id = int(author.id)
+        self.user_name = "{}#{}".format(author.name, author.discriminator)
         self.timestamp = int(discord_context.message.timestamp.timestamp() * 1000)
-        self.channel = discord_context.message.channel.name
-        self.server = discord_context.message.server.name
+        self.channel_id = channel.id
+        self.channel_name = channel.name
+        self.server_id = server.id
+        self.server_name = server.name
+
         self.query = query
         self.command = command
         self.is_valid = is_valid
@@ -24,10 +32,13 @@ class DynamoItem:
 
     def getDict(self):
         output = {
-            "user": self.user,
+            "user_id": self.user_id,
+            "user_name": self.user_name
             "timestamp": self.timestamp,
-            "channel": self.channel,
-            "server": self.server,
+            "channel_id": self.channel_id,
+            "channel_name": self.channel_name,
+            "server_id": self.server_id,
+            "server_name": self.server_name,
             "query": self.query,
             "command": self.command,
             "is_valid": self.is_valid
