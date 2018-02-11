@@ -147,9 +147,11 @@ class Hawking:
         self.module_manager.register(music.Music, *[self, self.bot])
         self.module_manager.register(admin.Admin, *[self, self.bot])
 
-        ## Give some feedback for when the bot is ready to go
+        ## Give some feedback for when the bot is ready to go, and provide some help text via the 'playing' status
         @self.bot.event
         async def on_ready():
+            bot_status = discord.Game(type=0, name="Use {}help".format(self.activation_str))
+            await self.bot.change_presence(game=bot_status)
             print("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.VERSION, self.bot.user.id))
 
     ## Methods
