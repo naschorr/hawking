@@ -33,7 +33,7 @@ class DynamoItem:
     def getDict(self):
         output = {
             "user_id": self.user_id,
-            "user_name": self.user_name
+            "user_name": self.user_name,
             "timestamp": self.timestamp,
             "channel_id": self.channel_id,
             "channel_name": self.channel_name,
@@ -49,7 +49,7 @@ class DynamoItem:
 
 
     def build_primary_key(self):
-        concatenated = "{}{}".format(self.user, self.timestamp)
+        concatenated = "{}{}".format(self.user_id, self.timestamp)
 
         return base64.b64encode(bytes(concatenated, "utf-8")).decode("utf-8")
     
