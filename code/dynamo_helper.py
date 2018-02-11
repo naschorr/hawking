@@ -49,7 +49,7 @@ class DynamoItem:
 
 
     def build_primary_key(self):
-        concatenated = "{}{}".format(self.user, self.timestamp)
+        concatenated = "{}{}".format(self.user_id, self.timestamp)
 
         return base64.b64encode(bytes(concatenated, "utf-8")).decode("utf-8")
     
