@@ -33,7 +33,7 @@ class DynamoItem:
     def getDict(self):
         output = {
             "user_id": self.user_id,
-            "user_name": self.user_name
+            "user_name": self.user_name,
             "timestamp": self.timestamp,
             "channel_id": self.channel_id,
             "channel_name": self.channel_name,
