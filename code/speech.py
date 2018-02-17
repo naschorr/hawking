@@ -1,13 +1,13 @@
 import os
 os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
-import re
 import asyncio
 import time
 import inspect
 from math import ceil
 
 import utilities
+import message_parser
 import dynamo_helper
 from discord import errors
 from discord.ext import commands
@@ -287,6 +287,7 @@ class Speech:
         self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
         self.channel_timeout = int(kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT))
 
+        self.message_parser = message_parser.MessageParser()
         self.dynamo_db = dynamo_helper.DynamoHelper()
 
     ## Methods
@@ -385,28 +386,6 @@ class Speech:
         to_check = string[len(command):]
         return (command == to_check)
 
-
-    ## Replaces user.id mention strings with their actual names
-    def replace_mentions(self, message_ctx, string):
-        def replace_id_with_string(string, discord_id, replacement):
-            match = re.search("<@[!|&]?({})>".format(discord_id), string)
-            if(match):
-                start, end = match.span(0)
-                string = string[:start] + replacement + string[end:]
-
-            return string
-
-        for user in message_ctx.mentions:
-            string = replace_id_with_string(string, user.id, user.nick if user.nick else user.name)
-
-        for channel in message_ctx.channel_mentions:
-            string = replace_id_with_string(string, channel.id, channel.name)
-
-        for role in message_ctx.role_mentions:
-            string = replace_id_with_string(string, role.id, role.name)
-
-        return string
-
     ## Commands
 
     ## Tries to summon the bot to a user's channel
@@ -494,7 +473,8 @@ class Speech:
             ## Todo: Handle exception if unable to create a voice client
             await self.create_voice_client(voice_channel)
 
-        message = self.replace_mentions(ctx.message, message)
+        ## Parse down the message before sending it to the TTS service
+        message = self.message_parser.parse_message(message, ctx.message)
 
         try:
             ## Create a .wav file of the message

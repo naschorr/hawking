@@ -1,5 +1,5 @@
 {
-    "version"                   : "0.1.0",
+    "version"                   : "0.2.0",
     "admins"                    : ["Username#1234"],
     "debug_level"               : 1,
     "announce_updates"          : true,
@@ -19,6 +19,7 @@
     "_tts_file_path"            : "",
     "tts_output_dir"            : "temp",
     "_tts_output_dir_path"		: "",
+    "replace_emoji"             : true,
 
     "skip_votes"            	: 3,
     "skip_percentage"           : 33,

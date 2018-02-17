@@ -16,7 +16,8 @@ tcl/
 etc/
 share/
 
-# Ignore sublime project files
+# Ignore dev environment project files
+*.vscode
 *.sublime-project
 *.sublime-workspace
 
