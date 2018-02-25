@@ -12,6 +12,7 @@ import speech
 import phrases
 import music
 import admin
+import message_parser
 
 if not discord.opus.is_loaded():
     # the 'opus' library here is opus.dll on windows
@@ -26,10 +27,11 @@ CONFIG_OPTIONS = utilities.load_config()
 
 
 class ModuleEntry:
-    def __init__(self, cls, *init_args, **init_kwargs):
+    def __init__(self, cls, is_cog, *init_args, **init_kwargs):
         self.module = sys.modules[cls.__module__]
         self.cls = cls
         self.name = cls.__name__
+        self.is_cog = is_cog
         self.args = init_args
         self.kwargs = init_kwargs
 
@@ -49,22 +51,22 @@ class ModuleManager:
     ## Methods
 
     ## Registers a module, class, and args necessary to instantiate the class
-    def register(self, cls, *init_args, **init_kwargs):
+    def register(self, cls, is_cog, *init_args, **init_kwargs):
         if(not init_args):
             init_args = [self.hawking, self.bot]
 
-        module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
+        module_entry = ModuleEntry(cls, is_cog, *init_args, **init_kwargs)
 
         self.modules[module_entry.name] = module_entry
 
-        ## Add the module to the bot, provided it hasn't already been added.
-        if(not self.bot.get_cog(module_entry.name)):
+        ## Add the module to the bot (if it's a cog), provided it hasn't already been added.
+        if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
             cog_cls = module_entry.get_class_callable()
             self.bot.add_cog(cog_cls(*module_entry.args, **module_entry.kwargs))
 
 
     ## Reimport a single module
-    def _reload_module(self, module):
+    def _reimport_module(self, module):
         try:
             importlib.reload(module)
         except Exception as e:
@@ -74,13 +76,21 @@ class ModuleManager:
             return True
 
 
+    ## Reloads a module with the provided name
+    def _reload_module(self, module_name):
+        module_entry = self.modules.get(module_name)
+        assert module_entry is not None
+
+        self._reimport_module(module_entry.module)
+
+
     ## Reload a cog attached to the bot
     def _reload_cog(self, cog_name):
         module_entry = self.modules.get(cog_name)
         assert module_entry is not None
 
         self.bot.remove_cog(cog_name)
-        self._reload_module(module_entry.module)
+        self._reimport_module(module_entry.module)
         cog_cls = module_entry.get_class_callable()
         self.bot.add_cog(cog_cls(*module_entry.args, **module_entry.kwargs))
 
@@ -90,7 +100,10 @@ class ModuleManager:
         counter = 0
         for module_name in self.modules:
             try:
-                self._reload_cog(module_name)
+                if(self.modules[module_name].is_cog):
+                    self._reload_cog(module_name)
+                else:
+                    self._reload_module(module_name)
             except Exception as e:
                 print("Error: {} when reloading cog: {}".format(e, module_name))
             else:
@@ -141,11 +154,11 @@ class Hawking:
         self.module_manager = ModuleManager(self, self.bot)
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
-        self.module_manager.register(speech.Speech, *[self.bot])
-        self.module_manager.register(phrases.Phrases, *[self, self.bot],
-                                     **dict(pass_context=True, no_pm=True))
-        self.module_manager.register(music.Music, *[self, self.bot])
-        self.module_manager.register(admin.Admin, *[self, self.bot])
+        self.module_manager.register(message_parser.MessageParser, False)
+        self.module_manager.register(speech.Speech, True, self.bot)
+        self.module_manager.register(phrases.Phrases, True, self, self.bot, **dict(pass_context=True, no_pm=True))
+        self.module_manager.register(music.Music, True, self, self.bot)
+        self.module_manager.register(admin.Admin, True, self, self.bot)
 
         ## Give some feedback for when the bot is ready to go, and provide some help text via the 'playing' status
         @self.bot.event
@@ -182,8 +195,8 @@ class Hawking:
 
 
     ## Register an arbitrary module with hawking (easy wrapper for self.module_manager.register)
-    def register_module(self, cls, *init_args, **init_kwargs):
-        self.module_manager.register(cls, *init_args, **init_kwargs)
+    def register_module(self, cls, is_cog, *init_args, **init_kwargs):
+        self.module_manager.register(cls, is_cog, *init_args, **init_kwargs)
 
 
     ## Run the bot
