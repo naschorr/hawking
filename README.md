@@ -5,7 +5,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=0) on Discord's site.
 - Select the server that you want Hawking to be added to.
 - Hit the "Authorize" button.
-- Start speaking! (you should check out the **Usage** and **Commands** sections of this readme, first)
+- Start speaking! (you should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
 ## To Do
 - [ ] Clean up config.json, and remove some ultimately unnecessary code
@@ -63,6 +63,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - `\admin skip` - Skip whatever's being spoken at the moment, regardless of who requested it.
 - `\admin reload_phrases` - Unloads, and then reloads the preset phrases (found in `phrases.json`). This is handy for quickly adding new presets on the fly.
 - `\admin reload_cogs` - Unloads, and then reloads the cogs registered to the bot (see admin.py's register_module() method). Useful for debugging.
+- `\admin disconnect` - Forces the bot to stop speaking, and disconnect from its current channel in the invoker's server.
 - `\help admin` - Show the help screen for the admin commands.
 
 
