@@ -8,11 +8,11 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Start speaking! (you should check out the **Usage** and **Commands** sections of this readme, first)
 
 ## Installation
-- Make sure you've got [Python 3.5](https://www.python.org/downloads/) or greater, and virtualenv installed (`pip install virtualenv`)
+- Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
 - `cd` into the directory that you'd like the project to go
 - `git clone https://github.com/naschorr/hawking`
 - `python3 -m venv hawing/`
-    + You may need to run: `apt install python3-venv` to enable virtual environments for Python 3
+    + You may need to run: `apt install python3-venv` to enable virtual environments for Python 3 on Linux
 - Activate your newly created venv
 - `pip install -r requirements.txt`
     + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.5-dev` to install some supplemental features for the setup process.
