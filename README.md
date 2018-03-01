@@ -7,6 +7,13 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Hit the "Authorize" button.
 - Start speaking! (you should check out the **Usage** and **Commands** sections of this readme, first)
 
+## To Do
+- [ ] Clean up config.json, and remove some ultimately unnecessary code
+- [ ] Improve the help interface by visually isolating phrase sections, and giving the music interface help text that's actually convenient to review
+- [ ] (Potentially) give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
+- [ ] Better, more up to date analytics (Who's using the bot right now? Is a specific server/channel abusing my poor EC2 instance?)
+- [ ] Live, per server configuration done by server owners
+
 ## Installation
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
 - `cd` into the directory that you'd like the project to go
