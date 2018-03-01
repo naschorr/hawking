@@ -60,16 +60,20 @@ Admin commands allow for some users to have a little more control over the bot. 
 
 
 ## Configuration `config.json`
-- **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
-- **debug_level** - Int - The maximum threshold for printing debug statements to the terminal. Debug statements with a level of `0` are the most important, while statements with a level of `4` are the least important. See `debug_print()` in `utilities.py`.
-- **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
-- **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
-- **wine** - String - The command to invoke Wine on your system. Linux only.
-- **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
-- **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
 
+#### Discord Configuration
+- **version** - String - The bot's current semantic version.
+- **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
 - **activation_str** - String - The string that'll activate the Discord bot from chat messages.
 - **description** - String - The bot's description. This is seen in the help interface.
+- **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
+- **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
+- **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
+- **skip_votes** - Int - The minimum number of votes needed by a channel to skip the currently playing speech.
+- **skip_percentage** - Int - The minimum percentage of other users who need to request a skip before the currently playing speech will be skipped.
+
+### Bot Configuration
+- **debug_level** - Int - The maximum threshold for printing debug statements to the terminal. Debug statements with a level of `0` are the most important, while statements with a level of `4` are the least important. See `debug_print()` in `utilities.py`.
 - **token_file** - String - The name of the file containing the bot's Discord token.
 - **\_token_file_path** - String - Force the bot to use a specific token, rather than the normal `token.json` file. Remove the leading underscore to activate it.
 - **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
@@ -79,24 +83,33 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **\_tts_file_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
 - **\_tts_output_dir_path** - String - Force the bot to use a specific text-to-speech output folder, rather than the normal `temp/` folder. Remove the leading underscore to activate it.
-
-- **skip_votes** - Int - The minimum number of votes needed by a channel to skip the currently playing speech.
-- **skip_percentage** - Int - The minimum percentage of other users who need to request a skip before the currently playing speech will be skipped.
 - **ffmpeg_before_options** - String - Options to send to the FFmpeg executable before the `-i` flag.
 - **ffmpeg_options** - String - Options to send to the FFmpeg executable after the `-i` flag.
-- **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
+- **output_extension** - String - The file extension of the text-to-speech engine's output.
+- **wine** - String - The command to invoke Wine on your system. Linux only.
+- **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
+- **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
 
+#### Speech Configuration
 - **prepend** - String - A string that'll always be prepended onto the text sent to the text-to-speech engine.
 - **append** - String - A string that'll always be appended onto the text sent to the text-to-speech engine.
 - **char_limit** - Int - A hard character limit for messages to be sent to the text-to-speech engine.
 - **newline_replacement** - String - A string that'll replace all newline characters in the text sent to the text-to-speech engine.
-- **output_extension** - String - The file extension of the text-to-speech engine's output.
+- **replace_emoji** - Boolean - If `true`, indicates that the bot should convert emoji into their textual form (ex. :thinking: -> "thinking face"). This isn't a perfect conversion, as Discord encodes emoji into their unicode representation before the bot is able to parse it. If this is set to `false`, then the bot will just strip out emoji completely, as if they weren't there.
 
+#### Music Configuration
 - **bpm** - Int - The default bpm for `\music` commands.
 - **octave** - Int - The default octave for `\music` commands.
 - **tone** - Boolean - Choose to use pure tones for musical notes instead of a simulated voice singing the notes.
 - **bad** - Boolean - Choose to make all `\music` commands comically worse. Think Cher's 'My Heart Will Go On' on the recorder.
 - **bad_percent** - Int - The percentage that the `bad` command makes music worse by.
+
+#### Analytics Configuration
+- **boto_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
+- **boto_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
+- **boto_region_name** - String - The AWS region of your chosen boto_resource.
+- **boto_table_name** - String - The name of the table to insert into.
+- **boto_primary_key** - String - The primary key of your chosen table.
 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
