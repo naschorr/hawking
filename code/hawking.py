@@ -167,6 +167,16 @@ class Hawking:
             await self.bot.change_presence(game=bot_status)
             print("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.VERSION, self.bot.user.id))
 
+        ## Give some feedback to users when their command doesn't execute.
+        @self.bot.event
+        async def on_command_error(exception, ctx):
+            # discord.py uses reflection to set the destination chat channel for whatever reason (sans command ctx)
+            _internal_channel = ctx.message.channel
+            await self.bot.say(
+                "Sorry <@{}>, '{}{}' isn't a valid command. Try the '\help' page."
+                    .format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
+            )
+
     ## Methods
 
     ## Add an arbitary cog to the bot
