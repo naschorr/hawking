@@ -13,6 +13,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - [ ] (Potentially) give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
 - [ ] Better, more up to date analytics (Who's using the bot right now? Is a specific server/channel abusing my poor EC2 instance?)
 - [ ] Live, per server configuration done by server owners
+- [ ] (Potentially) Have the bot delete it's own (less useful) messages after a period of time?
 
 ## Installation
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
