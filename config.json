@@ -1,5 +1,5 @@
 {
-    "version"                   : "0.2.2",
+    "version"                   : "0.3.0",
     "admins"                    : ["Username#1234"],
     "activation_str"            : "\\",
     "description"               : "A retro TTS bot for Discord (Beta)\nVisit https://github.com/naschorr/hawking",
@@ -25,6 +25,7 @@
     "wine"                      : "wine",
     "xvfb_prepend"              : "DISPLAY=:0.0",
     "headless"                  : false,
+    "modules_folder"            : "modules",
 
     "prepend"                   : "[:phoneme on]",
     "append"                    : "",

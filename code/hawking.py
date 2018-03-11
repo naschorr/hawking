@@ -1,4 +1,5 @@
 import importlib
+import inspect
 import sys
 import os
 import time
@@ -9,8 +10,6 @@ from discord.ext import commands
 
 import utilities
 import speech
-import phrases
-import music
 import admin
 import message_parser
 
@@ -43,7 +42,12 @@ class ModuleEntry:
 
 
 class ModuleManager:
+    ## Keys
+    MODULES_FOLDER_KEY = "modules_folder"
+
     def __init__(self, hawking, bot):
+        self.modules_folder = CONFIG_OPTIONS.get(self.MODULES_FOLDER_KEY, "")
+
         self.hawking = hawking
         self.bot = bot
         self.modules = OrderedDict()
@@ -51,18 +55,54 @@ class ModuleManager:
     ## Methods
 
     ## Registers a module, class, and args necessary to instantiate the class
-    def register(self, cls, is_cog, *init_args, **init_kwargs):
+    def register(self, cls, is_cog=True, *init_args, **init_kwargs):
+        if(not inspect.isclass(cls)):
+            raise RuntimeError("Provided class parameter '{}' isn't actually a class.".format(cls))
+
         if(not init_args):
             init_args = [self.hawking, self.bot]
 
         module_entry = ModuleEntry(cls, is_cog, *init_args, **init_kwargs)
-
         self.modules[module_entry.name] = module_entry
 
         ## Add the module to the bot (if it's a cog), provided it hasn't already been added.
         if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
             cog_cls = module_entry.get_class_callable()
             self.bot.add_cog(cog_cls(*module_entry.args, **module_entry.kwargs))
+
+
+    ## Finds and registers modules inside the modules folder
+    def discover(self):
+        ## Assumes that the modules folder is inside the root
+        modules_folder_path = os.path.abspath(os.path.sep.join(["..", self.modules_folder]))
+        ## Expose the modules folder to the interpreter, so modules can be loaded
+        sys.path.append(modules_folder_path)
+
+        ## Build a list of potential module paths and iterate through it...
+        candidate_modules = os.listdir(modules_folder_path)
+        for candidate in candidate_modules:
+            ## If the file could be a python file...
+            if(candidate[-3:] == ".py"):
+                name = candidate[:-3]
+
+                ## Attempt to import the module (akin to 'import [name]') and register it normally
+                ## NOTE: Modules MUST have a 'main()' function that essentially returns a list containing all the args
+                ##       needed by the 'register()' method of this ModuleManager class. At a minimum this list MUST
+                ##       contain a reference to the class that serves as an entry point to the module. You should also
+                ##       specify whether or not a given module is a cog (for discord.py) or not.
+                try:
+                    module = importlib.import_module(name)
+                    declarations = module.main()
+
+                    ## Validate the shape of the main() method's data, and attempt to tolerate poor formatting
+                    if(not isinstance(declarations, list)):
+                        declarations = [declarations]
+                    elif(len(declarations) == 0):
+                        raise RuntimeError("Module '{}' main() returned empty list. Needs a class object at minimum.".format(module.__name__))
+
+                    self.register(*declarations)
+                except Exception as e:
+                    del module
 
 
     ## Reimport a single module
@@ -156,9 +196,10 @@ class Hawking:
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
         self.module_manager.register(message_parser.MessageParser, False)
         self.module_manager.register(speech.Speech, True, self.bot)
-        self.module_manager.register(phrases.Phrases, True, self, self.bot, **dict(pass_context=True, no_pm=True))
-        self.module_manager.register(music.Music, True, self, self.bot)
         self.module_manager.register(admin.Admin, True, self, self.bot)
+
+        ## Load any dynamic modules inside the /modules folder
+        self.module_manager.discover()
 
         ## Give some feedback for when the bot is ready to go, and provide some help text via the 'playing' status
         @self.bot.event

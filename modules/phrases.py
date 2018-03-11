@@ -207,3 +207,7 @@ class Phrases:
         random_phrase = random.choice(self.command_names)
         command = self.bot.get_command(random_phrase)
         await command.callback(self, ctx)
+
+
+def main():
+    return [Phrases, True]

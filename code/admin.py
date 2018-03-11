@@ -60,6 +60,13 @@ class Admin:
     async def reload_phrases(self, ctx):
         """Reloads the list of preset phrases."""
 
+        ## I don't really like having core modules intertwined with dynamic ones, maybe move the appropriate admin
+        ## modules out into their dynamic module and exposing some admin auth function that they check in with before
+        ## running the command?
+        if(not self.phrases_cog):
+            await self.bot.say("Sorry <@{}>, but the phrases cog isn't available.".format(ctx.message.author.id))
+            return False
+
         if(not self.is_admin(ctx.message.author)):
             await self.bot.say("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))

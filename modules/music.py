@@ -490,3 +490,7 @@ class Music:
         speech_cog = self.speech_cog
         say = speech_cog.say.callback
         await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
+
+
+def main():
+    return [Music, True]
