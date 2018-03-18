@@ -8,7 +8,7 @@ import utilities
 CONFIG_OPTIONS = utilities.load_config()
 
 class DynamoItem:
-    def __init__(self, discord_context, query, command, is_valid):
+    def __init__(self, discord_context, query, command, is_valid, error=None):
         author = discord_context.message.author
         channel = discord_context.message.channel
         server = discord_context.message.server
@@ -24,6 +24,7 @@ class DynamoItem:
         self.query = query
         self.command = command
         self.is_valid = is_valid
+        self.error = error
 
         self.primary_key_name = CONFIG_OPTIONS.get("boto_primary_key", "QueryId")
         self.primary_key = self.build_primary_key()
@@ -41,7 +42,8 @@ class DynamoItem:
             "server_name": self.server_name,
             "query": self.query,
             "command": self.command,
-            "is_valid": self.is_valid
+            "is_valid": self.is_valid,
+            "error": self.error
         }
         output[self.primary_key_name] = self.primary_key
 

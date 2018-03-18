@@ -12,6 +12,7 @@ import utilities
 import speech
 import admin
 import message_parser
+import dynamo_helper
 
 if not discord.opus.is_loaded():
     # the 'opus' library here is opus.dll on windows
@@ -184,6 +185,7 @@ class Hawking:
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.token_file_path = kwargs.get(self.TOKEN_FILE_PATH_KEY, self.TOKEN_FILE_PATH)
+        self.dynamo_db = dynamo_helper.DynamoHelper()
         ## Todo: pass kwargs to the their modules
 
         ## Init the bot and module manager
@@ -213,10 +215,19 @@ class Hawking:
         async def on_command_error(exception, ctx):
             # discord.py uses reflection to set the destination chat channel for whatever reason (sans command ctx)
             _internal_channel = ctx.message.channel
-            await self.bot.say(
-                "Sorry <@{}>, '{}{}' isn't a valid command. Try the '\help' page."
-                    .format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
-            )
+
+            self.dynamo_db.put(dynamo_helper.DynamoItem(
+                ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
+
+            ## Poorly handled (for now, until I can get more concrete examples in my database) error messages for users
+            if ("code =" in str(exception)):
+                await self.bot.say("Sorry <@{}>, Discord is having some issues that won't let me speak right now.")
+                return
+            ## Generic, command couldn't be completed alert for users
+            else:
+                await self.bot.say("Sorry <@{}>, '{}{}' isn't a valid command. Try the '\help' page."
+                    .format(ctx.message.author.id, ctx.prefix, ctx.invoked_with))
+                return
 
     ## Methods
 
