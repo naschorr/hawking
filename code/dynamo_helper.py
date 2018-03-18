@@ -8,7 +8,7 @@ import utilities
 CONFIG_OPTIONS = utilities.load_config()
 
 class DynamoItem:
-    def __init__(self, discord_context, query, command, is_valid, error=None):
+    def __init__(self, discord_context, query, command, is_valid, error=""):
         author = discord_context.message.author
         channel = discord_context.message.channel
         server = discord_context.message.server
