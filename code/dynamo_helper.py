@@ -46,7 +46,7 @@ class DynamoItem:
         }
 
         if(self.error != None):
-            output["error"]: self.error
+            output["error"] = self.error
 
         output[self.primary_key_name] = self.primary_key
 
