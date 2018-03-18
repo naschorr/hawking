@@ -1,5 +1,5 @@
 {
-    "version"                   : "0.3.1",
+    "version"                   : "0.3.2",
     "admins"                    : ["Username#1234"],
     "activation_str"            : "\\",
     "description"               : "A retro TTS bot for Discord (Beta)\nVisit https://github.com/naschorr/hawking",

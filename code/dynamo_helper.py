@@ -8,7 +8,7 @@ import utilities
 CONFIG_OPTIONS = utilities.load_config()
 
 class DynamoItem:
-    def __init__(self, discord_context, query, command, is_valid, error=""):
+    def __init__(self, discord_context, query, command, is_valid, error=None):
         author = discord_context.message.author
         channel = discord_context.message.channel
         server = discord_context.message.server
@@ -42,9 +42,12 @@ class DynamoItem:
             "server_name": self.server_name,
             "query": self.query,
             "command": self.command,
-            "is_valid": self.is_valid,
-            "error": self.error
+            "is_valid": self.is_valid
         }
+
+        if(self.error != None):
+            output["error"]: self.error
+
         output[self.primary_key_name] = self.primary_key
 
         return output
