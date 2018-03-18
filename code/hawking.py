@@ -225,7 +225,7 @@ class Hawking:
                 return
             ## Generic, command couldn't be completed alert for users
             else:
-                await self.bot.say("Sorry <@{}>, '{}{}' isn't a valid command. Try the '\help' page."
+                await self.bot.say("Sorry <@{0}>, **{1}{2}** isn't a valid command. Try the **{1}help** page."
                     .format(ctx.message.author.id, ctx.prefix, ctx.invoked_with))
                 return
 
