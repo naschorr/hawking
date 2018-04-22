@@ -1,11 +1,12 @@
 {
-    "version"                   : "0.3.2",
+    "version"                   : "0.3.5",
     "admins"                    : ["Username#1234"],
     "activation_str"            : "\\",
     "description"               : "A retro TTS bot for Discord (Beta)\nVisit https://github.com/naschorr/hawking",
     "announce_updates"          : true,
     "delete_commands"           : true,
     "channel_timeout"           : 900,
+    "channel_timeout_phrases"   : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "I'm out"],
     "skip_votes"                : 3,
     "skip_percentage"           : 33,
 

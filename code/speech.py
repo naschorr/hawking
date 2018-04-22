@@ -5,6 +5,7 @@ import asyncio
 import time
 import inspect
 from math import ceil
+from random import choice
 
 import utilities
 import message_parser
@@ -177,11 +178,12 @@ class TTSController:
 
 
 class SpeechEntry:
-    def __init__(self, requester, channel, player, file_path):
+    def __init__(self, requester, channel, player, file_path, callback=None):
         self.requester = requester
         self.channel = channel
         self.player = player
         self.file_path = file_path
+        self.callback = callback
 
 
     def __str__(self):
@@ -250,7 +252,15 @@ class SpeechState:
             await self.join_channel(self.current_speech.channel)
             self.last_speech_time = self.get_current_time()
             self.current_speech.player.start()
-            await self.next.wait()
+            await self.next.wait()  # 'next' semaphore gets triggered after the ffmpeg_player finished playing the file
+
+            ## Perform callback after the speech has finished (assuming it's defined)
+            callback = self.current_speech.callback
+            if(callback):
+                if(asyncio.iscoroutinefunction(callback)):
+                    await callback()
+                else:
+                    callback()
 
 
 class Speech:
@@ -262,6 +272,7 @@ class Speech:
     FFMPEG_BEFORE_OPTIONS_KEY = "ffmpeg_before_options"
     FFMPEG_OPTIONS_KEY = "ffmpeg_options"
     CHANNEL_TIMEOUT_KEY = "channel_timeout"
+    CHANNEL_TIMEOUT_PHRASES_KEY = "channel_timeout_phrases"
 
     ## Defaults
     DELETE_COMMANDS = CONFIG_OPTIONS.get(DELETE_COMMANDS_KEY, False)
@@ -286,6 +297,9 @@ class Speech:
         self.ffmpeg_before_options = kwargs.get(self.FFMPEG_BEFORE_OPTIONS_KEY, self.FFMPEG_BEFORE_OPTIONS)
         self.ffmpeg_options = kwargs.get(self.FFMPEG_OPTIONS_KEY, self.FFMPEG_OPTIONS)
         self.channel_timeout = int(kwargs.get(self.CHANNEL_TIMEOUT_KEY, self.CHANNEL_TIMEOUT))
+
+        ## Beginning config cleanup, hence no extra kwargs.get junk
+        self.channel_timeout_phrases = CONFIG_OPTIONS.get(self.CHANNEL_TIMEOUT_PHRASES_KEY, [])
 
         self.message_parser = message_parser.MessageParser()
         self.dynamo_db = dynamo_helper.DynamoHelper()
@@ -375,10 +389,18 @@ class Speech:
 
     ## Tries to disonnect the bot from the given state's voice channel if it hasn't been used in a while.
     async def attempt_leave_channel(self, state):
+        ## Handy closure to preserve leave_channel's argument
+        async def leave_channel_closure():
+            await self.leave_channel(state.voice_client.channel)
+
+        ## Attempt to leave the state's channel
         await asyncio.sleep(self.channel_timeout)
         if(state.last_speech_time + self.channel_timeout <= state.get_current_time() and state.voice_client):
             utilities.debug_print("Leaving channel", debug_level=4)
-            await self.leave_channel(state.voice_client.channel)
+            if(len(self.channel_timeout_phrases) > 0):
+                await self._announce(state, choice(self.channel_timeout_phrases), leave_channel_closure)
+            else:
+                await leave_channel_closure()
 
 
     ## Checks if a given command fits into the back of a string (ex. '\say' matches 'say')
@@ -501,6 +523,34 @@ class Speech:
 
             ## Attempt to delete the command message
             await self.attempt_delete_command_message(ctx.message)
+
+            ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
+            await self.attempt_leave_channel(state)
+
+            return True
+
+
+    async def _announce(self, state, message, callback=None):
+        """Internal way to speak text to a specific speech_state """
+        try:
+            ## Create a .wav file of the message
+            wav_path = await self.save(message, True)
+            if(wav_path):
+                ## Create a player for the .wav
+                player = state.voice_client.create_ffmpeg_player(
+                    wav_path,
+                    before_options=self.ffmpeg_before_options,
+                    options=self.ffmpeg_options,
+                    after=state.next_speech
+                )
+            else:
+                raise RuntimeError("Unable to save a proper .wav file.")
+        except Exception as e:
+            utilities.debug_print("Exception in _announce():", e, debug_level=0)
+            return False
+        else:
+            ## On successful player creation, build a SpeechEntry and push it into the queue
+            await state.speech_queue.put(SpeechEntry(None, state.voice_client.channel, player, wav_path, callback))
 
             ## Start a timeout to disconnect the bot if the bot hasn't spoken in a while
             await self.attempt_leave_channel(state)
