@@ -10,7 +10,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 ## To Do
 - [ ] Clean up config.json, and remove some ultimately unnecessary code
 - [ ] Improve the help interface by visually isolating phrase sections, and giving the music interface help text that's actually convenient to review
-- [ ] (Potentially) give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
+- [x] Give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
 - [ ] Better, more up to date analytics (Who's using the bot right now? Is a specific server/channel abusing my poor EC2 instance?)
 - [ ] Live, per server configuration done by server owners
 - [ ] (Potentially) Have the bot delete it's own (less useful) messages after a period of time?
@@ -80,6 +80,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
 - **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
 - **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
+- **channel_timeout_phrases** - Array - Array of strings that the bot can speak right before it leaves. One phrase is chosen randomly from the array.
 - **skip_votes** - Int - The minimum number of votes needed by a channel to skip the currently playing speech.
 - **skip_percentage** - Int - The minimum percentage of other users who need to request a skip before the currently playing speech will be skipped.
 
