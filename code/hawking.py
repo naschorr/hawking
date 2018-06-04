@@ -12,6 +12,7 @@ import utilities
 import speech
 import admin
 import message_parser
+import help_formatter
 import dynamo_helper
 
 if not discord.opus.is_loaded():
@@ -191,6 +192,7 @@ class Hawking:
         ## Init the bot and module manager
         self.bot = commands.Bot(
             command_prefix=commands.when_mentioned_or(self.activation_str),
+            formatter=help_formatter.HawkingHelpFormatter(),
             description=self.description
         )
         self.module_manager = ModuleManager(self, self.bot)

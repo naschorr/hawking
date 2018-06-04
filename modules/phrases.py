@@ -18,9 +18,22 @@ class Phrase:
         self.is_music = is_music
         self.kwargs = kwargs
 
-
     def __str__(self):
         return "{} music={} {}".format(self.name, self.is_music, self.kwargs)
+
+
+class PhraseGroup:
+    def __init__(self, name, key, description):
+        self.name = name
+        self.key = key
+        self.description = description
+        self.phrases = {}
+
+    def add_phrase(self, phrase):
+        if (isinstance(phrase, Phrase)):
+            self.phrases[phrase.name] = phrase
+        else:
+            utilities.debug_log("Couldn't add phrase: {}, as it's not a valid Phrase object".format(phrase), debug_level=2)
 
 
 class Phrases:
@@ -54,6 +67,9 @@ class Phrases:
 
         ## Make sure context is always passed to the callbacks
         self.command_kwargs["pass_context"] = True
+
+        ## The mapping of phrases into groups 
+        self.phrase_groups = {}
 
         ## Load and add the phrases
         self.init_phrases()
@@ -89,19 +105,42 @@ class Phrases:
         return phrase_files
 
 
+    ## Builds a PhraseGroup object from a phrase file
+    def _build_phrase_group(self, path):
+        with open(path) as fd:
+            group_raw = json.load(fd)
+            name = group_raw.get('name', path.split(os.path.sep)[-1].split('.')[0])
+            key = group_raw.get('key', name)
+            description = group_raw.get('description', None)
+
+            return PhraseGroup(name, key, description)
+
+
     ## Initialize the phrases available to the bot
     def init_phrases(self):
         phrase_file_paths = self.scan_phrases(self.phrases_folder_path)
 
         counter = 0
         for phrase_file_path in phrase_file_paths:
+            starting_count = counter
+            phrase_group = self._build_phrase_group(phrase_file_path)
+
             for phrase in self.load_phrases(phrase_file_path):
                 try:
                     self.add_phrase(phrase)
+                    phrase_group.add_phrase(phrase)
                 except Exception as e:
                     utilities.debug_print(e, "Skipping...", debug_level=2)
                 else:
                     counter += 1
+
+            ## Ensure we don't add in empty phrase files into the groupings
+            if(counter > starting_count):
+                self.phrase_groups[phrase_group.key] = phrase_group
+
+                ## Set up a dummy command for the category, to help with the help interface. See help_formatter.py
+                help_command = commands.Command(phrase_group.key, lambda noop: None, hidden=True, no_pm=True)
+                self.bot.add_command(help_command)
 
         print("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
@@ -153,6 +192,7 @@ class Phrases:
         for name in self.command_names:
             self.bot.remove_command(name)
         self.command_names = []
+        self.phrase_groups = {} # yay garbage collection
 
         return True
 
@@ -188,6 +228,7 @@ class Phrases:
 
         ## Create a callback for music.music
         async def _music_callback(self, ctx):
+            print('creating music callback', message, is_music)
             music_cog = self.music_cog
             music = music_cog.music.callback
             await music(music_cog, ctx, message=message, ignore_char_limit=True)

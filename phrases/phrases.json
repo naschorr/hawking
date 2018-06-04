@@ -1,4 +1,7 @@
 {
+	"name": "Phrases",
+	"key": "phrases",
+	"description": "All the internet classics from Moonbase Alpha and beyond!",
 	"phrases": [
 		{
 			"name"		: "pizza",
@@ -101,20 +104,9 @@
 			"message"	: "[ae<150,28>nnday<300,30>ssae<300,28>_<300>hxeh<750,37>ey<200,33>eh<750,33>ey<200,28>eh<750,28>ey<400,26>ey<400,25>]\n [hxeh<750,37>ey<200,33>eh<750,33>ey<200,26>eh<750,26>_<750>ay<150,35>sseh<200,37>hxeh<300,33>eh<300,30>]\n [wwah<300,35>ttsgow<300,35>ih<400,37>nnaw<300,33>nn<90>]"
 		},
 		{
-			"name"		: "no",
-			"help"		: "He doesn't want it.",
-			"message"	: "[:dv ap 95 pr 0 hs 125 sm 50] [duw<200>] [nao<200>t<50>] [waa<1500>nt<150>]!"
-		},
-		{
 			"name"		: "salt",
 			"help"		: "The zest of life.",
 			"message"	: "The ceiling is salt, the floor is salt, the walls are salt, and too an extent, the air is salt. You breathe that in, and you constantly taste the salt."
-		},
-		{
-			"name"		: "titanic",
-			"help"		: "A heartfelt rendition.",
-			"message"	: "\\bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r",
-			"music"		: true
 		},
 		{
 			"name"		: "wake",
@@ -130,11 +122,6 @@
 			"name"		: "roflcopter",
 			"help"		: "Now how will you get the easter egg?",
 			"message"	: "My rawfulcopter, it goes schwah schwah schwah"
-		},
-		{
-			"name"		: "koolaid",
-			"help"		: "An excellent prize.",
-			"message"	: "Today winna will receive the gift of KoolAid! Now available in all five food groups: red, urnge, green, blue, and turkwaz. Because, you always need mo KoolAid!"
 		},
 		{
 			"name"		: "mad",

@@ -422,8 +422,9 @@ class Music:
     ## Commands
 
     @commands.command(pass_context=True, no_pm=True, brief="Sings the given notes aloud!")
-    async def music(self, ctx, *, message, ignore_char_limit=False):
-        """Sings the given notes aloud to your voice channel.
+    async def music(self, ctx, *, notes, ignore_char_limit=False):
+        """
+        Sings the given notes aloud to your voice channel.
 
         A note (or notes) can look like any of these:
             'a' - Just the 'a' quarter note in the default second octave.
@@ -433,40 +434,49 @@ class Music:
             'r' - A quarter rest.
             '4r' - A quarter rest held for four beats.
             'b/b' - Two 'b' eighth notes.
-            '2c#/d#/a3/f' - A 'c#' sixteenth note held for two beats, a 'd#' sixteenth note, an 'a' sixteenth note in the third octave, and a 'f' sixteenth note.
+            '2c#/d#/a3/f' - A 'c#' sixteenth note held for two beats, a 'd#' sixteenth note,
+                an 'a' sixteenth note in the third octave, and a 'f' sixteenth note.
         
         Formatting:
-            Notes (at the moment) have four distinc parts (Duration?)(Note)(Sharp?)(Octave?).
-            Only the base note is necessary, everything else can be omitted if necessary (see above examples)
-            A single space NEEDS to be inserted between notes.
-            You can chain notes together by inserting a '/' between notes, this lets you create multiple shorter beats.
-            This lets you approximate eighth notes, sixteenth notes, thirty-second notes, and really any other division of notes. (Twelfth, Twentieth, etc)
-            You can also use the | character to help with formatting your bars (ex. 'c d e f | r g a b')
+            Notes (at the moment) have four distinct parts (Duration?)(Note)(Sharp?)(Octave?).
+            Only the base note is necessary, everything else can be omitted if necessary
+                (see examples) A single space NEEDS to be inserted between notes.
+            You can chain notes together by inserting a '/' between notes, this lets you create
+                multiple shorter beats.
+            This lets you approximate eighth notes, sixteenth notes, thirty-second notes, and
+                really any other division of notes. (Twelfth, Twentieth, etc)
+            You can also use the | character to help with formatting your bars
+                (ex. 'c d e f | r g a b')
 
         Inline Configuration:
             BPM:
-                The '\\bpm=N' line can be inserted anywhere to adjust the bpm of notes in that line.
-                N can be any positive integer. (ex. '\\bpm=120' or '\\bpm=60')
+                The '\\bpm=N' line can be inserted anywhere to adjust the bpm of notes in that
+                line. N can be any positive integer. (ex. '\\bpm=120' or '\\bpm=60')
             Octave:
-                The '\\octave=N' line can be inserted anywhere to adjust the default octave of notes in that line.
-                N can be any integer between 0 and 9 (inclusive) (ex. '\\octave=1' or '\\octave=3'), however 0 through 4 give the best results.
+                The '\\octave=N' line can be inserted anywhere to adjust the default octave of
+                notes in that line. N can be any integer between 0 and 9 (inclusive)
+                (ex. '\\octave=1' or '\\octave=3'), however 0 through 4 give the best results.
             Tones:
-                The '\\tone=N' line can be inserted anywhere to set whether or not to use tones instead of phonemes on that line.
-                N can be either 0 or 1, where 0 disables tones, and 1 enables them.
+                The '\\tone=N' line can be inserted anywhere to set whether or not to use tones
+                instead of phonemes on that line. N can be either 0 or 1, where 0 disables tones,
+                and 1 enables them.
             Bad:
-                The '\\bad=N' line can be inserted anywhere to set whether or not to make the notes on that line sound worse (See: https://www.youtube.com/watch?v=KolfEhV-KiA).
-                N can be either 0 or 1, where 0 disables the badness, and 1 enables it.
+                The '\\bad=N' line can be inserted anywhere to set whether or not to make the notes
+                on that line sound worse (See: https://www.youtube.com/watch?v=KolfEhV-KiA). N can
+                be either 0 or 1, where 0 disables the badness, and 1 enables it.
             Bad_Percent:
-                The '\\bad_percent=N' line can be inserted anywhere to set the level of badness, when using the \\bad config.
-                N can be any positive integer. It works as a percentage where if N = 0, then it's not at all worse, and N = 100 would be 100% worse.
-                Needs \\bad to be set to have any effect.
+                The '\\bad_percent=N' line can be inserted anywhere to set the level of badness, 
+                when using the \\bad config. N can be any positive integer. It works as a
+                percentage where if N = 0, then it's not at all worse, and N = 100 would be 100%
+                worse. Needs \\bad to be set to have any effect.
 
         Examples:
             My Heart Will Go On (first 7 bars):
-                '\music \bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r'
+                '\music \\bpm=100 f f f f | e 2f f | e 2f g | 2a 2g | f f f f | e 2f f | 2d 2r'
 
             Sandstorm (kinda):
-                '\music \bpm=136 \octave=3 \tone=1 b/b/b/b/b b/b/b/b/b/b/b e/e/e/e/e/e/e d/d/d/d/d/d/d a b/b/b/b/b/b b/b/b/b/b/b c# b/b/b/b/b/a'
+                '\music \\bpm=136 \\octave=3 \\tone=1 b/b/b/b/b b/b/b/b/b/b/b e/e/e/e/e/e/e
+                    d/d/d/d/d/d/d a b/b/b/b/b/b b/b/b/b/b/b c# b/b/b/b/b/a'
 
         Defaults:
             bpm = 100
@@ -477,8 +487,8 @@ class Music:
         """
 
         ## Todo: preserve the position of tts_configs in the message
-        tts_configs, message = self._extract_tts_configs(message)
-        music_configs, message = self._extract_music_configs(message)
+        tts_configs, message = self._extract_tts_configs(notes)
+        music_configs, message = self._extract_music_configs(notes)
 
         bpm = music_configs.get(self.BPM_KEY, self.bpm)
         beat_length = 60 / bpm  # for a quarter note

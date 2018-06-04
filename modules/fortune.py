@@ -39,7 +39,7 @@ class Fortune:
         self.phrases = self.FORTUNES
 
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.command(pass_context=True, no_pm=True, brief="Tells you your magic 8 ball fortune!")
     async def fortune(self, ctx):
         speech_cog = self.hawking.get_speech_cog()
         await speech_cog.say.callback(speech_cog, ctx, message=choice(self.phrases))
