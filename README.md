@@ -9,7 +9,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 
 ## To Do
 - [ ] Clean up config.json, and remove some ultimately unnecessary code
-- [ ] Improve the help interface by visually isolating phrase sections, and giving the music interface help text that's actually convenient to review
+- [x] Improve the help interface by visually isolating phrase sections, and giving the music interface help text that's actually convenient to review
 - [x] Give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
 - [ ] Better, more up to date analytics (Who's using the bot right now? Is a specific server/channel abusing my poor EC2 instance?)
 - [ ] Live, per server configuration done by server owners
