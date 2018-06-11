@@ -228,10 +228,9 @@ class Phrases:
 
         ## Create a callback for music.music
         async def _music_callback(self, ctx):
-            print('creating music callback', message, is_music)
             music_cog = self.music_cog
             music = music_cog.music.callback
-            await music(music_cog, ctx, message=message, ignore_char_limit=True)
+            await music(music_cog, ctx, notes=message, ignore_char_limit=True)
 
         ## Return the appropriate callback
         if(is_music):
