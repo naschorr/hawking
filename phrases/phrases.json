@@ -127,6 +127,11 @@
 			"name"		: "mad",
 			"help"		: "Is only game.",
 			"message"	: "[:nr] [:dv hs 85] Its only game, why you hef to be mad?"
+		},
+		{
+			"name"		: "batman",
+			"help"		: "Starring: Adam West!",
+			"message"	: "[nae<99,20>nae<99,20>nae<99,19>nae<99,19>nae<99,18>nae<99,18>nae<99,19>nae<99,19>bae<140,25>ttmae<600,25>nn]"
 		}
 	]
 }
