@@ -16,6 +16,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - [ ] (Potentially) Have the bot delete it's own (less useful) messages after a period of time?
 - [ ] Clean up class level configuration, theres too much redundancy
 - [x] Dynamic module loading? Just drop (properly formatted) modules into a folder and the bot will handle loading?
+- [ ] Proper testing suite
 
 ## Installation
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
