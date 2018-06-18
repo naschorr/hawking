@@ -218,6 +218,8 @@ class Hawking:
             # discord.py uses reflection to set the destination chat channel for whatever reason (sans command ctx)
             _internal_channel = ctx.message.channel
 
+            utilities.debug_print(exception, debug_level=2)
+
             self.dynamo_db.put(dynamo_helper.DynamoItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
 

@@ -141,6 +141,7 @@ class Phrases:
                 ## Set up a dummy command for the category, to help with the help interface. See help_formatter.py
                 help_command = commands.Command(phrase_group.key, lambda noop: None, hidden=True, no_pm=True)
                 self.bot.add_command(help_command)
+                self.command_names.append(phrase_group.key) # Keep track of the 'parent' commands for later use
 
         print("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
