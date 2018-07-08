@@ -17,10 +17,12 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - [ ] Clean up class level configuration, theres too much redundancy
 - [x] Dynamic module loading? Just drop (properly formatted) modules into a folder and the bot will handle loading?
 - [ ] Proper testing suite
+- [x] Run it as a system service (systemd for now)
+- [ ] Installation script (pip instead?)
 
 ## Installation
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
-- `cd` into the directory that you'd like the project to go
+- `cd` into the directory that you'd like the project to go (If you're on Linux, I'd recommend '/usr/local/bin')
 - `git clone https://github.com/naschorr/hawking`
 - `python3 -m venv hawing/`
     + You may need to run: `apt install python3-venv` to enable virtual environments for Python 3 on Linux
@@ -37,16 +39,27 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Nothing else to do! Everything should work just fine.
 
 #### Linux Installation
+Running Hawking on Linux requires a bit more work. At a minimum you'll need some sort of way to get Windows applications running on Linux. However, if you plan to run Hawking in a server environment (and you probably do), you should also check out the Hawking as a Service section.
+
+##### Basic Installation
 - Install [Wine](https://www.winehq.org/) to get the text-to-speech executable working.
     + `dpkg --add-architecture i386`
     + `apt-get update`
     + `apt-get install wine`
 
-#### Headless Installation
-- Install Xvfb with with your preferred package manager (`apt install xvfb` on Ubuntu, for example)
-- Invoke Xvfb automatically on reboot with a cron job (`sudo crontab -e`), by adding `@reboot Xvfb :0 -screen 0 1024x768x16 &` to your list of jobs.
-- Set `headless` to be `true` in `config.json`
-- If you're using different virtual server or screen identifiers, then make sure they work with `xvfb_prepend` in `config.json`. Otherwise everything should work fine out of the box.
+##### Server Installation
+- Get Hawking set up with Xvfb
+    + Install Xvfb with with your preferred package manager (`apt install xvfb` on Ubuntu, for example)
+    + Invoke Xvfb automatically on reboot with a cron job (`sudo crontab -e`), by adding `@reboot Xvfb :0 -screen 0 1024x768x16 &` to your list of jobs.
+    + Set `headless` to be `true` in `config.json`
+    + If you're using different virtual server or screen identifiers, then make sure they work with `xvfb_prepend` in `config.json`. Otherwise everything should work fine out of the box.
+
+- Hawking as a Service (HaaS)
+    - Note: This assumes that your system uses systemd. You can check that by running `pidof systemd && echo "systemd" || echo "other"` in the terminal. If your system is using sysvinit, then you can just as easily build a cron job to handle running `hawking.py` on reboot. Just make sure to use your virtual environment's Python executable, and not the system's one.
+    - Assuming that your installation is in '/usr/local/bin/hawking', you'll want to move the `hawking.service` file into the systemd services folder with `mv hawking.service /etc/systemd/system/`
+        + If your hawking installation is located elsewhere, just update the paths inside the `hawking.service` to point to your installation.
+    - Get the service working with `sudo systemctl daemon-reload && systemctl enable hawking && systemctl start hawking --no-block`
+    - Now you can control the Hawking service just like any other. For example, to restart: `sudo service hawking restart`
 
 ## Usage
 - `cd` into the project's root
