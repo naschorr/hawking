@@ -1,0 +1,12 @@
+[Unit]
+Description=Hawking as a Service (HaaS)
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/hawking/bin/python /usr/local/bin/hawking/code/hawking.py
+WorkingDirectory=/usr/local/bin/hawking/code
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=sysinit.target
