@@ -39,7 +39,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Nothing else to do! Everything should work just fine.
 
 #### Linux Installation
-Running Hawking on Linux requires a bit more work. At a minimum you'll need some sort of way to get Windows applications running on Linux. However, if you plan to run Hawking in a server environment (and you probably do), you should also check out the Hawking as a Service section.
+Running Hawking on Linux requires a bit more work. At a minimum you'll need some sort of way to get Windows applications running on Linux. However, if you plan to run Hawking in a server environment (and you probably do), you should also check out the [Server Installation](https://github.com/naschorr/hawking#server-installation) section below.
 
 ##### Basic Installation
 - Install [Wine](https://www.winehq.org/) to get the text-to-speech executable working.
@@ -55,9 +55,10 @@ Running Hawking on Linux requires a bit more work. At a minimum you'll need some
     + If you're using different virtual server or screen identifiers, then make sure they work with `xvfb_prepend` in `config.json`. Otherwise everything should work fine out of the box.
 
 - Hawking as a Service (HaaS)
-    - Note: This assumes that your system uses systemd. You can check that by running `pidof systemd && echo "systemd" || echo "other"` in the terminal. If your system is using sysvinit, then you can just as easily build a cron job to handle running `hawking.py` on reboot. Just make sure to use your virtual environment's Python executable, and not the system's one.
+    > *Note:* This assumes that your system uses systemd. You can check that by running `pidof systemd && echo "systemd" || echo "other"` in the terminal. If your system is using sysvinit, then you can just as easily build a cron job to handle running `hawking.py` on reboot. Just make sure to use your virtual environment's Python executable, and not the system's one.
+
     - Assuming that your installation is in '/usr/local/bin/hawking', you'll want to move the `hawking.service` file into the systemd services folder with `mv hawking.service /etc/systemd/system/`
-        + If your hawking installation is located elsewhere, just update the paths inside the `hawking.service` to point to your installation.
+        + If your hawking installation is located elsewhere, just update the paths (`ExecStart` and `WorkingDirectory`) inside the `hawking.service` to point to your installation.
     - Get the service working with `sudo systemctl daemon-reload && systemctl enable hawking && systemctl start hawking --no-block`
     - Now you can control the Hawking service just like any other. For example, to restart: `sudo service hawking restart`
 
