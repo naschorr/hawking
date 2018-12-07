@@ -1,11 +1,13 @@
 import json
 import os
 import random
+import re
 from discord import errors
 from discord.ext import commands
 
 import utilities
 import dynamo_helper
+from string_similarity import StringSimilarity
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -62,6 +64,7 @@ class Phrases:
         self.phrases_folder_path = phrases_folder_path or self.PHRASES_FOLDER_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
+        self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
 
         self.dynamo_db = dynamo_helper.DynamoHelper()
 
@@ -70,6 +73,9 @@ class Phrases:
 
         ## The mapping of phrases into groups 
         self.phrase_groups = {}
+
+        ## Compile a regex for filtering non-letter characters
+        self.non_letter_regex = re.compile('\W+')
 
         ## Load and add the phrases
         self.init_phrases()
@@ -116,10 +122,14 @@ class Phrases:
             return PhraseGroup(name, key, description)
 
 
+    ## (Attempt to) process a given string down into a searchable string
+    def process_string_into_searchable(self, string):
+        return self.non_letter_regex.sub(' ', string).lower()
+
+
     ## Initialize the phrases available to the bot
     def init_phrases(self):
         phrase_file_paths = self.scan_phrases(self.phrases_folder_path)
-
         counter = 0
         for phrase_file_path in phrase_file_paths:
             starting_count = counter
@@ -165,17 +175,25 @@ class Phrases:
         with open(path) as fd:
             for phrase_raw in json.load(fd)[self.PHRASES_KEY]:
                 try:
+                    message = phrase_raw[self.MESSAGE_KEY]
+
                     ## Todo: make this less ugly
                     kwargs = {}
                     help_value = phrase_raw.get(self.HELP_KEY)  # fallback for the help submenus
                     kwargs = insert_if_exists(kwargs, phrase_raw, self.HELP_KEY)
                     kwargs = insert_if_exists(kwargs, phrase_raw, self.BRIEF_KEY, help_value)
-                    kwargs = insert_if_exists(kwargs, phrase_raw, self.DESCRIPTION_KEY, help_value)
+
+                    ## Attempt to populate the description kwarg, but if it isn't available, then try and parse the
+                    ## message down into something usable instead.
+                    if (self.DESCRIPTION_KEY in phrase_raw):
+                        kwargs[self.DESCRIPTION_KEY] = phrase_raw[self.DESCRIPTION_KEY]
+                    else:
+                        kwargs[self.DESCRIPTION_KEY] = self.process_string_into_searchable(message)
 
                     phrase_name = phrase_raw[self.NAME_KEY]
                     phrase = Phrase(
                         phrase_name,
-                        phrase_raw[self.MESSAGE_KEY],
+                        message,
                         phrase_raw.get(self.IS_MUSIC_KEY, False),
                         **kwargs
                     )
@@ -248,6 +266,53 @@ class Phrases:
         random_phrase = random.choice(self.command_names)
         command = self.bot.get_command(random_phrase)
         await command.callback(self, ctx)
+
+
+    ## Scores a given string (message) based on how many of it's words exist in another string (description)
+    def _calcSubstringScore(self, message, description):
+        ## Todo: shrink instances of repeated letters down to a single letter in both message and description
+        ##       (ex. yeeeee => ye or reeeeeboot => rebot)
+
+        message_split = message.split(' ')
+        word_frequency = 0
+        for word in message_split:
+            if (word in description.split(' ')):
+                word_frequency += 1
+
+        return word_frequency / len(message_split)
+
+
+    ## Attempts to find the command whose description text most closely matches the provided message
+    @commands.command(pass_context=True, no_pm=True)
+    async def find(self, ctx, *, message):
+        ## Strip all non alphanumeric and non whitespace characters out of the message
+        message = ''.join(char for char in message.lower() if (char.isalnum() or char.isspace()))
+
+        most_similar_command = (None, 0)
+        for phrase_group in self.phrase_groups.values():
+            for phrase in phrase_group.phrases.values():
+                ## Todo: Maybe look into filtering obviously bad descriptions from the calculation somehow?
+                ##       A distance metric might be nice, but then if I could solve that problem, why not just use that
+                ##       distance in the first place and skip the substring check?
+
+                description = phrase.kwargs.get(self.DESCRIPTION_KEY)
+                if (not description):
+                    continue
+
+                ## Build a weighted distance using a traditional similarity metric and the previously calculated word
+                ## frequency as well as the similarity of the actual string that invokes the phrase
+                distance =  (self._calcSubstringScore(message, description) * 0.5) + \
+                            (StringSimilarity.similarity(description, message) * 0.3) + \
+                            (StringSimilarity.similarity(message, phrase.name) * 0.2)
+
+                if (distance > most_similar_command[1]):
+                    most_similar_command = (phrase, distance)
+
+        if (most_similar_command[1] > self.find_command_minimum_similarity):
+            command = self.bot.get_command(most_similar_command[0].name)
+            await command.callback(self, ctx)
+        else:
+            await self.bot.say("I couldn't find anything close to that, sorry <@{}>.".format(ctx.message.author.id))
 
 
 def main():

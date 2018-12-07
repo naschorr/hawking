@@ -14,6 +14,7 @@ import admin
 import message_parser
 import help_formatter
 import dynamo_helper
+from string_similarity import StringSimilarity
 
 if not discord.opus.is_loaded():
     # the 'opus' library here is opus.dll on windows
@@ -172,6 +173,7 @@ class Hawking:
     TOKEN_KEY = "token"
     TOKEN_FILE_KEY = "token_file"
     TOKEN_FILE_PATH_KEY = "token_file_path"
+    INVALID_COMMAND_MINIMUM_SIMILARITY = "invalid_command_minimum_similarity"
 
     ## Defaults
     VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
@@ -186,6 +188,7 @@ class Hawking:
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.token_file_path = kwargs.get(self.TOKEN_FILE_PATH_KEY, self.TOKEN_FILE_PATH)
+        self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
         self.dynamo_db = dynamo_helper.DynamoHelper()
         ## Todo: pass kwargs to the their modules
 
@@ -225,12 +228,25 @@ class Hawking:
 
             ## Poorly handled (for now, until I can get more concrete examples in my database) error messages for users
             if ("code =" in str(exception)):
-                await self.bot.say("Sorry <@{}>, Discord is having some issues that won't let me speak right now.")
+                await self.bot.say("Sorry <@{}>, Discord is having some issues that won't let me speak right now."
+                    .format(ctx.message.author.id))
                 return
-            ## Generic, command couldn't be completed alert for users
+
+            ## Attempt to find a command that's similar to the one they wanted. Otherwise just direct them to the help page
             else:
-                await self.bot.say("Sorry <@{}>, **{}{}** isn't a valid command. Try the **{}help** page."
-                    .format(ctx.message.author.id, ctx.prefix, ctx.invoked_with, self.activation_str))
+                help_text_chunks = [
+                    "Sorry <@{}>, **{}{}** isn't a valid command.".format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
+                ]
+
+                ## Calculate the output to give to the user
+                most_similar_command = self.find_most_similar_command(ctx.message.content)
+                if (most_similar_command[1] > self.invalid_command_minimum_similarity):
+                    help_text_chunks.append("Did you mean **{}{}**?".format(self.activation_str, most_similar_command[0]))
+                else:
+                    help_text_chunks.append("Try the **{}help** page.".format(self.activation_str))
+
+                ## Dump output to user
+                await self.bot.say(" ".join(help_text_chunks))
                 return
 
     ## Methods
@@ -263,6 +279,27 @@ class Hawking:
     ## Register an arbitrary module with hawking (easy wrapper for self.module_manager.register)
     def register_module(self, cls, is_cog, *init_args, **init_kwargs):
         self.module_manager.register(cls, is_cog, *init_args, **init_kwargs)
+
+
+    ## Finds the most similar command to the supplied one
+    def find_most_similar_command(self, command):
+        ## Build a message string that we can compare with.
+        try:
+            message = command[len(self.activation_str):]
+        except TypeError:
+            message = command
+
+        ## Get a list of all visible commands 
+        commands = [name for name, cmd in self.bot.commands.items() if not cmd.hidden]
+
+        ## Find the most similar command
+        most_similar_command = (None, 0)
+        for key in commands:
+            distance = StringSimilarity.similarity(key, message)
+            if (distance > most_similar_command[1]):
+                most_similar_command = (key, distance)
+
+        return most_similar_command
 
 
     ## Run the bot
