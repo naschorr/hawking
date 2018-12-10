@@ -2,7 +2,7 @@
 A retro text-to-speech interface bot for Discord, designed to work with all of the stuff you might've seen in Moonbase Alpha, using the existing commands.
 
 ## Activation
-- Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=0) on Discord's site.
+- Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072) on Discord's site.
 - Select the server that you want Hawking to be added to.
 - Hit the "Authorize" button.
 - Start speaking! (you should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
