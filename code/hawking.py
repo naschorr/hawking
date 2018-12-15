@@ -234,20 +234,24 @@ class Hawking:
 
             ## Attempt to find a command that's similar to the one they wanted. Otherwise just direct them to the help page
             else:
-                help_text_chunks = [
-                    "Sorry <@{}>, **{}{}** isn't a valid command.".format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
-                ]
-
-                ## Calculate the output to give to the user
                 most_similar_command = self.find_most_similar_command(ctx.message.content)
-                if (most_similar_command[1] > self.invalid_command_minimum_similarity):
-                    help_text_chunks.append("Did you mean **{}{}**?".format(self.activation_str, most_similar_command[0]))
-                else:
-                    help_text_chunks.append("Try the **{}help** page.".format(self.activation_str))
 
-                ## Dump output to user
-                await self.bot.say(" ".join(help_text_chunks))
-                return
+                if (most_similar_command[0] == ctx.invoked_with):
+                    ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
+                    await self.bot.say("Sorry <@{}>, I can't talk right now. Try again in a little bit.".format(ctx.message.author.id))
+                else:
+                    ## Otherwise, handle other issues involving invalid commands
+                    help_text_chunks = [
+                        "Sorry <@{}>, **{}{}** isn't a valid command.".format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
+                    ]
+
+                    ## Build the output to give to the user
+                    if (most_similar_command[1] > self.invalid_command_minimum_similarity):
+                        help_text_chunks.append("Did you mean **{}{}**?".format(self.activation_str, most_similar_command[0]))
+                    else:
+                        help_text_chunks.append("Try the **{}help** page.".format(self.activation_str))
+
+                    await self.bot.say(" ".join(help_text_chunks))
 
     ## Methods
 
