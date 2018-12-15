@@ -31,7 +31,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
     + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.5-dev` to install some supplemental features for the setup process.
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
 - Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `hawking/token.json`
-- Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=0`, but make sure to replace CLIENT_ID with your bot's client id.
+- Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=53803072`, but make sure to replace CLIENT_ID with your bot's client id.
 - Select your server, and hit "Authorize"
 - Check out `config.json` for any configuration you might want to do. It's set up to work well out of the box, but you may want to add admins, change pathing, or modify the number of votes required for a skip.
 
