@@ -5,7 +5,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072) on Discord's site.
 - Select the server that you want Hawking to be added to.
 - Hit the "Authorize" button.
-- Start speaking! (you should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
+- Start speaking! (_Hint:_ join a voice channel and type in `\help`. You should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
 ## To Do
 - [ ] Clean up config.json, and remove some ultimately unnecessary code
@@ -72,7 +72,9 @@ Running Hawking on Linux requires a bit more work. At a minimum you'll need some
 These commands allow for the basic operation of the bot, by anyone.
 - `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
 - `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
-- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Currently rewriting to be even more flexible.
+- `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
+- `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
+- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
 - `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 
@@ -116,6 +118,11 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **wine** - String - The command to invoke Wine on your system. Linux only.
 - **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
 - **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
+- **modules_folder** - String - The name of the folder, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
+- **string_similarity_algorithm** - String - The name of the algorithm to use when calculating how similar two given strings are. Currently only supports 'difflib'.
+- **invalid_command_minimum_similarity** - Float - The minimum similarity an invalid command must have with an existing command before the existing command will be suggested as an alternative.
+- **find_command_minimum_similarity** - Float - The minimum similarity the find command must have with an existing command, before the existing command will be suggested for use.
+> *A quick note about minimum similarity*: If the value is set too low, then you can run into issues where seemingly irrelevant commands are suggested. Likewise, if the value is set too high, then commands might not ever be suggested to the user. For both of the minimum similarities, the value should be values between 0 and 1 (inclusive), and should rarely go below 0.4.
 
 #### Speech Configuration
 - **prepend** - String - A string that'll always be prepended onto the text sent to the text-to-speech engine.
@@ -141,6 +148,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
 
-Lastly, be sure to check out the [Moonbase Alpha](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam.
+Lastly, be sure to check out the [Moonbase Alpha](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam, there's a bunch of great stuff in there!
 
 Tested on Windows 10, and Ubuntu 16.04.

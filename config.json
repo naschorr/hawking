@@ -28,8 +28,8 @@
     "headless"                              : false,
     "modules_folder"                        : "modules",
     "string_similarity_algorithm"           : "difflib",
-    "invalid_command_minimum_similarity"    : "0.66",
-    "find_command_minimum_similarity"       : "0.5",
+    "invalid_command_minimum_similarity"    : 0.66,
+    "find_command_minimum_similarity"       : 0.5,
 
     "prepend"                               : "[:phoneme on]",
     "append"                                : "",
