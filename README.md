@@ -8,7 +8,7 @@ A retro text-to-speech interface bot for Discord, designed to work with all of t
 - Start speaking! (_Hint:_ join a voice channel and type in `\help`. You should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
 ## Installation
-- Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
+- Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
 - `cd` into the directory that you'd like the project to go (If you're on Linux, I'd recommend '/usr/local/bin')
 - `git clone https://github.com/naschorr/hawking`
 - `python3 -m venv hawing/`
