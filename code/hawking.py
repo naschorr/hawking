@@ -289,9 +289,9 @@ class Hawking:
     def find_most_similar_command(self, command):
         ## Build a message string that we can compare with.
         try:
-            message = command[len(self.activation_str):]
+            message = command[len(self.activation_str):].lower()
         except TypeError:
-            message = command
+            message = command.lower()
 
         ## Get a list of all visible commands 
         commands = [name for name, cmd in self.bot.commands.items() if not cmd.hidden]
@@ -299,7 +299,7 @@ class Hawking:
         ## Find the most similar command
         most_similar_command = (None, 0)
         for key in commands:
-            distance = StringSimilarity.similarity(key, message)
+            distance = StringSimilarity.similarity(key.lower(), message)
             if (distance > most_similar_command[1]):
                 most_similar_command = (key, distance)
 
