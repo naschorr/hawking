@@ -1,27 +1,26 @@
-# hawking
-A retro text-to-speech interface bot for Discord, designed to work with all of the stuff you might've seen in Moonbase Alpha, using the existing commands.
+<p align="center"><img src="https://raw.githubusercontent.com/naschorr/hawking/master/resources/hawking-avatar.png" width="150"/></p>
 
-## Activation
+# hawking
+A retro text-to-speech bot for Discord, designed to work with all of the stuff you might've seen in Moonbase Alpha, using the existing commands.
+
+## Activate Hawking on your server!
 - Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072) on Discord's site.
 - Select the server that you want Hawking to be added to.
 - Hit the "Authorize" button.
 - Start speaking! (_Hint:_ join a voice channel and type in `\help`. You should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
-## To Do
-- [ ] Clean up config.json, and remove some ultimately unnecessary code
-- [x] Improve the help interface by visually isolating phrase sections, and giving the music interface help text that's actually convenient to review
-- [x] Give the bot some sort of sign-off message when he leaves a channel due to inactivity? Right now it just sounds like a regular person left
-- [ ] Better, more up to date analytics (Who's using the bot right now? Is a specific server/channel abusing my poor EC2 instance?)
-- [ ] Live, per server configuration done by server owners
-- [ ] (Potentially) Have the bot delete it's own (less useful) messages after a period of time?
-- [ ] Clean up class level configuration, theres too much redundancy
-- [x] Dynamic module loading? Just drop (properly formatted) modules into a folder and the bot will handle loading?
-- [ ] Proper testing suite
-- [x] Run it as a system service (systemd for now)
-- [ ] Installation script (pip instead?)
+## Basic Commands
+These commands allow for the basic operation of the bot, by anyone. Just type them into a public text channel while connected to a public voice channel. (Hawking can also read/join channels that you've given the permissions to)
+- `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
+- `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
+- `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
+- `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
+- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
+- `\summon` - Summons the bot to join your voice channel.
+- `\help` - Show the help screen.
 
-## Installation
-- Make sure you've got [Python 3.6](https://www.python.org/downloads/) or greater installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
+## Hosting it yourself
+- Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
 - `cd` into the directory that you'd like the project to go (If you're on Linux, I'd recommend '/usr/local/bin')
 - `git clone https://github.com/naschorr/hawking`
 - `python3 -m venv hawing/`
@@ -62,21 +61,11 @@ Running Hawking on Linux requires a bit more work. At a minimum you'll need some
     - Get the service working with `sudo systemctl daemon-reload && systemctl enable hawking && systemctl start hawking --no-block`
     - Now you can control the Hawking service just like any other. For example, to restart: `sudo service hawking restart`
 
-## Usage
+## Running your Hawking installation
 - `cd` into the project's root
-- Activate the venv
-- `cd` into `hawking/code/` (Note, you need `hawking.py` to be in your current working directory, as theres some weird pathing issues with the required files for `say.exe`
-- `python hawking.py`
-
-## Commands
-These commands allow for the basic operation of the bot, by anyone.
-- `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
-- `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
-- `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
-- `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
-- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
-- `\summon` - Summons the bot to join your voice channel.
-- `\help` - Show the help screen.
+- Activate the venv (`source bin/activate` on Linux, `.\Scripts\activate` on Windows)
+- `cd` into `hawking/code/` (Note, you need `hawking.py` to be in your current working directory, as there are some weird pathing issues with the required files for `say.exe`
+- Run `python hawking.py` to start Hawking
 
 ## Admin Commands
 Admin commands allow for some users to have a little more control over the bot. For these to work, the `admin` array in `config.json` needs to have the desired usernames added to it. Usernames should be in the `Username#1234` format that Discord uses.
@@ -85,7 +74,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 - `\admin reload_cogs` - Unloads, and then reloads the cogs registered to the bot (see admin.py's register_module() method). Useful for debugging.
 - `\admin disconnect` - Forces the bot to stop speaking, and disconnect from its current channel in the invoker's server.
 - `\help admin` - Show the help screen for the admin commands.
-
 
 ## Configuration `config.json`
 

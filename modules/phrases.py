@@ -310,6 +310,9 @@ class Phrases:
 
         if (most_similar_command[1] > self.find_command_minimum_similarity):
             command = self.bot.get_command(most_similar_command[0].name)
+            await self.bot.say("Hey <@{}>, I found the **{}{}** phrase.".format(
+                ctx.message.author.id, self.hawking.activation_str, most_similar_command[0].name
+            ))
             await command.callback(self, ctx)
         else:
             await self.bot.say("I couldn't find anything close to that, sorry <@{}>.".format(ctx.message.author.id))
