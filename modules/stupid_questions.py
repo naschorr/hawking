@@ -11,7 +11,6 @@ CONFIG_OPTIONS = utilities.load_config()
 
 class StupidQuestions:
     REDDIT_USER_AGENT = "discord:hawking:{} (by /u/hawking-py)".format(CONFIG_OPTIONS.get("version", "0.0.1"))
-    SUBREDDIT = "NoStupidQuestions"
 
     def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
@@ -23,9 +22,11 @@ class StupidQuestions:
         reddit_client_id = config.get("reddit_client_id")
         reddit_secret = config.get("reddit_secret")
 
+        subreddits = CONFIG_OPTIONS.get("stupid_question_subreddits", ["NoStupidQuestions"])
         try:
             self.reddit = Reddit(client_id=reddit_client_id, client_secret=reddit_secret, user_agent=self.REDDIT_USER_AGENT)
-            self.subreddit = self.reddit.subreddit(self.SUBREDDIT)
+            ## Use a multireddit to pull random post from any of the chosen subreddits
+            self.subreddit = self.reddit.subreddit("+".join(subreddits))
         except Exception as e:
             utilities.debug_log("Unable to create reddit/subreddit instance,", e, debug_level=1)
         
