@@ -36,8 +36,9 @@ pyvenv.cfg
 # Ignore my notes
 voices.txt
 
-# Ignore the token
+# Ignore credentials
 token.json
+modules/*.json
 
 # Ignore misc phrase files, but include default phrases
 phrases/*
