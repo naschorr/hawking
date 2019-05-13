@@ -16,6 +16,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
 - `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
 - `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
+- `\fortune` - Tells you your magic 8 ball fortune!
 - `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 
