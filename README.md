@@ -16,6 +16,8 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
 - `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
 - `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
+- `\fortune` - Tells you your magic 8 ball fortune!
+- `\stupidquestion` - Asks you a random, (potentially) stupid question from Reddit.
 - `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 
@@ -125,6 +127,9 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **tone** - Boolean - Choose to use pure tones for musical notes instead of a simulated voice singing the notes.
 - **bad** - Boolean - Choose to make all `\music` commands comically worse. Think Cher's 'My Heart Will Go On' on the recorder.
 - **bad_percent** - Int - The percentage that the `bad` command makes music worse by.
+
+#### Stupid Question Configuration
+- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one.
 
 #### Analytics Configuration
 - **boto_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
