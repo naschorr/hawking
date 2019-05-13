@@ -105,6 +105,7 @@ class ModuleManager:
 
                     self.register(*declarations)
                 except Exception as e:
+                    utilities.debug_print("Unable to import module: {},".format(name), e, debug_level=2)
                     del module
 
 
