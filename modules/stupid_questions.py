@@ -13,8 +13,9 @@ class StupidQuestions:
     REDDIT_USER_AGENT = "discord:hawking:{} (by /u/hawking-py)".format(CONFIG_OPTIONS.get("version", "0.0.1"))
     SUBREDDIT = "NoStupidQuestions"
 
-    def __init__(self, hawking, *args, **kwargs):
+    def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
+        self.bot = bot
 
         ## Load module specific configs from 'stupid_questions.json' located in modules folder
         modules_folder_name = CONFIG_OPTIONS.get("modules_folder", "modules")
@@ -44,7 +45,7 @@ class StupidQuestions:
             speech_cog = self.hawking.get_speech_cog()
             await speech_cog.say.callback(speech_cog, ctx, message=question)
         else:
-            await self.bot.say("Sorry <@{}>, but I'm having trouble loading data from Reddit. Try again in a bit.".format(ctx.message.author.id))
+            await self.bot.say("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 
 
 def main():
