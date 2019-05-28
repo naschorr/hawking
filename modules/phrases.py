@@ -243,7 +243,14 @@ class Phrases:
             ## Pass a self arg to it now that the command.instance is set to self
             speech_cog = self.speech_cog
             say = speech_cog.say.callback
-            await say(speech_cog, ctx, message=message, ignore_char_limit=True)
+
+            ## Attempt to get a target channel
+            try:
+                target = ctx.message.mentions[0]
+            except:
+                target = None
+
+            await say(speech_cog, ctx, message=message, ignore_char_limit=True, target_member=target)
 
         ## Create a callback for music.music
         async def _music_callback(self, ctx):

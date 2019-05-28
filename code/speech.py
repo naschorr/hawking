@@ -12,6 +12,7 @@ import message_parser
 import dynamo_helper
 from discord import errors
 from discord.ext import commands
+from discord.member import Member
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -444,6 +445,7 @@ class Speech:
             self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         voter = ctx.message.author
+        ## Todo: Add extra skip logic when sending preset phrases to someone else?
         if(voter == state.current_speech.requester):
             await self.bot.say("<@{}> skipped their own speech.".format(voter.id))
             await state.skip_speech()
@@ -472,15 +474,18 @@ class Speech:
 
     ## Starts the TTS process! Creates and stores a ffmpeg player for the message to be played
     @commands.command(pass_context=True, no_pm=True)
-    async def say(self, ctx, *, message, ignore_char_limit=False):
+    async def say(self, ctx, *, message, ignore_char_limit=False, target_member=None):
         """Speaks your text aloud to your channel."""
 
         ## Todo: look into memoization of speech. Phrases.py's speech is a perfect candidate
 
-        ## Check that the requester is in a voice channel
-        voice_channel = ctx.message.author.voice_channel
+        ## Verify that the target/requester is in a channel
+        if (not target_member or not isinstance(target_member, Member)):
+            target_member = ctx.message.author
+
+        voice_channel = target_member.voice_channel
         if(voice_channel is None):
-            await self.bot.say("<@{}> isn't in a voice channel.".format(ctx.message.author.id))
+            await self.bot.say("<@{}> isn't in a voice channel.".format(target_member.id))
             self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
