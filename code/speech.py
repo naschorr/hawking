@@ -231,8 +231,12 @@ class SpeechState:
 
 
     ## Skips the currently playing speech (magic happens in speech_player)
-    async def skip_speech(self):
-        self.skip_votes.clear()
+    async def skip_speech(self, channel=None):
+        if (not channel):
+            channel = self.voice_client.channel
+
+        self.skip_votes = { voter for voter in self.skip_votes if voter.voice_channel == channel }
+
         if(self.is_speaking()):
             self.player.stop()
 
@@ -445,28 +449,26 @@ class Speech:
             self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         voter = ctx.message.author
-        ## Todo: Add extra skip logic when sending preset phrases to someone else?
         if(voter == state.current_speech.requester):
             await self.bot.say("<@{}> skipped their own speech.".format(voter.id))
-            await state.skip_speech()
+            await state.skip_speech(voter.voice_channel)
             ## Attempt to delete the command message
             await self.attempt_delete_command_message(ctx.message)
             return False
         elif(voter.id not in state.skip_votes):
-            state.skip_votes.add(voter.id)
+            state.skip_votes.add(voter)
 
-            ## Todo: filter total_votes by members actually in the channel
-            total_votes = len(state.skip_votes)
-            total_members = len(await state.get_members()) - 1  # Subtract one for the bot itself
+            total_votes = len([voter for voter in state.skip_votes if voter.voice_channel == state.voice_client.channel])
+            total_members = len([member for member in await state.get_members() if not member.bot])
             vote_percentage = ceil((total_votes / total_members) * 100)
 
             if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
-                await self.bot.say("Skip vote passed, skipping current speech.")
+                await self.bot.say("Skip vote passed by {}% of members. I'll skip the current speech.".format(vote_percentage))
                 await state.skip_speech()
                 return True
             else:
-                raw = "Skip vote added, currently at {}/{} or {}%/{}%"
-                await self.bot.say(raw.format(total_votes, self.skip_votes, vote_percentage, self.skip_percentage))
+                raw = "Skip vote added, currently at {}/{} or {}%"
+                await self.bot.say(raw.format(total_votes, total_members, vote_percentage))
 
         else:
             await self.bot.say("<@{}> has already voted!".format(voter.id))
