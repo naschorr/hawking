@@ -1,9 +1,12 @@
 import inspect
 import os
 import time
+from concurrent.futures import TimeoutError
+from collections import OrderedDict
 
 import discord
 from discord.ext import commands
+from discord.ext.commands.errors import CommandInvokeError
 
 import utilities
 import speech
@@ -95,6 +98,17 @@ class Hawking:
 
             self.dynamo_db.put(dynamo_helper.DynamoItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
+
+            ## Handy for debugging
+            # import traceback
+            # print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+            # traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
+
+            ## Permissions error?
+            if (isinstance(exception, CommandInvokeError) and isinstance(exception.original, TimeoutError)):
+                await self.bot.say("Sorry <@{}>, I'm not able to join the voice channel right now. Discord might be having issues, or I might not have permission to join."
+                    .format(ctx.message.author.id))
+                return
 
             ## Poorly handled (for now, until I can get more concrete examples in my database) error messages for users
             if ("code =" in str(exception)):
