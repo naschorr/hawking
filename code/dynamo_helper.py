@@ -1,25 +1,29 @@
 import boto3
 import base64
 import time
+import logging
 
 import utilities
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
+
 class DynamoItem:
     def __init__(self, discord_context, query, command, is_valid, error=None):
         author = discord_context.message.author
         channel = discord_context.message.channel
-        server = discord_context.message.server
+        guild = discord_context.message.guild
 
         self.user_id = int(author.id)
         self.user_name = "{}#{}".format(author.name, author.discriminator)
-        self.timestamp = int(discord_context.message.timestamp.timestamp() * 1000)
+        self.timestamp = int(discord_context.message.created_at.timestamp() * 1000)
         self.channel_id = channel.id
         self.channel_name = channel.name
-        self.server_id = server.id
-        self.server_name = server.name
+        self.server_id = guild.id
+        self.server_name = guild.name
 
         self.query = query
         self.command = command
@@ -90,7 +94,7 @@ class DynamoHelper:
                 return self.table.put_item(Item=dynamo_item.getDict())
             except Exception as e:
                 ## Don't let issues with dynamo tank the bot's functionality
-                utilities.debug_print("Exception while performing dynamo put", e, debug_level=1)
+                logger.exception("Exception while performing dynamo put")
                 return None
         else:
             return None

@@ -1,6 +1,9 @@
 import os
 import sys
 import json
+import logging
+import pathlib
+from logging.handlers import RotatingFileHandler
 
 ## Config
 CONFIG_OPTIONS = {}         # This'll be populated on import
@@ -24,35 +27,47 @@ def load_config():
 	return load_json(os.sep.join([get_root_path(), CONFIG_NAME]))
 
 
-def debug_print(*args, **kwargs):
-    """debug_print
-    Print the debug statement only if that statement's supplied debug_level kwarg is less than the
-    debug_level specified in config.json.
-    Commonly used levels:
-    0 - Extremely important, usually for extreme exceptions where something huge is going wrong
-    1 - Important, usually for exceptions that really shouldn't be happening, but probably won't
-        immediately tank the system
-    2 - Slightly important, usually for small exceptions that won't affect operation
-    3 - Not at all important, usually just for warnings
-    4 - For debugging only
-    """
-
-    ## Read and clean up the kwargs that'll be passed onto the print function
-    debug_print_level = kwargs.get(DEBUG_LEVEL_KEY, 0)
-    if(DEBUG_LEVEL_KEY in kwargs):
-        del kwargs[DEBUG_LEVEL_KEY]
-
-    ## Compare and print the message if necessary
-    if(debug_print_level <= CONFIG_OPTIONS.get(DEBUG_LEVEL_KEY, 0)):
-        print(*args, **kwargs)
-
-
 def is_linux():
     return ("linux" in PLATFORM)
 
 
 def is_windows():
     return ("win" in PLATFORM)
+
+
+def initialize_logging(logger):
+    FORMAT = "%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s"
+    formatter = logging.Formatter(FORMAT)
+    logging.basicConfig(format=FORMAT)
+
+    log_level = str(CONFIG_OPTIONS.get("log_level", "DEBUG"))
+    if (log_level == "DEBUG"):
+        logger.setLevel(logging.DEBUG)
+    elif (log_level == "INFO"):
+        logger.setLevel(logging.INFO)
+    elif (log_level == "WARNING"):
+        logger.setLevel(logging.WARNING)
+    elif (log_level == "ERROR"):
+        logger.setLevel(logging.ERROR)
+    elif (log_level == "CRITICAL"):
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.DEBUG)
+
+    ## Get the directory containing the logs and make sure it exists, creating it if it doesn't
+    log_dir = CONFIG_OPTIONS.get("log_dir", os.path.sep.join([get_root_path(), "logs"]))
+    pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)    # Basically a mkdir -p $log_dir
+
+    log_path = os.path.sep.join([log_dir, "clipster.log"])
+
+    ## Setup and add the rotating log handler to the logger
+    max_bytes = CONFIG_OPTIONS.get("log_max_bytes", 1024 * 1024 * 10)   # 10 MB
+    backup_count = CONFIG_OPTIONS.get("log_backup_count", 10)
+    rotating_log_handler = RotatingFileHandler(log_path, maxBytes=max_bytes, backupCount=backup_count)
+    rotating_log_handler.setFormatter(formatter)
+    logger.addHandler(rotating_log_handler)
+
+    return logger
 
 
 CONFIG_OPTIONS = load_config()
