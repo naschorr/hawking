@@ -43,3 +43,5 @@ modules/*.json
 # Ignore misc phrase files, but include default phrases
 phrases/*
 !phrases/phrases.json
+
+*.log

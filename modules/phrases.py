@@ -2,15 +2,22 @@ import json
 import os
 import random
 import re
-from discord import errors
-from discord.ext import commands
+import logging
+import asyncio
 
 import utilities
 import dynamo_helper
 from string_similarity import StringSimilarity
 
+from discord import errors
+from discord.ext import commands
+from discord.ext.commands.errors import MissingRequiredArgument
+
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
+
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
 class Phrase:
@@ -35,10 +42,10 @@ class PhraseGroup:
         if (isinstance(phrase, Phrase)):
             self.phrases[phrase.name] = phrase
         else:
-            utilities.debug_log("Couldn't add phrase: {}, as it's not a valid Phrase object".format(phrase), debug_level=2)
+            logger.error("Couldn't add phrase: {}, as it's not a valid Phrase object".format(phrase))
 
 
-class Phrases:
+class Phrases(commands.Cog):
     ## Keys
     PHRASES_KEY = "phrases"
     PHRASES_FILE_EXTENSION_KEY = "phrases_file_extension"
@@ -57,11 +64,11 @@ class Phrases:
     PHRASES_FOLDER_PATH = CONFIG_OPTIONS.get(PHRASES_FOLDER_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FOLDER]))
 
 
-    def __init__(self, hawking, bot, phrases_folder_path=None, **command_kwargs):
+    def __init__(self, hawking, bot, *args, **command_kwargs):
         self.hawking = hawking
         self.bot = bot
         self.phrases_file_extension = self.PHRASES_FILE_EXTENSION
-        self.phrases_folder_path = phrases_folder_path or self.PHRASES_FOLDER_PATH
+        self.phrases_folder_path = self.PHRASES_FOLDER_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
@@ -83,8 +90,8 @@ class Phrases:
     ## Properties
 
     @property
-    def speech_cog(self):
-        return self.hawking.get_speech_cog()
+    def audio_player_cog(self):
+        return self.hawking.get_audio_player_cog()
 
     @property
     def music_cog(self):
@@ -93,7 +100,7 @@ class Phrases:
     ## Methods
 
     ## Removes all existing phrases when the cog is unloaded
-    def __unload(self):
+    def cog_unload(self):
         self.remove_phrases()
 
 
@@ -140,7 +147,7 @@ class Phrases:
                     self.add_phrase(phrase)
                     phrase_group.add_phrase(phrase)
                 except Exception as e:
-                    utilities.debug_print(e, "Skipping...", debug_level=2)
+                    logger.warning("Skipping...", e)
                 else:
                     counter += 1
 
@@ -149,7 +156,8 @@ class Phrases:
                 self.phrase_groups[phrase_group.key] = phrase_group
 
                 ## Set up a dummy command for the category, to help with the help interface. See help_formatter.py
-                help_command = commands.Command(phrase_group.key, lambda noop: None, hidden=True, no_pm=True)
+                ## asyncio.sleep is just a dummy command since commands.Command needs some kind of async callback
+                help_command = commands.Command(self._create_noop_callback(), name=phrase_group.key, hidden=True, no_pm=True)
                 self.bot.add_command(help_command)
                 self.command_names.append(phrase_group.key) # Keep track of the 'parent' commands for later use
 
@@ -200,7 +208,7 @@ class Phrases:
                     phrases.append(phrase)
                     self.command_names.append(phrase_name)
                 except Exception as e:
-                    utilities.debug_print("Error loading {} from {}. Skipping...".format(phrase_raw, fd), e, debug_level=3)
+                    logger.warning("Error loading {} from {}. Skipping...".format(phrase_raw, fd), e)
 
         ## Todo: This doesn't actually result in the phrases in the help menu being sorted?
         return sorted(phrases, key=lambda phrase: phrase.name)
@@ -223,26 +231,34 @@ class Phrases:
 
         ## Manually build command to be added
         command = commands.Command(
-            phrase.name,
             self._create_phrase_callback(phrase.message, phrase.is_music),
+            name = phrase.name,
             **phrase.kwargs,
             **self.command_kwargs
         )
-        ## _phrase_callback doesn't have an instance linked to it, 
-        ## (not technically a method of Phrases?) so manually insert the correct instance anyway.
-        ## This also fixes the broken category label in the help page.
-        command.instance = self
+        ## Ensure that this command is linked to the Phrases cog
+        command.cog = self
 
         self.bot.add_command(command)
 
 
+    def _create_noop_callback(self):
+        '''
+        Build an async noop callback. This is used as a dummy callback for the help commands that make up the command
+        categories
+        '''
+
+        async def _noop_callback(ctx):
+            await asyncio.sleep(0)
+
+        return _noop_callback
+
+
     ## Build a dynamic callback to invoke the bot's say method
     def _create_phrase_callback(self, message, is_music=False):
-        ## Create a callback for speech.say
+        ## Create a callback for audio_player.play_audio
         async def _phrase_callback(self, ctx):
-            ## Pass a self arg to it now that the command.instance is set to self
-            speech_cog = self.speech_cog
-            say = speech_cog.say.callback
+            audio_player_cog = self.audio_player_cog
 
             ## Attempt to get a target channel
             try:
@@ -250,28 +266,27 @@ class Phrases:
             except:
                 target = None
 
-            await say(speech_cog, ctx, message=message, ignore_char_limit=True, target_member=target)
+            await audio_player_cog.play_audio(ctx, message, target_member=target, ignore_char_limit=True)
 
         ## Create a callback for music.music
-        async def _music_callback(self, ctx):
-            music_cog = self.music_cog
-            music = music_cog.music.callback
-            await music(music_cog, ctx, notes=message, ignore_char_limit=True)
+        # async def _music_callback(self, ctx):
+        #     music_cog = self.music_cog
+        #     await music_cog.music(ctx, message, ignore_char_limit=True)
 
         ## Return the appropriate callback
-        if(is_music):
-            return _music_callback
-        else:
-            return _phrase_callback
+        # if(is_music):
+        #     return _music_callback
+        # else:
+        return _phrase_callback
 
 
     ## Says a random phrase from the added phrases
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.command(no_pm=True)
     async def random(self, ctx):
-        """Says a random phrase from the list of phrases."""
+        """Says a random clip from the list of clips."""
 
-        random_phrase = random.choice(self.command_names)
-        command = self.bot.get_command(random_phrase)
+        random_clip = random.choice(self.command_names)
+        command = self.bot.get_command(random_clip)
         await command.callback(self, ctx)
 
 
@@ -290,10 +305,18 @@ class Phrases:
 
 
     ## Attempts to find the command whose description text most closely matches the provided message
-    @commands.command(pass_context=True, no_pm=True)
-    async def find(self, ctx, *, message):
+    @commands.command(no_pm=True)
+    async def find(self, ctx, *, search_text = None):
+        '''Find phrases that are similar to the search text'''
+
+        ## This method isn't ideal, as it breaks the command's signature. However it's the least bad option until
+        ## Command.error handling doesn't always call the global on_command_error
+        if (search_text is None):
+            await self.find_error(ctx, MissingRequiredArgument(ctx.command.params['search_text']))
+            return
+
         ## Strip all non alphanumeric and non whitespace characters out of the message
-        message = ''.join(char for char in message.lower() if (char.isalnum() or char.isspace()))
+        message = ''.join(char for char in search_text.lower() if (char.isalnum() or char.isspace()))
 
         most_similar_command = (None, 0)
         for phrase_group in self.phrase_groups.values():
@@ -317,12 +340,24 @@ class Phrases:
 
         if (most_similar_command[1] > self.find_command_minimum_similarity):
             command = self.bot.get_command(most_similar_command[0].name)
-            await self.bot.say("Hey <@{}>, I found the **{}{}** phrase.".format(
-                ctx.message.author.id, self.hawking.activation_str, most_similar_command[0].name
-            ))
             await command.callback(self, ctx)
         else:
-            await self.bot.say("I couldn't find anything close to that, sorry <@{}>.".format(ctx.message.author.id))
+            await ctx.send("I couldn't find anything close to that, sorry <@{}>.".format(ctx.message.author.id))
+
+    
+    @find.error
+    async def find_error(self, ctx, error):
+        '''
+        Find command error handler. Addresses some common error scenarios that on_command_error doesn't really help with
+        '''
+        
+        if (isinstance(error, MissingRequiredArgument)):
+            output_raw = "Sorry <@{}>, but I need something to search for! Why not try: **{}find {}**?"
+            await ctx.send(output_raw.format(
+                ctx.message.author.id,
+                CONFIG_OPTIONS.get("activation_str"),
+                random.choice(self.command_names)
+            ))
 
 
 def main():
