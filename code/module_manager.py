@@ -1,13 +1,17 @@
 import os
 import sys
-import importlib
+import logging
 import inspect
+import importlib
 from collections import OrderedDict
 
 import utilities
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
+
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
 class ModuleEntry:
@@ -54,6 +58,7 @@ class ModuleManager:
         if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
             cog_cls = module_entry.get_class_callable()
             self.bot.add_cog(cog_cls(*module_entry.args, **module_entry.kwargs))
+            logger.info("Registered cog: {} on bot.".format(module_entry.name))
 
 
     ## Finds and registers modules inside the modules folder
@@ -87,7 +92,7 @@ class ModuleManager:
 
                     self.register(*declarations)
                 except Exception as e:
-                    utilities.debug_print("Unable to import module: {},".format(name), e, debug_level=2)
+                    logger.exception("Unable to register module {} on bot.".format(name))
                     del module
 
 
@@ -96,7 +101,7 @@ class ModuleManager:
         try:
             importlib.reload(module)
         except Exception as e:
-            print("Error: ({}) reloading module: {}".format(e, module))
+            logger.error("Error: ({}) reloading module: {}".format(e, module))
             return False
         else:
             return True
@@ -131,9 +136,9 @@ class ModuleManager:
                 else:
                     self._reload_module(module_name)
             except Exception as e:
-                print("Error: {} when reloading cog: {}".format(e, module_name))
+                logger.error("Error: {} when reloading cog: {}".format(e, module_name))
             else:
                 counter += 1
 
-        print("Loaded {}/{} cogs.".format(counter, len(self.modules)))
+        logger.info("Loaded {}/{} cogs.".format(counter, len(self.modules)))
         return counter

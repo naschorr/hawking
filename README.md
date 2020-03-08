@@ -15,10 +15,8 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
 - `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
 - `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
-- `\music [options] [notes]` - Sings the [notes] aloud. See music.py's music() command docstring for more info about music structure. Note: requires the Music module.
 - `\fortune` - Tells you your magic 8 ball fortune!
 - `\stupidquestion` - Asks you a random, (potentially) stupid question from Reddit.
-- `\summon` - Summons the bot to join your voice channel.
 - `\help` - Show the help screen.
 
 ## Hosting it yourself
@@ -92,7 +90,10 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **skip_percentage** - Int - The minimum percentage of other users who need to request a skip before the currently playing speech will be skipped.
 
 #### Bot Configuration
-- **debug_level** - Int - The maximum threshold for printing debug statements to the terminal. Debug statements with a level of `0` are the most important, while statements with a level of `4` are the least important. See `debug_print()` in `utilities.py`.
+- **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.
+- **log_dir** - String - The path (relative to the root) where logs should be stored.
+- **log_max_bytes** - Int - The maximum size (in bytes) of a single log, before it should be rotated out. Defaults to 10MB.
+- **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
 - **token_file** - String - The name of the file containing the bot's Discord token.
 - **\_token_file_path** - String - Force the bot to use a specific token, rather than the normal `token.json` file. Remove the leading underscore to activate it.
 - **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
@@ -120,13 +121,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **char_limit** - Int - A hard character limit for messages to be sent to the text-to-speech engine.
 - **newline_replacement** - String - A string that'll replace all newline characters in the text sent to the text-to-speech engine.
 - **replace_emoji** - Boolean - If `true`, indicates that the bot should convert emoji into their textual form (ex. :thinking: -> "thinking face"). This isn't a perfect conversion, as Discord encodes emoji into their unicode representation before the bot is able to parse it. If this is set to `false`, then the bot will just strip out emoji completely, as if they weren't there.
-
-#### Music Configuration
-- **bpm** - Int - The default bpm for `\music` commands.
-- **octave** - Int - The default octave for `\music` commands.
-- **tone** - Boolean - Choose to use pure tones for musical notes instead of a simulated voice singing the notes.
-- **bad** - Boolean - Choose to make all `\music` commands comically worse. Think Cher's 'My Heart Will Go On' on the recorder.
-- **bad_percent** - Int - The percentage that the `bad` command makes music worse by.
 
 #### Stupid Question Configuration
 - **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one.

@@ -1,10 +1,16 @@
+import logging
 from random import choice
+
+import utilities
 
 import discord
 from discord.ext import commands
 
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
 
-class Fortune:
+
+class Fortune(commands.Cog):
     ## Defaults
     FORTUNES = [
         ## Positive
@@ -39,10 +45,10 @@ class Fortune:
         self.phrases = self.FORTUNES
 
 
-    @commands.command(pass_context=True, no_pm=True, brief="Tells you your magic 8 ball fortune!")
+    @commands.command(no_pm=True, brief="Tells you your magic 8 ball fortune!")
     async def fortune(self, ctx):
-        speech_cog = self.hawking.get_speech_cog()
-        await speech_cog.say.callback(speech_cog, ctx, message=choice(self.phrases))
+        audio_player_cog = self.hawking.get_audio_player_cog()
+        await audio_player_cog.play_audio(ctx, choice(self.phrases), ignore_char_limit=True)
 
 
 def main():

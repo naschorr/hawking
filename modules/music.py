@@ -1,6 +1,7 @@
 import re
 import math
 import random
+import logging
 from collections import OrderedDict
 
 import utilities
@@ -9,6 +10,9 @@ from discord.ext import commands
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
+
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
 class Note:
@@ -77,7 +81,7 @@ class MusicParser:
         def exit(self, char, string, **kwargs):
             for regex_string, handler in self.exit_dict.items():
                 match = re.match(regex_string, char)
-                utilities.debug_print("MATCHING", regex_string, char, handler.__self__.__class__.__name__, debug_level=4)
+                ## logger.debug("MATCHING {}, {}, {}".format(regex_string, char, handler.__self__.__class__.__name__))
                 if(match):
                     return handler(string, **kwargs)
 
@@ -90,7 +94,7 @@ class MusicParser:
     class StartState(BaseState):
         def enter(self, string, **kwargs):
             char = self.emit_char(string)
-            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
 
             return self.exit(char, string, **kwargs)
 
@@ -99,7 +103,7 @@ class MusicParser:
     class DurationState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, duration=int(char), **kwargs)
 
@@ -108,7 +112,7 @@ class MusicParser:
     class NoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, note=char, **kwargs)
 
@@ -117,7 +121,7 @@ class MusicParser:
     class SharpState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, sharp=char, **kwargs)
 
@@ -126,7 +130,7 @@ class MusicParser:
     class OctaveState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, octave=int(char), **kwargs)
 
@@ -135,7 +139,7 @@ class MusicParser:
     class NoteObjState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             beat_length = kwargs.get("beat_length", 0.25)
             duration = kwargs.get("duration", 1)
@@ -161,7 +165,7 @@ class MusicParser:
     class SubNoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            utilities.debug_print("Enter {} '{}' '{}'".format(self.__class__.__name__, consumed_str, char), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             note_obj = kwargs.get("note_obj")
             assert note_obj is not None
@@ -178,7 +182,7 @@ class MusicParser:
     ## Final output state
     class FinalState(BaseState):
         def enter(self, string, **kwargs):
-            utilities.debug_print("Enter {} '{}'".format(self.__class__.__name__, string), kwargs, debug_level=4)
+            ## logger.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
 
             note_obj = kwargs.get("note_obj")
             sub_notes = kwargs.get("sub_notes", [])
@@ -197,7 +201,7 @@ class MusicParser:
     ## Error handling state
     class ErrorState(BaseState):
         def enter(self, char, string):
-            utilities.debug_print("Error", char, string, debug_level=4)
+            logger.debug("Error in music state machine", char, string)
             return None
 
     ## End State Machine Classes
@@ -263,7 +267,12 @@ class MusicParser:
         return notes_list
 
 
-class Music:
+class Music(commands.Cog):
+    '''
+    Note that there's something wrong with the note parsing logic. It still works, but it takes waaay too long now. I'll
+    look into it later.
+    '''
+
     ## Keys
     BPM_KEY = "bpm"
     OCTAVE_KEY = "octave"
@@ -307,8 +316,8 @@ class Music:
     ## Properties
 
     @property
-    def speech_cog(self):
-        return self.hawking.get_speech_cog()
+    def audio_player_cog(self):
+        return self.hawking.get_audio_player_cog()
 
     ## Methods
 
@@ -421,8 +430,8 @@ class Music:
 
     ## Commands
 
-    @commands.command(pass_context=True, no_pm=True, brief="Sings the given notes aloud!")
-    async def music(self, ctx, *, notes, ignore_char_limit=False):
+    @commands.command(no_pm=True, brief="Sings the given notes aloud!")
+    async def music(self, ctx, notes, ignore_char_limit=False):
         """
         Sings the given notes aloud to your voice channel.
 
@@ -497,10 +506,10 @@ class Music:
         notes = MusicParser(message, beat_length, octave).notes
         tts_notes = self._build_tts_note_string(notes, **music_configs)
 
-        speech_cog = self.speech_cog
-        say = speech_cog.say.callback
-        await say(speech_cog, ctx, message=" ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
+        audio_player_cog = self.audio_player_cog
+        play_audio = audio_player_cog.play_audio
+        await play_audio(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
 
 
-def main():
-    return [Music, True]
+# def main():
+#     return [Music, True]
