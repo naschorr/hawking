@@ -91,7 +91,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 
 #### Bot Configuration
 - **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.
-- **log_dir** - String - The path (relative to the root) where logs should be stored.
+- **log_path** - String - The path where logs should be stored. If left empty, it will default to a `logs` folder inside the Hawking root.
 - **log_max_bytes** - Int - The maximum size (in bytes) of a single log, before it should be rotated out. Defaults to 10MB.
 - **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
 - **token_file** - String - The name of the file containing the bot's Discord token.
