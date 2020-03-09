@@ -15,7 +15,8 @@ PLATFORM = sys.platform
 
 def get_root_path():
 	## -1 includes this script itself in the realpath
-	return os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)])
+    p = os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)]
+    return os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)])
 
 
 def load_json(path):
@@ -55,19 +56,20 @@ def initialize_logging(logger):
         logger.setLevel(logging.DEBUG)
 
     ## Get the directory containing the logs and make sure it exists, creating it if it doesn't
-    log_dir = CONFIG_OPTIONS.get("log_dir", os.path.sep.join([get_root_path(), "logs"]))
-    pathlib.Path(log_dir).mkdir(parents=True, exist_ok=True)    # Basically a mkdir -p $log_dir
+    log_path = CONFIG_OPTIONS.get("log_path")
+    if (not log_path):
+        log_path = os.path.sep.join([get_root_path(), "logs"]) # Default logs to a 'logs' folder inside the hawking directory
 
-    log_path = os.path.sep.join([log_dir, "clipster.log"])
+    pathlib.Path(log_path).mkdir(parents=True, exist_ok=True)    # Basically a mkdir -p $log_path
+    log_file = os.path.sep.join([log_path, "hawking.log"])   # Build the true path to the log file
 
     ## Setup and add the rotating log handler to the logger
     max_bytes = CONFIG_OPTIONS.get("log_max_bytes", 1024 * 1024 * 10)   # 10 MB
     backup_count = CONFIG_OPTIONS.get("log_backup_count", 10)
-    rotating_log_handler = RotatingFileHandler(log_path, maxBytes=max_bytes, backupCount=backup_count)
+    rotating_log_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
     rotating_log_handler.setFormatter(formatter)
     logger.addHandler(rotating_log_handler)
 
     return logger
-
 
 CONFIG_OPTIONS = load_config()
