@@ -5,7 +5,7 @@
     "description"                           : "A retro TTS bot for Discord. Contribute or star me at https://github.com/naschorr/hawking",
     "announce_updates"                      : true,
     "delete_commands"                       : false,
-    "channel_timeout_seconds"               : 900,
+    "channel_timeout_seconds"               : 300,
     "channel_timeout_phrases"               : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "ight i'm a head out"],
     "skip_votes"                            : 3,
     "skip_percentage"                       : 33,
