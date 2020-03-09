@@ -15,7 +15,6 @@ PLATFORM = sys.platform
 
 def get_root_path():
 	## -1 includes this script itself in the realpath
-    p = os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)]
     return os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)])
 
 
