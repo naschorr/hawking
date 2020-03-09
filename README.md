@@ -20,14 +20,15 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\help` - Show the help screen.
 
 ## Hosting it yourself
-- Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but older versions with `virtualenv` and `pyvenv` should also work.)
+- Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but Discord.py requires at least 3.5.3 currently)
+- Double check that you're installing int a clean directory. If there's an old version of Hawking or an old venv then this likely won't work!
 - `cd` into the directory that you'd like the project to go (If you're on Linux, I'd recommend '/usr/local/bin')
 - `git clone https://github.com/naschorr/hawking`
-- `python3 -m venv hawing/`
-    + You may need to run: `apt install python3-venv` to enable virtual environments for Python 3 on Linux
+- `python3.6 -m venv hawking/`
+    + You may need to run: `apt install python3.6-venv` to enable virtual environments for Python 3.6 on Linux
 - Activate your newly created venv
 - `pip install -r requirements.txt`
-    + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.5-dev` to install some supplemental features for the setup process.
+    + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.6-dev` to install some supplemental features for the setup process.
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
 - Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `hawking/token.json`
 - Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=53803072`, but make sure to replace CLIENT_ID with your bot's client id.
