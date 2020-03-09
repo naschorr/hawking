@@ -40,12 +40,6 @@
     "newline_replacement"                   : "[_<250,10>]",
     "replace_emoji"                         : true,
 
-    "bpm"                                   : 100,
-    "octave"                                : 2,
-    "tone"                                  : false,
-    "bad"                                   : false,
-    "bad_percent"                           : 10,
-
     "stupid_question_subreddits"            : ["NoStupidQuestions", "AskRedditAfterDark", "stupidquestions", "TooAfraidToAsk"],
 
     "boto_enable"                           : false,
