@@ -123,11 +123,11 @@ class ServerStateManager:
             )
 
         if (self.ctx.voice_client is not None):
-            ## Check to see if the bot is already in the correct channel
-            if (self.ctx.voice_client.channel.id == channel.id):
-                return self.ctx.voice_client
-            else:
-                return await self.ctx.voice_client.move_to(channel)
+            ## Check to see if the bot isn't already in the correct channel
+            if (self.ctx.voice_client.channel.id != channel.id):
+                await self.ctx.voice_client.move_to(channel)
+
+            return self.ctx.voice_client
         else:
             ## NOTE: There's an issue where if you reset the app, while the bot is connected to a voice channel, upon the 
             ## bot reconnecting and joining the same voice channel, playing audio won't work.
