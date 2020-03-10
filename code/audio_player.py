@@ -9,11 +9,13 @@ import logging
 from math import ceil
 from random import choice
 from typing import Callable
+from concurrent import futures
 
 import utilities
 import dynamo_helper
 import message_parser
 import tts_controller
+import exceptions
 
 import discord
 from discord import errors
@@ -110,6 +112,16 @@ class ServerStateManager:
     async def get_voice_client(self, channel: discord.VoiceChannel):
         '''Handles voice client management by connecting, and moving between voice channels'''
 
+        ## Make sure the bot can actually connect to the requested VoiceChannel
+        permissions = channel.guild.me.permissions_in(channel)
+        if (not permissions.connect or not permissions.speak):
+            raise exceptions.UnableToConnectToVoiceChannelException(
+                "Unable to speak and/or connect to the channel",
+                channel,
+                can_speak=permissions.speak,
+                can_connect=permissions.connect
+            )
+
         if (self.ctx.voice_client is not None):
             ## Check to see if the bot is already in the correct channel
             if (self.ctx.voice_client.channel.id == channel.id):
@@ -122,12 +134,10 @@ class ServerStateManager:
             ## See: https://github.com/Rapptz/discord.py/issues/2284
             already_in_channel = next(filter(lambda member: member.id == self.bot.user.id, channel.members), None)
             if (already_in_channel):
-                logger.warning("Bot is already in requested channel, but no voice client exists.")
-                await self.ctx.send(
-                    "Uh oh <@{}>, looks like I'm still in the channel! Wait until I disconnect before trying again."
-                    .format(self.ctx.message.author.id)
+                raise exceptions.AlreadyInVoiceChannelException(
+                    "Old instance of bot already exists in the channel",
+                    channel
                 )
-                return
 
         return await channel.connect()
 
@@ -193,12 +203,43 @@ class ServerStateManager:
                     if (self.ctx.voice_client and self.ctx.voice_client.is_connected()):
                         self.bot.loop.create_task(self.disconnect(inactive=True))
                     continue
-                except asyncio.CancelledError as e:
+                except asyncio.CancelledError:
                     logger.exception("CancelledError during audio_player_loop, ignoring and continuing loop.")
                     continue
 
-                ## Join the requester's voice channel & play their clip
-                voice_client = await self.get_voice_client(self.active_play_request.channel)
+                ## Join the requester's voice channel & play their clip (Or Handle the appropriate exception)
+                voice_client = None
+                try:
+                    voice_client = await self.get_voice_client(self.active_play_request.channel)
+                except futures.TimeoutError:
+                    logger.error("Timed out trying to connect to the voice channel")
+
+                    await self.ctx.send("Sorry <@{}>, I can't connect to that channel right now.".format(active_play_request.member.id))
+                    continue
+
+                except exceptions.UnableToConnectToVoiceChannelException as e:
+                    logger.error("Unable to connect to voice channel")
+
+                    required_permission_phrases = []
+                    if (not e.can_connect):
+                        required_permission_phrases.append("connect to that channel")
+                    if (not e.can_speak):
+                        required_permission_phrases.append("speak in that channel")
+
+                    await self.ctx.send("Sorry <@{}>, I don't have permission to {}.".format(
+                        self.ctx.message.author.id,
+                        " or ".join(required_permission_phrases)
+                    ))
+                    continue
+
+                except exceptions.AlreadyInVoiceChannelException as e:
+                    logger.error("Unable to connect to voice channel, old instance of the bot already exists")
+
+                    await self.ctx.send(
+                        "Uh oh <@{}>, looks like I'm still in the channel! Wait until I disconnect before trying again."
+                        .format(self.ctx.message.author.id)
+                    )
+                    continue
 
                 if (voice_client.is_playing()):
                     voice_client.stop()
