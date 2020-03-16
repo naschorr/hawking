@@ -6,15 +6,13 @@ import async_timeout
 import time
 import inspect
 import logging
-from math import ceil
-from random import choice
+import random
+import math
 from typing import Callable
 from concurrent import futures
 
 import utilities
 import dynamo_helper
-import message_parser
-import tts_controller
 import exceptions
 
 import discord
@@ -22,11 +20,10 @@ from discord import errors
 from discord.ext import commands
 from discord.member import Member
 
-## Config
+## Config & logging
 CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
 logger = utilities.initialize_logging(logging.getLogger(__name__))
+
 
 class AudioPlayRequest:
     '''
@@ -60,19 +57,18 @@ class ServerStateManager:
     This class helps to manage the bot, initiate audio play requests, and move between channels.
     '''
 
-    def __init__(self, ctx, bot: commands.Bot, audio_player_cog):
+    def __init__(self, ctx, bot: commands.Bot, audio_player_cog, channel_timeout_handler = None):
         self.ctx = ctx
         self.bot = bot
         self.audio_player_cog = audio_player_cog
-        self.active_play_request = None
+        self.active_play_request: AudioPlayRequest = None
         self.next = asyncio.Event() # flag for alerting the audio_player to play the next AudioPlayRequest
         self.skip_votes = set() # set of Members that voted to skip
         self.audio_play_queue = asyncio.Queue() # queue of AudioPlayRequest to play
         self.audio_player = self.bot.loop.create_task(self.audio_player_loop())
 
-        ## Lazy config
         self.channel_timeout_seconds = int(CONFIG_OPTIONS.get('channel_timeout_seconds', 15 * 60))
-        self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
+        self.channel_timeout_handler = channel_timeout_handler
 
     ## Property(s)
 
@@ -87,11 +83,15 @@ class ServerStateManager:
 
     ## Methods
 
-    async def get_members(self) -> set:
+    async def get_members(self, include_bots = False) -> list:
         '''Returns a set of members in the current voice channel'''
 
-        ## todo: does this include bots?
-        return self.active_play_request.channel.members
+        members = self.active_play_request.channel.members
+
+        if (include_bots):
+            return members
+        else:
+            return [member for member in members if member.bot == False]
 
 
     def is_playing(self) -> bool:
@@ -146,10 +146,11 @@ class ServerStateManager:
         '''Skips the currently playing audio. If more audio is queued up, it will be played immediately.'''
 
         if(self.is_playing()):
-            logger.debug("Skipping file at: {}, in channel: {}, in server: {}".format(
+            logger.debug("Skipping file at: {}, in channel: {}, in server: {}, for user: {}".format(
                 self.active_play_request.file_path,
                 self.ctx.voice_client.channel.name,
-                self.ctx.guild.name
+                self.ctx.guild.name,
+                self.active_play_request.member.name if self.active_play_request.member else None
             ))
 
             self.ctx.voice_client.stop()
@@ -170,13 +171,8 @@ class ServerStateManager:
                 self.channel_timeout_seconds
             ))   
 
-        if (inactive and len(self.channel_timeout_phrases) > 0):
-            ## Play a random sign off clip before disconnecting
-            await self.audio_player_cog._play_audio_via_server_state(
-                self,
-                choice(self.channel_timeout_phrases),
-                self.ctx.voice_client.disconnect
-            )
+        if (inactive and self.channel_timeout_handler):
+            await self.channel_timeout_handler(self, self.ctx.voice_client.disconnect)
             return
 
         ## Default to a regular voice client disconnect
@@ -207,7 +203,7 @@ class ServerStateManager:
                     logger.exception("CancelledError during audio_player_loop, ignoring and continuing loop.")
                     continue
 
-                ## Join the requester's voice channel & play their clip (Or Handle the appropriate exception)
+                ## Join the requester's voice channel & play their requested audio (Or Handle the appropriate exception)
                 voice_client = None
                 try:
                     voice_client = await self.get_voice_client(self.active_play_request.channel)
@@ -249,6 +245,8 @@ class ServerStateManager:
                     current_active_play_request = active_play_request
                     
                     def after_play(_):
+                        self.skip_votes.clear()
+
                         if (id(self.active_play_request) == id(current_active_play_request)):
                             self.next.set()
 
@@ -277,22 +275,21 @@ class ServerStateManager:
 
 class AudioPlayer(commands.Cog):
     ## Keys
-    SKIP_VOTES_KEY = "skip_votes"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
 
-    def __init__(self, bot: commands.Bot, **kwargs):
+    def __init__(self, bot: commands.Bot, channel_timeout_handler, **kwargs):
         self.bot = bot
         self.server_states = {}
-        self.skip_votes = int(CONFIG_OPTIONS.get(self.SKIP_VOTES_KEY, 3))
-        self.skip_percentage = int(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 33))
+        self.channel_timeout_handler = channel_timeout_handler
+        self.dynamo_db = dynamo_helper.DynamoHelper()
+
+        ## Clamp between 0.0 and 1.0
+        self.skip_percentage = max(min(float(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
         self.ffmpeg_parameters = CONFIG_OPTIONS.get(self.FFMPEG_PARAMETERS_KEY, "")
         self.ffmpeg_post_parameters = CONFIG_OPTIONS.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
-        self.dynamo_db = dynamo_helper.DynamoHelper()
-        self.message_parser = message_parser.MessageParser()
-        self.tts_controller = tts_controller.TTSController()
 
     ## Methods
 
@@ -303,17 +300,10 @@ class AudioPlayer(commands.Cog):
         server_state = self.server_states.get(server_id, None)
 
         if (server_state is None):
-            server_state = ServerStateManager(ctx, self.bot, self)
+            server_state = ServerStateManager(ctx, self.bot, self, self.channel_timeout_handler)
             self.server_states[server_id] = server_state
 
         return server_state
-
-
-    def is_matching_command(self, string, command) -> bool:
-        '''Checks if a given command fits into the back of a string (ex. '\say' matches 'say')'''
-
-        to_check = string[len(command):]
-        return (command == to_check)
 
 
     def build_player(self, file_path) -> discord.FFmpegPCMAudio:
@@ -328,85 +318,80 @@ class AudioPlayer(commands.Cog):
     ## Commands
 
     @commands.command(no_pm=True)
-    async def skip(self, ctx, **kwargs):
-        """Vote to skip the current audio."""
+    async def skip(self, ctx, force = False):
+        '''Vote to skip the current audio.'''
 
         state = self.get_server_state(ctx)
 
+        ## Is the bot speaking?
         if(not state.is_playing()):
             await ctx.send("I'm not speaking at the moment.")
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
-        else:
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
-        voter = ctx.message.author
-        ## Todo: Add extra skip logic when sending preset phrases to someone else?
-        if(voter == state.active_play_request.member):
-            await ctx.send("<@{}> skipped their own audio.".format(voter.id))
+        ## Handle forced skips (should pretty much always be from an admin/bot owner)
+        if (force):
             state.skip_audio()
+            await ctx.send("<@{}> has skipped the audio.".format(ctx.message.author.id))
+            return True
+
+        ## Add a skip vote and tally it up!
+        voter = ctx.message.author
+        if(voter == state.active_play_request.member):
+            state.skip_audio()
+            await ctx.send("<@{}> skipped their own audio.".format(voter.id))
             return False
+
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
 
-            ## Todo: filter total_votes by members actually in the channel
-            total_votes = len(state.skip_votes)
-            total_members = len(await state.get_members()) - 1  # todo: filter out all bots
-            vote_percentage = ceil((total_votes / total_members) * 100)
+            ## Ensure all voters are still in the current channel (no drive-by skipping)
+            active_members = await state.get_members()
+            active_voters = [voter for voter in state.skip_votes if any(voter == member.id for member in active_members)]
+            total_votes = len(active_voters)
 
-            if(total_votes >= self.skip_votes or vote_percentage >= self.skip_percentage):
-                await ctx.send("Skip vote passed, skipping current audio.")
+            ## Determine if a skip should happen or not
+            vote_percentage = total_votes / len(active_members)
+            if(vote_percentage >= self.skip_percentage):
                 state.skip_audio()
+                await ctx.send("Skip vote passed! Skipping the current audio right now.")
                 return True
+
             else:
-                raw = "Skip vote added, currently at {}/{} or {}%/{}%"
-                await ctx.send(raw.format(total_votes, self.skip_votes, vote_percentage, self.skip_percentage))
+                ## The total votes needed for a successful skip
+                required_votes = math.ceil(len(active_members) * self.skip_percentage)
+
+                raw = "Skip vote added! Currently at {} of {} votes."
+                await ctx.send(raw.format(total_votes, required_votes))
+
         else:
             await ctx.send("<@{}> has already voted!".format(voter.id))
 
 
-    ## Interface for playing the clip for the invoker's channel
-    async def play_audio(self, ctx, message: str, target_member = None, ignore_char_limit = False):
-        """Plays the given clip aloud to your channel"""
+    ## Interface for playing the audio file for the invoker's channel
+    async def play_audio(self, ctx, file_path: str, target_member = None):
+        '''Plays the given audio file aloud to your channel'''
 
         ## Verify that the target/requester is in a channel
         if (not target_member or not isinstance(target_member, Member)):
             target_member = ctx.message.author
-
-        ## Make sure the message isn't too long
-        if(not self.tts_controller.check_length(message) and not ignore_char_limit):
-            await ctx.send("Keep phrases less than {} characters.".format(self.tts_controller.char_limit))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
-            return False
 
         voice_channel = None
         if (target_member.voice):   ## Handle users not in a voice channel
             voice_channel = target_member.voice.channel
         if(voice_channel is None):
             await ctx.send("<@{}> isn't in a voice channel.".format(target_member.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
-        ## Parse down the message before sending it to the TTS service
-        message = self.message_parser.parse_message(message, ctx.message)
-
-        ## Build the audio file for speaking
-        wav_path = None
-        try:
-            wav_path = await self.tts_controller.save(message, ignore_char_limit)
-            if (not wav_path):
-                raise RuntimeError("Unable to save .wav file for phrase")
-        except Exception:
-            logger.exception("Unable to get .wav file")
-            await ctx.send("Sorry, <@{}>, I can't say that phrase right now.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(
-                ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+        ## Make sure file_path points to an actual file
+        if (not os.path.isfile(file_path)):
+            logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
+            await ctx.send("Sorry, <@{}>, that couldn't be played.".format(ctx.message.author.id))
             return False
 
         ## Get/Build a state for this audio, build the player, and add it to the state
         state = self.get_server_state(ctx)
-        player = self.build_player(wav_path)
-        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, wav_path))
+        player = self.build_player(file_path)
+        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path))
 
         self.dynamo_db.put(dynamo_helper.DynamoItem(
             ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
@@ -414,33 +399,19 @@ class AudioPlayer(commands.Cog):
         return True
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, message: str, callback = None):
-        '''Internal method for playing clips without a requester. Instead it'll play from the active voice_client.'''
+    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback = None):
+        '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
 
-        ## Build the audio file for speaking
-        wav_path = None
-        try:
-            wav_path = await self.tts_controller.save(message, True)
-            if (not wav_path):
-                raise RuntimeError("Unable to save .wav file for phrase")
-        except Exception:
-            logger.exception("Unable to get .wav file")
-            self.dynamo_db.put(dynamo_helper.DynamoItem(
-                server_state.ctx, server_state.ctx.message.content, inspect.currentframe().f_code.co_name, False))
+        ## Make sure file_path points to an actual file
+        if (not os.path.isfile(file_path)):
+            logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             return False
 
-        ## Create a player for the clip
-        player = self.build_player(wav_path)
+        ## Create a player for the audio file
+        player = self.build_player(file_path)
 
         ## On successful player creation, build a AudioPlayRequest and push it into the queue
-        play_request = AudioPlayRequest(None, server_state.ctx.voice_client.channel, player, wav_path, callback)
+        play_request = AudioPlayRequest(None, server_state.ctx.voice_client.channel, player, file_path, callback)
         await server_state.add_play_request(play_request)
 
         return True
-
-
-    @commands.command(no_pm=True)
-    async def say(self, ctx, *, message):
-        """Speaks your text aloud to your current channel."""
-
-        await self.play_audio(ctx, message)

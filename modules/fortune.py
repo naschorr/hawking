@@ -47,8 +47,8 @@ class Fortune(commands.Cog):
 
     @commands.command(no_pm=True, brief="Tells you your magic 8 ball fortune!")
     async def fortune(self, ctx):
-        audio_player_cog = self.hawking.get_audio_player_cog()
-        await audio_player_cog.play_audio(ctx, choice(self.phrases), ignore_char_limit=True)
+        speech_cog = self.hawking.get_speech_cog()
+        await speech_cog.say(ctx, choice(self.phrases), ignore_char_limit=True)
 
 
 def main():

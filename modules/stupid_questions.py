@@ -67,7 +67,7 @@ class StupidQuestions(commands.Cog):
             return
         self.is_mid_question_refresh = True
 
-        logger.debug("Loading questions from reddit: top({}), {} submissions".format(
+        logger.info("Loading questions from reddit: top({}), {} submissions".format(
             self.submission_top_time,
             self.submission_count
         ))
@@ -86,7 +86,7 @@ class StupidQuestions(commands.Cog):
         self.questions = questions
         self.is_mid_question_refresh = False
 
-        logger.debug("{} questions loaded at {}".format(len(self.questions), time.asctime()))
+        logger.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
 
 
     def get_question(self) -> str:
@@ -103,7 +103,7 @@ class StupidQuestions(commands.Cog):
         question = self.get_question()
 
         if (question):
-            await self.hawking.get_audio_player_cog().play_audio(ctx, question, ignore_char_limit=True)
+            await self.hawking.get_speech_cog().say(ctx, question, ignore_char_limit = True)
             await ctx.send("Hey <@{}>, {} ```{}```".format(ctx.message.author.id, random.choice(self.THOUGHT_PROVOKING_STRINGS), question))
         else:
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
