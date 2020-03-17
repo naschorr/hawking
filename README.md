@@ -87,8 +87,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
 - **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
 - **channel_timeout_phrases** - Array - Array of strings that the bot can speak right before it leaves. One phrase is chosen randomly from the array.
-- **skip_votes** - Int - The minimum number of votes needed by a channel to skip the currently playing speech.
-- **skip_percentage** - Int - The minimum percentage of other users who need to request a skip before the currently playing speech will be skipped.
+- **skip_percentage** - Float - The minimum percentage of other users who need to request a skip before the currently playing audio will be skipped. Must be a floating point number between 0.0 and 1.0 inclusive.
 
 #### Bot Configuration
 - **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.

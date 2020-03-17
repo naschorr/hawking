@@ -102,25 +102,16 @@ class Admin(commands.Cog):
 
 
     ## Skips the currently playing audio (admin only)
-    ## Todo: merge with AudioPlayer.skip
     @admin.command(no_pm=True)
     async def skip(self, ctx):
         """Skips the current audio."""
 
         if(not self.is_admin(ctx.message.author)):
+            logger.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
-        state = self.audio_player_cog.get_server_state(ctx)
-        if(not state.is_playing()):
-            await ctx.send("I'm not speaking at the moment.")
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
-            return False
-
-        await ctx.send("Admin <@{}> has skipped the audio.".format(ctx.message.author.id))
-        await state.skip_audio()
-        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        await self.audio_player_cog.skip(ctx, force = True)
         return True
 
 
