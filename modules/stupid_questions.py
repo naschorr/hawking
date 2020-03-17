@@ -1,6 +1,7 @@
 import os
 import logging
 import random
+import time
 
 import utilities
 
@@ -17,7 +18,7 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 class StupidQuestions(commands.Cog):
     REDDIT_USER_AGENT = "discord:hawking:{} (by /u/hawking-py)".format(CONFIG_OPTIONS.get("version", "0.0.1"))
-    THOUGH_PROVOKING_STRINGS = [
+    THOUGHT_PROVOKING_STRINGS = [
         "🤔?",
         "have you ever pondered:",
         "what do you think about this:",
@@ -32,8 +33,16 @@ class StupidQuestions(commands.Cog):
 
     def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
-        self.bot = bot
+        self.bot = bot 
 
+        self.questions = []
+        self.is_mid_question_refresh = False
+        self.last_question_refresh_time = time.time()
+
+        ## Load config data
+        self.submission_top_time = CONFIG_OPTIONS.get("stupid_question_top_time", "month")
+        self.submission_count = CONFIG_OPTIONS.get("stupid_question_submission_count", 500)
+        self.refresh_time_seconds = CONFIG_OPTIONS.get("stupid_question_refresh_time_seconds", 21600)
         ## Load module specific configs from 'stupid_questions.json' located in modules folder
         modules_folder_name = CONFIG_OPTIONS.get("modules_folder", "modules")
         config = utilities.load_json(os.path.sep.join([utilities.get_root_path(), modules_folder_name, "stupid_questions.json"]))
@@ -47,23 +56,55 @@ class StupidQuestions(commands.Cog):
             self.subreddit = self.reddit.subreddit("+".join(subreddits))
         except Exception:
             logger.exception("Unable to create reddit/subreddit instance")
-        
-    def get_question(self):
+
+        self.bot.loop.create_task(self.load_questions())
+
+
+    async def load_questions(self) -> None:
+        ## Don't try to pull more data from Reddit if it's already happening
+        if (self.is_mid_question_refresh):
+            logger.debug("Skipping load_questions as they're already being refreshed.")
+            return
+        self.is_mid_question_refresh = True
+
+        logger.info("Loading questions from reddit: top({}), {} submissions".format(
+            self.submission_top_time,
+            self.submission_count
+        ))
+
+        questions = []
         try:
-            submission = self.subreddit.random()
+            submission_generator = self.subreddit.top(self.submission_top_time, limit=self.submission_count)
         except Exception:
             logger.exception("Unable to load submission from Reddit.")
-            return None
+            return
 
-        return submission.title
+        for submission in submission_generator:
+            questions.append(submission.title)
 
-    @commands.command(no_pm=True, name="stupidquestion", brief="Ask a stupid question, via Reddit.")
+        self.last_question_refresh_time = time.time()
+        self.questions = questions
+        self.is_mid_question_refresh = False
+
+        logger.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
+
+
+    def get_question(self) -> str:
+        if (time.time() > self.last_question_refresh_time + self.refresh_time_seconds):
+            self.bot.loop.create_task(self.load_questions())
+
+        if (len(self.questions) > 0):
+            return random.choice(self.questions)
+        return None
+
+
+    @commands.command(name="stupidquestion", brief="Ask a stupid question, via Reddit.")
     async def stupid_question(self, ctx):
         question = self.get_question()
+
         if (question):
-            audio_player_cog = self.hawking.get_audio_player_cog()
-            await audio_player_cog.play_audio(ctx, question, ignore_char_limit=True)
-            await ctx.send("Hey <@{}>, {} ```{}```".format(ctx.message.author.id, random.choice(self.THOUGH_PROVOKING_STRINGS), question))
+            await self.hawking.get_speech_cog().say(ctx, question, ignore_char_limit = True)
+            await ctx.send("Hey <@{}>, {} ```{}```".format(ctx.message.author.id, random.choice(self.THOUGHT_PROVOKING_STRINGS), question))
         else:
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 

@@ -11,7 +11,7 @@ from discord.ext.commands.errors import CommandInvokeError
 
 import utilities
 import audio_player
-import tts_controller
+import speech
 import admin
 import message_parser
 import help_command
@@ -75,8 +75,9 @@ class Hawking:
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
         self.module_manager.register(message_parser.MessageParser, False)
-        self.module_manager.register(audio_player.AudioPlayer, True, self.bot)
         self.module_manager.register(admin.Admin, True, self, self.bot)
+        self.module_manager.register(speech.Speech, True, self)
+        self.module_manager.register(audio_player.AudioPlayer, True, self.bot, self.get_speech_cog().play_random_channel_timeout_message)
 
         ## Load any dynamic modules inside the /modules folder
         self.module_manager.discover()
@@ -137,6 +138,11 @@ class Hawking:
     ## Returns the bot's audio player cog
     def get_audio_player_cog(self):
         return self.bot.get_cog("AudioPlayer")
+
+
+    ## Returns the bot's audio player cog
+    def get_speech_cog(self):
+        return self.bot.get_cog("Speech")
 
 
     ## Returns the bot's phrases cog

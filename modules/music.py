@@ -506,10 +506,8 @@ class Music(commands.Cog):
         notes = MusicParser(message, beat_length, octave).notes
         tts_notes = self._build_tts_note_string(notes, **music_configs)
 
-        audio_player_cog = self.audio_player_cog
-        play_audio = audio_player_cog.play_audio
-        await play_audio(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
+        await self.speech_cog.say(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
 
 
-# def main():
-#     return [Music, True]
+def main():
+    return [Music, False]

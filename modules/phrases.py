@@ -90,8 +90,8 @@ class Phrases(commands.Cog):
     ## Properties
 
     @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
+    def speech_cog(self):
+        return self.hawking.get_speech_cog()
 
     @property
     def music_cog(self):
@@ -161,7 +161,7 @@ class Phrases(commands.Cog):
                 self.bot.add_command(help_command)
                 self.command_names.append(phrase_group.key) # Keep track of the 'parent' commands for later use
 
-        print("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
+        logger.info("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
 
 
@@ -256,17 +256,15 @@ class Phrases(commands.Cog):
 
     ## Build a dynamic callback to invoke the bot's say method
     def _create_phrase_callback(self, message, is_music=False):
-        ## Create a callback for audio_player.play_audio
+        ## Create a callback for speech.say
         async def _phrase_callback(self, ctx):
-            audio_player_cog = self.audio_player_cog
-
             ## Attempt to get a target channel
             try:
                 target = ctx.message.mentions[0]
             except:
                 target = None
 
-            await audio_player_cog.play_audio(ctx, message, target_member=target, ignore_char_limit=True)
+            await self.speech_cog.say(ctx, message)#, target_member = target, ignore_char_limit = True)
 
         ## Create a callback for music.music
         # async def _music_callback(self, ctx):

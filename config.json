@@ -1,5 +1,5 @@
 {
-    "version"                               : "1.0.3",
+    "version"                               : "1.1.0",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : "A retro TTS bot for Discord. Contribute or star me at https://github.com/naschorr/hawking",
@@ -7,7 +7,6 @@
     "delete_commands"                       : false,
     "channel_timeout_seconds"               : 300,
     "channel_timeout_phrases"               : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "ight i'm a head out"],
-    "skip_votes"                            : 3,
     "skip_percentage"                       : 33,
 
     "log_level"                             : "DEBUG",
@@ -41,6 +40,9 @@
     "replace_emoji"                         : true,
 
     "stupid_question_subreddits"            : ["NoStupidQuestions", "AskRedditAfterDark", "stupidquestions", "TooAfraidToAsk"],
+    "stupid_question_top_time"              : "month",
+    "stupid_question_submission_count"      : 250,
+    "stupid_question_refresh_time_seconds"  : 21600,
 
     "boto_enable"                           : false,
     "boto_resource"                         : "dynamodb",
