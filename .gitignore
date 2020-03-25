@@ -44,4 +44,6 @@ modules/*.json
 phrases/*
 !phrases/phrases.json
 
+# Ignore logfiles
+logs/*
 *.log

@@ -143,7 +143,10 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
 
         ## Initial setup
         self.paginator = Paginator()
-        phrase_groups = self.context.bot.get_cog("Phrases").phrase_groups
+        phrase_cog = self.context.bot.get_cog("Phrases")
+        phrase_groups = None
+        if (phrase_cog != None):
+            phrase_groups = phrase_cog.phrase_groups
 
         self.dump_header_boilerplate()
 
@@ -151,15 +154,16 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
         self.dump_commands()
 
         ## Dump the base phrase commands
-        phrases_group = phrase_groups["phrases"]
-        if(phrases_group):
-            self.dump_phrase_group(phrases_group)
+        if (phrase_groups != None):
+            phrases_group = phrase_groups["phrases"]
+            if(phrases_group):
+                self.dump_phrase_group(phrases_group)
 
-        ## Dump the names of the additional phrases. Don't print their commands because that's too much info.
-        ## This is a help interface, not a CVS receipt
-        self.dump_phrase_categories(phrase_groups)
+            ## Dump the names of the additional phrases. Don't print their commands because that's too much info.
+            ## This is a help interface, not a CVS receipt
+            self.dump_phrase_categories(phrase_groups)
 
-        self.dump_footer_boilerplate(list(phrase_groups.keys()))
+            self.dump_footer_boilerplate(list(phrase_groups.keys()))
 
         await self.send_pages()
 
