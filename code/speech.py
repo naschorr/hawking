@@ -238,11 +238,8 @@ class Speech(commands.Cog):
 
         return wav_path
 
-    ## Commands
-
-    @commands.command(no_pm=True)
-    async def say(self, ctx, message, target_member = None, ignore_char_limit = False):
-        '''Speaks your text aloud to your current channel.'''
+    async def _say(self, ctx, message, target_member = None, ignore_char_limit = False):
+        '''Internal say method, for use with presets and anything else that generates phrases on the fly'''
 
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
@@ -259,3 +256,11 @@ class Speech(commands.Cog):
             return
 
         await self.audio_player_cog.play_audio(ctx, wav_path, target_member)
+
+    ## Commands
+
+    @commands.command(no_pm=True)
+    async def say(self, ctx, *, message, target_member = None, ignore_char_limit = False):
+        '''Speaks your text aloud to your current channel.'''
+
+        await self._say(ctx, message, target_member, ignore_char_limit)

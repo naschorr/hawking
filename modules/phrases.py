@@ -264,7 +264,7 @@ class Phrases(commands.Cog):
             except:
                 target = None
 
-            await self.speech_cog.say(ctx, message)#, target_member = target, ignore_char_limit = True)
+            await self.speech_cog._say(ctx, message, target_member = target, ignore_char_limit = True)
 
         ## Create a callback for music.music
         # async def _music_callback(self, ctx):
