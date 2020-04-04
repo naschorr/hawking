@@ -256,7 +256,7 @@ class Phrases(commands.Cog):
 
     ## Build a dynamic callback to invoke the bot's say method
     def _create_phrase_callback(self, message, is_music=False):
-        ## Create a callback for speech.say
+        ## Create a callback for speech._say
         async def _phrase_callback(self, ctx):
             ## Attempt to get a target channel
             try:

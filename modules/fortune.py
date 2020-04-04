@@ -48,7 +48,7 @@ class Fortune(commands.Cog):
     @commands.command(no_pm=True, brief="Tells you your magic 8 ball fortune!")
     async def fortune(self, ctx):
         speech_cog = self.hawking.get_speech_cog()
-        await speech_cog.say(ctx, choice(self.phrases), ignore_char_limit=True)
+        await speech_cog._say(ctx, choice(self.phrases), ignore_char_limit=True)
 
 
 def main():
