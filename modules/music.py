@@ -506,7 +506,7 @@ class Music(commands.Cog):
         notes = MusicParser(message, beat_length, octave).notes
         tts_notes = self._build_tts_note_string(notes, **music_configs)
 
-        await self.speech_cog.say(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
+        await self.speech_cog._say(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
 
 
 def main():
