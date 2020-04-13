@@ -10,14 +10,16 @@ from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
 
 import utilities
+import privacy_manager
+import social_helper
 import audio_player
 import speech
 import admin
 import message_parser
 import help_command
 import dynamo_helper
-from module_manager import ModuleEntry, ModuleManager
 from string_similarity import StringSimilarity
+from module_manager import ModuleEntry, ModuleManager
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -48,7 +50,7 @@ class Hawking:
     ## Defaults
     VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
-    DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord\n Visit https://github.com/naschorr/hawking")
+    DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, ["A retro TTS bot for Discord"])
     TOKEN_FILE = CONFIG_OPTIONS.get(TOKEN_FILE_KEY, "token.json")
     TOKEN_FILE_PATH = CONFIG_OPTIONS.get(TOKEN_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), TOKEN_FILE]))
 
@@ -66,7 +68,7 @@ class Hawking:
         ## Init the bot and module manager
         self.bot = commands.Bot(
             command_prefix=commands.when_mentioned_or(self.activation_str),
-            description=self.description
+            description='\n'.join(self.description)
         )
         self.module_manager = ModuleManager(self, self.bot)
 
@@ -74,6 +76,8 @@ class Hawking:
         self.bot.help_command = help_command.HawkingHelpCommand()
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
+        self.module_manager.register(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register(social_helper.SocialHelper, True, self, self.bot)
         self.module_manager.register(message_parser.MessageParser, False)
         self.module_manager.register(admin.Admin, True, self, self.bot)
         self.module_manager.register(speech.Speech, True, self)

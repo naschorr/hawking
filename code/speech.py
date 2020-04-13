@@ -249,7 +249,7 @@ class Speech(commands.Cog):
             return
         except exceptions.MessageTooLongException as e:
             logger.warn("Unable to build message, {}".format(e.message))
-            await ctx.send("Wow <@{}>, that's waaay too much. You've gotte keep messages shorter than {} characters.".format(
+            await ctx.send("Wow <@{}>, that's waaay too much. You've gotta keep messages shorter than {} characters.".format(
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
