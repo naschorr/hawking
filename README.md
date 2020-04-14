@@ -136,6 +136,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 
 #### Analytics Configuration
 - **boto_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
+- **boto_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
 - **boto_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
 - **boto_region_name** - String - The AWS region of your chosen boto_resource.
 - **boto_table_name** - String - The name of the table to insert into.

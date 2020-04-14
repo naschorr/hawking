@@ -1,3 +1,4 @@
+import os
 import boto3
 import base64
 import time
@@ -64,27 +65,32 @@ class DynamoItem:
     
 
 class DynamoHelper:
-    ## Keys
-    BOTO_ENABLE_KEY = "boto_enable"
-    BOTO_RESOURCE_KEY = "boto_resource"
-    BOTO_REGION_NAME_KEY = "boto_region_name"
-    BOTO_TABLE_NAME_KEY = "boto_table_name"
 
-    ## Defaults
-    BOTO_ENABLE = CONFIG_OPTIONS.get(BOTO_ENABLE_KEY, False)
-    BOTO_RESOURCE = CONFIG_OPTIONS.get(BOTO_RESOURCE_KEY, "dynamodb")
-    BOTO_REGION_NAME = CONFIG_OPTIONS.get(BOTO_REGION_NAME_KEY, "us-east-2")
-    BOTO_TABLE_NAME = CONFIG_OPTIONS.get(BOTO_TABLE_NAME_KEY, "Hawking")
-
-
-    def __init__(self, **kwargs):
-        self.enabled = kwargs.get(self.BOTO_ENABLE_KEY, self.BOTO_ENABLE)
-        self.resource = kwargs.get(self.BOTO_RESOURCE_KEY, self.BOTO_RESOURCE)
-        self.region_name = kwargs.get(self.BOTO_REGION_NAME_KEY, self.BOTO_REGION_NAME)
-        self.table_name = kwargs.get(self.BOTO_TABLE_NAME_KEY, self.BOTO_TABLE_NAME)
+    def __init__(self):
+        self.enabled = CONFIG_OPTIONS.get('boto_enable', False)
+        self.credentials_path = CONFIG_OPTIONS.get('boto_credentials_file_path')
+        self.resource = CONFIG_OPTIONS.get('boto_resource', 'dynamodb')
+        self.region_name = CONFIG_OPTIONS.get('boto_region_name', 'us-east-2')
+        self.table_name = CONFIG_OPTIONS.get('boto_table_name', 'Hawking')
 
         self.dynamo_db = boto3.resource(self.resource, region_name=self.region_name)
         self.table = self.dynamo_db.Table(self.table_name)
+
+    ## Properties
+
+    @property
+    def credentials_path(self):
+        return self._credentials_path
+
+
+    @credentials_path.setter
+    def credentials_path(self, value):
+        if (not value):
+            self._credentials_path = None
+            return
+
+        self._credentials_path = value
+        os.environ['AWS_SHARED_CREDENTIALS_FILE'] = self.credentials_path
 
     ## Methods
 

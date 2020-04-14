@@ -255,6 +255,12 @@ class Speech(commands.Cog):
             ))
             return
 
+        logger.debug('Generating file at: {}, containing: "{}", for user: {}'.format(
+            wav_path,
+            message,
+            target_member if target_member else ctx.message.author.name
+        ))
+
         await self.audio_player_cog.play_audio(ctx, wav_path, target_member)
 
     ## Commands

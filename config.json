@@ -1,5 +1,5 @@
 {
-    "version"                               : "1.2.0",
+    "version"                               : "1.2.1",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : ["A retro TTS bot for Discord.", "Contribute or star me at https://github.com/naschorr/hawking", "Add Hawking to your server, and join the Hawking Discord server too! Type '\\invite' for links."],
@@ -45,6 +45,7 @@
     "stupid_question_refresh_time_seconds"  : 21600,
 
     "boto_enable"                           : false,
+    "boto_credentials_file_path"            : "",
     "boto_resource"                         : "dynamodb",
     "boto_region_name"                      : "us-east-2",
     "boto_table_name"                       : "Hawking",
