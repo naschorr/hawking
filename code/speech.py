@@ -14,6 +14,7 @@ import dynamo_helper
 import exceptions
 
 import async_timeout
+from aioify import aioify
 from discord import errors
 from discord.ext import commands
 from discord.member import Member
@@ -56,10 +57,11 @@ class TTSController:
     HEADLESS = CONFIG_OPTIONS.get(HEADLESS_KEY, False)
 
 
-    def __init__(self, exe_path=None, **kwargs):
-        self.exe_path = exe_path or kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
+    def __init__(self, **kwargs):
+        self.exe_path = kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
         self.output_dir_path = kwargs.get(self.TTS_OUTPUT_DIR_PATH_KEY, self.TTS_OUTPUT_DIR_PATH)
         self.args = kwargs.get(self.ARGS_KEY, {})
+        self.audio_generate_timeout_seconds = CONFIG_OPTIONS.get("audio_generate_timeout_seconds", 3)
         self.prepend = kwargs.get(self.PREPEND_KEY, self.PREPEND)
         self.append = kwargs.get(self.APPEND_KEY, self.APPEND)
         self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
@@ -73,6 +75,8 @@ class TTSController:
 
         if(self.output_dir_path):
             self._init_dir()
+
+        self.async_os = aioify(obj=os, name='async_os')
 
 
     def __del__(self):
@@ -177,17 +181,22 @@ class TTSController:
         if(self.is_headless):
             args = "{} {}".format(self.xvfb_prepend, args)
 
+        has_timed_out = False
         try:
-            ## For #50, it seems like some long messages will 
-            async with async_timeout.timeout(5):
-                retval = os.system(args)
-
-                if(retval == 0):
-                    return output_file_path
-                else:
-                    raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
+            ## See https://github.com/naschorr/hawking/issues/50
+            async with async_timeout.timeout(self.audio_generate_timeout_seconds):
+                retval = await self.async_os.system(command=args)
         except asyncio.TimeoutError:
-            raise exceptions.UnableToBuildAudioFileException("Building wav timed out for '{}'".format(message))
+            has_timed_out = True
+            raise exceptions.BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))
+        except asyncio.CancelledError as e:
+            if (not has_timed_out):
+                logger.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
+
+        if(retval == 0):
+            return output_file_path
+        else:
+            raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
 class Speech(commands.Cog):
@@ -246,13 +255,17 @@ class Speech(commands.Cog):
 
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
+        except exceptions.BuildingAudioFileTimedOutExeption as e:
+            logger.exception("Timed out building audio for '{}'".format(message))
+            await ctx.send("Sorry, <@{}>, I wasn't able to generate speech for that.".format(ctx.message.author.id))
+            return
         except exceptions.UnableToBuildAudioFileException as e:
             logger.exception("Unable to build .wav file")
             await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return
         except exceptions.MessageTooLongException as e:
-            logger.warn("Unable to build too long message")
-            await ctx.send("Wow <@{}>, that's waaay too much. You've gotta keep messages shorter than {} characters.".format(
+            logger.warn("Unable to build too long message {}/{}".format(self.tts_controller.char_limit, len(message)))
+            await ctx.send("Wow, <@{}>, that's waaay too much! You've gotta keep messages shorter than {} characters.".format(
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
