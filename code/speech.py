@@ -13,6 +13,7 @@ import message_parser
 import dynamo_helper
 import exceptions
 
+import async_timeout
 from discord import errors
 from discord.ext import commands
 from discord.member import Member
@@ -176,12 +177,17 @@ class TTSController:
         if(self.is_headless):
             args = "{} {}".format(self.xvfb_prepend, args)
 
-        retval = os.system(args)
+        try:
+            ## For #50, it seems like some long messages will 
+            async with async_timeout.timeout(5):
+                retval = os.system(args)
 
-        if(retval == 0):
-            return output_file_path
-        else:
-            return None
+                if(retval == 0):
+                    return output_file_path
+                else:
+                    raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
+        except asyncio.TimeoutError:
+            raise exceptions.UnableToBuildAudioFileException("Building wav timed out for '{}'".format(message))
 
 
 class Speech(commands.Cog):
@@ -204,11 +210,15 @@ class Speech(commands.Cog):
     async def play_random_channel_timeout_message(self, server_state, callback):
         '''Channel timeout logic, picks an appropriate sign-off message and plays it'''
 
-        if (len(self.channel_timeout_phrases) > 0):
-            message = random.choice(self.channel_timeout_phrases)
-            file_path = await self.build_audio_file(None, message, True)
+        try:
+            if (len(self.channel_timeout_phrases) > 0):
+                message = random.choice(self.channel_timeout_phrases)
+                file_path = await self.build_audio_file(None, message, True)
 
-            await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
+                await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
+        except Exception as e:
+            logger.exception("Exception during channel sign-off")
+            await callback()
 
 
     async def build_audio_file(self, ctx, message, ignore_char_limit = False) -> str:
@@ -228,28 +238,21 @@ class Speech(commands.Cog):
             message = self.message_parser.parse_message(message, ctx.message)
 
         ## Build the audio file for speaking
-        wav_path = None
-        try:
-            wav_path = await self.tts_controller.save(message, ignore_char_limit)
-            if (not wav_path):
-                raise RuntimeError("Unable to save .wav file for phrase")
-        except Exception as e:
-            raise exceptions.UnableToBuildAudioFileException("Unable to get/save .wav file")
+        return await self.tts_controller.save(message, ignore_char_limit)
 
-        return wav_path
 
     async def _say(self, ctx, message, target_member = None, ignore_char_limit = False):
         '''Internal say method, for use with presets and anything else that generates phrases on the fly'''
 
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
-        except exceptions.UnableToBuildAudioFileException:
-            logger.exception("Unable to get .wav file")
-            await ctx.send("Sorry, <@{}>, I can't say that phrase right now.".format(ctx.message.author.id))
+        except exceptions.UnableToBuildAudioFileException as e:
+            logger.exception("Unable to build .wav file")
+            await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return
         except exceptions.MessageTooLongException as e:
-            logger.warn("Unable to build message, {}".format(e.message))
-            await ctx.send("Wow <@{}>, that's waaay too much. You've gotte keep messages shorter than {} characters.".format(
+            logger.warn("Unable to build too long message")
+            await ctx.send("Wow <@{}>, that's waaay too much. You've gotta keep messages shorter than {} characters.".format(
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
