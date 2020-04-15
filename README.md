@@ -103,6 +103,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **\_tts_file_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
 - **\_tts_output_dir_path** - String - Force the bot to use a specific text-to-speech output folder, rather than the normal `temp/` folder. Remove the leading underscore to activate it.
+- **audio_generate_timeout_seconds** - Int - Number of seconds to wait before timing out of the audio generation. Certain 'expanded' phrases can crash Hawking if too many are used at once (See: https://github.com/naschorr/hawking/issues/50)
 - **ffmpeg_before_options** - String - Options to send to the FFmpeg executable before the `-i` flag.
 - **ffmpeg_options** - String - Options to send to the FFmpeg executable after the `-i` flag.
 - **output_extension** - String - The file extension of the text-to-speech engine's output.

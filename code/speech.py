@@ -13,6 +13,8 @@ import message_parser
 import dynamo_helper
 import exceptions
 
+import async_timeout
+from aioify import aioify
 from discord import errors
 from discord.ext import commands
 from discord.member import Member
@@ -55,10 +57,11 @@ class TTSController:
     HEADLESS = CONFIG_OPTIONS.get(HEADLESS_KEY, False)
 
 
-    def __init__(self, exe_path=None, **kwargs):
-        self.exe_path = exe_path or kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
+    def __init__(self, **kwargs):
+        self.exe_path = kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
         self.output_dir_path = kwargs.get(self.TTS_OUTPUT_DIR_PATH_KEY, self.TTS_OUTPUT_DIR_PATH)
         self.args = kwargs.get(self.ARGS_KEY, {})
+        self.audio_generate_timeout_seconds = CONFIG_OPTIONS.get("audio_generate_timeout_seconds", 3)
         self.prepend = kwargs.get(self.PREPEND_KEY, self.PREPEND)
         self.append = kwargs.get(self.APPEND_KEY, self.APPEND)
         self.char_limit = int(kwargs.get(self.CHAR_LIMIT_KEY, self.CHAR_LIMIT))
@@ -72,6 +75,8 @@ class TTSController:
 
         if(self.output_dir_path):
             self._init_dir()
+
+        self.async_os = aioify(obj=os, name='async_os')
 
 
     def __del__(self):
@@ -176,12 +181,22 @@ class TTSController:
         if(self.is_headless):
             args = "{} {}".format(self.xvfb_prepend, args)
 
-        retval = os.system(args)
+        has_timed_out = False
+        try:
+            ## See https://github.com/naschorr/hawking/issues/50
+            async with async_timeout.timeout(self.audio_generate_timeout_seconds):
+                retval = await self.async_os.system(command=args)
+        except asyncio.TimeoutError:
+            has_timed_out = True
+            raise exceptions.BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))
+        except asyncio.CancelledError as e:
+            if (not has_timed_out):
+                logger.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
 
         if(retval == 0):
             return output_file_path
         else:
-            return None
+            raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
 class Speech(commands.Cog):
@@ -204,11 +219,15 @@ class Speech(commands.Cog):
     async def play_random_channel_timeout_message(self, server_state, callback):
         '''Channel timeout logic, picks an appropriate sign-off message and plays it'''
 
-        if (len(self.channel_timeout_phrases) > 0):
-            message = random.choice(self.channel_timeout_phrases)
-            file_path = await self.build_audio_file(None, message, True)
+        try:
+            if (len(self.channel_timeout_phrases) > 0):
+                message = random.choice(self.channel_timeout_phrases)
+                file_path = await self.build_audio_file(None, message, True)
 
-            await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
+                await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
+        except Exception as e:
+            logger.exception("Exception during channel sign-off")
+            await callback()
 
 
     async def build_audio_file(self, ctx, message, ignore_char_limit = False) -> str:
@@ -228,28 +247,25 @@ class Speech(commands.Cog):
             message = self.message_parser.parse_message(message, ctx.message)
 
         ## Build the audio file for speaking
-        wav_path = None
-        try:
-            wav_path = await self.tts_controller.save(message, ignore_char_limit)
-            if (not wav_path):
-                raise RuntimeError("Unable to save .wav file for phrase")
-        except Exception as e:
-            raise exceptions.UnableToBuildAudioFileException("Unable to get/save .wav file")
+        return await self.tts_controller.save(message, ignore_char_limit)
 
-        return wav_path
 
     async def _say(self, ctx, message, target_member = None, ignore_char_limit = False):
         '''Internal say method, for use with presets and anything else that generates phrases on the fly'''
 
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
-        except exceptions.UnableToBuildAudioFileException:
-            logger.exception("Unable to get .wav file")
-            await ctx.send("Sorry, <@{}>, I can't say that phrase right now.".format(ctx.message.author.id))
+        except exceptions.BuildingAudioFileTimedOutExeption as e:
+            logger.exception("Timed out building audio for '{}'".format(message))
+            await ctx.send("Sorry, <@{}>, I wasn't able to generate speech for that.".format(ctx.message.author.id))
+            return
+        except exceptions.UnableToBuildAudioFileException as e:
+            logger.exception("Unable to build .wav file")
+            await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return
         except exceptions.MessageTooLongException as e:
-            logger.warn("Unable to build message, {}".format(e.message))
-            await ctx.send("Wow <@{}>, that's waaay too much. You've gotte keep messages shorter than {} characters.".format(
+            logger.warn("Unable to build too long message {}/{}".format(self.tts_controller.char_limit, len(message)))
+            await ctx.send("Wow, <@{}>, that's waaay too much! You've gotta keep messages shorter than {} characters.".format(
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
