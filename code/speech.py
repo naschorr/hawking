@@ -256,27 +256,31 @@ class Speech(commands.Cog):
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
         except exceptions.BuildingAudioFileTimedOutExeption as e:
-            logger.exception("Timed out building audio for '{}'".format(message))
-            await ctx.send("Sorry, <@{}>, I wasn't able to generate speech for that.".format(ctx.message.author.id))
+            logger.exception("Timed out building audio for message: '{}'".format(message))
+            await ctx.send("Sorry, <@{}>, it took too long to generate speech for that.".format(ctx.message.author.id))
             return
         except exceptions.UnableToBuildAudioFileException as e:
-            logger.exception("Unable to build .wav file")
+            logger.exception("Unable to build .wav file for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
-            return
+            return False
         except exceptions.MessageTooLongException as e:
-            logger.warn("Unable to build too long message {}/{}".format(self.tts_controller.char_limit, len(message)))
-            await ctx.send("Wow, <@{}>, that's waaay too much! You've gotta keep messages shorter than {} characters.".format(
+            logger.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
+                len(message),
+                self.tts_controller.char_limit
+            ))
+            await ctx.send("Wow <@{}>, that's waaay too much. You've gotta keep messages shorter than {} characters.".format(
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
-            return
+            return False
 
         await self.audio_player_cog.play_audio(ctx, wav_path, target_member)
+        return True
 
     ## Commands
 
     @commands.command(no_pm=True)
     async def say(self, ctx, *, message, target_member = None, ignore_char_limit = False):
-        '''Speaks your text aloud to your current channel.'''
+        '''Speaks your text aloud to your current voice channel.'''
 
         await self._say(ctx, message, target_member, ignore_char_limit)

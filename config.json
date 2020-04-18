@@ -1,5 +1,5 @@
 {
-    "version"                               : "1.1.6",
+    "version"                               : "1.1.7",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : "A retro TTS bot for Discord. Contribute or star me at https://github.com/naschorr/hawking",
@@ -23,8 +23,8 @@
     "tts_output_dir"                        : "temp",
     "_tts_output_dir_path"                  : "",
     "audio_generate_timeout_seconds"        : 3,
-    "ffmpeg_before_options"                 : "-ac 2",
-    "ffmpeg_options"                        : "-loglevel 16",
+    "ffmpeg_parameters"                     : "-ac 2 -guess_layout_max 0",
+    "ffmpeg_post_parameters"                : "-loglevel 16",
     "output_extension"                      : "wav",
     "wine"                                  : "wine",
     "xvfb_prepend"                          : "DISPLAY=:0.0",

@@ -165,18 +165,28 @@ class ServerStateManager:
         if (not self.ctx.voice_client):
             return
 
-        logger.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
+        ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
+        if (inactive and self.channel_timeout_handler):
+            logger.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name,
                 self.channel_timeout_seconds
-            ))   
+            ))  
 
-        if (inactive and self.channel_timeout_handler):
             await self.channel_timeout_handler(self, self.ctx.voice_client.disconnect)
-            return
+        else:
+            logger.debug("Attempting to leave channel: {}, in server: {}".format(
+                self.ctx.voice_client.channel.name,
+                self.ctx.guild.name
+            ))
 
-        ## Default to a regular voice client disconnect
-        await self.ctx.voice_client.disconnect()
+            ## Otherwise just default to a normal voice_client disconnect
+            await self.ctx.voice_client.disconnect()
+
+        logger.debug("Successfully disconnected voice client from channel: {}, in server: {}".format(
+            self.ctx.voice_client.channel.name,
+            self.ctx.guild.name,
+        ))
 
 
     async def audio_player_loop(self):

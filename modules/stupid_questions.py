@@ -103,8 +103,13 @@ class StupidQuestions(commands.Cog):
         question = self.get_question()
 
         if (question):
-            await self.hawking.get_speech_cog()._say(ctx, question, ignore_char_limit = True)
-            await ctx.send("Hey <@{}>, {} ```{}```".format(ctx.message.author.id, random.choice(self.THOUGHT_PROVOKING_STRINGS), question))
+            say_result = await self.hawking.get_speech_cog()._say(ctx, question, ignore_char_limit = True)
+            if (say_result):
+                await ctx.send("Hey <@{}>, {} ```{}```".format(
+                    ctx.message.author.id,
+                    random.choice(self.THOUGHT_PROVOKING_STRINGS),
+                    question
+                ))
         else:
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 

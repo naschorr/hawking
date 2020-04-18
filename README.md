@@ -104,8 +104,8 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
 - **\_tts_output_dir_path** - String - Force the bot to use a specific text-to-speech output folder, rather than the normal `temp/` folder. Remove the leading underscore to activate it.
 - **audio_generate_timeout_seconds** - Int - Number of seconds to wait before timing out of the audio generation. Certain 'expanded' phrases can crash Hawking if too many are used at once (See: https://github.com/naschorr/hawking/issues/50)
-- **ffmpeg_before_options** - String - Options to send to the FFmpeg executable before the `-i` flag.
-- **ffmpeg_options** - String - Options to send to the FFmpeg executable after the `-i` flag.
+- **ffmpeg_parameters** - String - Options to send to the FFmpeg executable before the `-i` flag. Used when building the audio player.
+- **ffmpeg_post_parameters** - String - Options to send to the FFmpeg executable after the `-i` flag. Used when building the audio player.
 - **output_extension** - String - The file extension of the text-to-speech engine's output.
 - **wine** - String - The command to invoke Wine on your system. Linux only.
 - **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.

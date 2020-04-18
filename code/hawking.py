@@ -96,8 +96,7 @@ class Hawking:
         @self.bot.event
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
-            
-            logger.exception("Unable to process command.", exc_info=exception)
+
             self.dynamo_db.put(dynamo_helper.DynamoItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
 
@@ -105,11 +104,22 @@ class Hawking:
             most_similar_command = self.find_most_similar_command(ctx.message.content)
 
             if (most_similar_command[0] == ctx.invoked_with):
+                logger.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
+                    ctx.message.content,
+                    ctx.message.author.name,
+                    ctx.mess
+                ), exc_info=exception)
                 ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
-                await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\n" \
-                    "Discord is having some issues that won't let me speak right now."
-                    .format(ctx.message.author.id))
+                await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\nSomething went wrong, and I couldn't complete the command.".format(ctx.message.author.id))
             else:
+                logger.exception("Received invalid command: '{0}{1}', suggested: '{0}{2}', for author: {3}, in server: {4}".format(
+                    self.activation_str,
+                    ctx.invoked_with,
+                    most_similar_command[0],
+                    ctx.message.author.name,
+                    ctx.guild.name
+                ), exc_info=exception)
+
                 help_text_chunks = [
                     "Sorry <@{}>, **{}{}** isn't a valid command.".format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
                 ]
