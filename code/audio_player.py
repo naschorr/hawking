@@ -377,7 +377,7 @@ class AudioPlayer(commands.Cog):
 
 
     ## Interface for playing the audio file for the invoker's channel
-    async def play_audio(self, ctx, file_path: str, target_member = None):
+    async def play_audio(self, ctx, file_path: str, target_member = None, callback: Callable = None):
         '''Plays the given audio file aloud to your channel'''
 
         ## Verify that the target/requester is in a channel
@@ -400,7 +400,7 @@ class AudioPlayer(commands.Cog):
         ## Get/Build a state for this audio, build the player, and add it to the state
         state = self.get_server_state(ctx)
         player = self.build_player(file_path)
-        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path))
+        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path, callback))
 
         self.dynamo_db.put(dynamo_helper.DynamoItem(
             ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
@@ -408,7 +408,7 @@ class AudioPlayer(commands.Cog):
         return True
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback = None):
+    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback: Callable = None):
         '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
 
         ## Make sure file_path points to an actual file

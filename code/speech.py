@@ -273,7 +273,7 @@ class Speech(commands.Cog):
             ))
             return False
 
-        await self.audio_player_cog.play_audio(ctx, wav_path, target_member)
+        await self.audio_player_cog.play_audio(ctx, wav_path, target_member, lambda: self.tts_controller.delete(wav_path))
         return True
 
     ## Commands
