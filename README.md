@@ -30,7 +30,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `pip install -r requirements.txt`
     + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.6-dev` to install some supplemental features for the setup process.
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
-- Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `hawking/token.json`
+- Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `config.json`, next to the `discord_token` key.
 - Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=53803072`, but make sure to replace CLIENT_ID with your bot's client id.
 - Select your server, and hit "Authorize"
 - Check out `config.json` for any configuration you might want to do. It's set up to work well out of the box, but you may want to add admins, change pathing, or modify the number of votes required for a skip.
@@ -94,8 +94,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **log_path** - String - The path where logs should be stored. If left empty, it will default to a `logs` folder inside the Hawking root.
 - **log_max_bytes** - Int - The maximum size (in bytes) of a single log, before it should be rotated out. Defaults to 10MB.
 - **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
-- **token_file** - String - The name of the file containing the bot's Discord token.
-- **\_token_file_path** - String - Force the bot to use a specific token, rather than the normal `token.json` file. Remove the leading underscore to activate it.
+- **discord_token** - String - The token for the bot, used to authenticate with Discord.
 - **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
 - **phrases_folder** - String - The name of the folder that contains phrase files.
 - **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.

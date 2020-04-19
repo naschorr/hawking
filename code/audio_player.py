@@ -1,5 +1,4 @@
 import os
-os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
 import asyncio
 import async_timeout
