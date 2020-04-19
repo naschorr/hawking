@@ -17,6 +17,7 @@ etc/
 share/
 
 # Ignore dev environment project files
+config.dev.json
 *.vscode
 *.sublime-project
 *.sublime-workspace
@@ -24,7 +25,7 @@ share/
 # Ignore gitattributes
 .gitattributes
 
-# Ignore the pip-selfcheck
+# Ignore pip files
 pip-selfcheck.json
 
 # Ignore .pyc files
