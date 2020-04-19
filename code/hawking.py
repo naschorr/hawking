@@ -106,7 +106,7 @@ class Hawking:
                 logger.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
                     ctx.message.content,
                     ctx.message.author.name,
-                    ctx.mess
+                    ctx.guild.name
                 ), exc_info=exception)
                 ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
                 await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\nSomething went wrong, and I couldn't complete the command.".format(ctx.message.author.id))
