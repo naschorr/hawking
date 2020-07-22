@@ -6,15 +6,15 @@ import pathlib
 from logging.handlers import RotatingFileHandler
 
 ## Config
-CONFIG_OPTIONS = {}         # This'll be populated on import
-DEBUG_LEVEL_KEY = "debug_level"
-CONFIG_NAME = "config.json"	# The name of the config file
-DIRS_FROM_ROOT = 1			# How many directories away this script is from the root
+CONFIG_OPTIONS = {}                 # This'll be populated on import
+CONFIG_NAME = "config.json"	        # The name of the config file
+DEV_CONFIG_NAME = "config.dev.json" # The name of the dev config file (overrides properties stored in the normal config file)
+DIRS_FROM_ROOT = 1			        # How many directories away this script is from the root
 PLATFORM = sys.platform
 
 
 def get_root_path():
-	## -1 includes this script itself in the realpath
+    ## -1 includes this script itself in the realpath
     return os.sep.join(os.path.realpath(__file__).split(os.path.sep)[:(-1 - DIRS_FROM_ROOT)])
 
 
@@ -24,7 +24,21 @@ def load_json(path):
 
 
 def load_config():
-	return load_json(os.sep.join([get_root_path(), CONFIG_NAME]))
+    config_path = pathlib.Path(os.sep.join([get_root_path(), CONFIG_NAME]))
+    if (not config_path.exists()):
+        raise RuntimeError("Unable to find config.json file in root!")
+
+    config = load_json(config_path)
+
+    ## Override the config values if the dev config file exists.
+    dev_config_path = pathlib.Path(os.sep.join([get_root_path(), DEV_CONFIG_NAME]))
+    if (dev_config_path.exists()):
+        dev_config = load_json(dev_config_path)
+
+        for key, value in dev_config.items():
+            config[key] = value
+
+    return config
 
 
 def is_linux():
@@ -71,4 +85,5 @@ def initialize_logging(logger):
 
     return logger
 
+os.environ = {}
 CONFIG_OPTIONS = load_config()

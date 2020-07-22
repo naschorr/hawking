@@ -1,5 +1,4 @@
 import os
-os.environ = {} # Remove env variables to give os.system a semblance of security
 import sys
 import asyncio
 import async_timeout
@@ -165,18 +164,28 @@ class ServerStateManager:
         if (not self.ctx.voice_client):
             return
 
-        logger.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
+        ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
+        if (inactive and self.channel_timeout_handler):
+            logger.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name,
                 self.channel_timeout_seconds
-            ))   
+            ))  
 
-        if (inactive and self.channel_timeout_handler):
             await self.channel_timeout_handler(self, self.ctx.voice_client.disconnect)
-            return
+        else:
+            logger.debug("Attempting to leave channel: {}, in server: {}".format(
+                self.ctx.voice_client.channel.name,
+                self.ctx.guild.name
+            ))
 
-        ## Default to a regular voice client disconnect
-        await self.ctx.voice_client.disconnect()
+            ## Otherwise just default to a normal voice_client disconnect
+            await self.ctx.voice_client.disconnect()
+
+        logger.debug("Successfully disconnected voice client from channel: {}, in server: {}".format(
+            self.ctx.voice_client.channel.name,
+            self.ctx.guild.name,
+        ))
 
 
     async def audio_player_loop(self):
@@ -368,7 +377,7 @@ class AudioPlayer(commands.Cog):
 
 
     ## Interface for playing the audio file for the invoker's channel
-    async def play_audio(self, ctx, file_path: str, target_member = None):
+    async def play_audio(self, ctx, file_path: str, target_member = None, callback: Callable = None):
         '''Plays the given audio file aloud to your channel'''
 
         ## Verify that the target/requester is in a channel
@@ -391,7 +400,7 @@ class AudioPlayer(commands.Cog):
         ## Get/Build a state for this audio, build the player, and add it to the state
         state = self.get_server_state(ctx)
         player = self.build_player(file_path)
-        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path))
+        await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path, callback))
 
         self.dynamo_db.put(dynamo_helper.DynamoItem(
             ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
@@ -399,7 +408,7 @@ class AudioPlayer(commands.Cog):
         return True
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback = None):
+    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback: Callable = None):
         '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
 
         ## Make sure file_path points to an actual file

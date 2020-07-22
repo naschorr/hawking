@@ -40,28 +40,27 @@ class Hawking:
     VERSION_KEY = "version"
     ACTIVATION_STR_KEY = "activation_str"
     DESCRIPTION_KEY = "description"
-    TOKEN_KEY = "token"
-    TOKEN_FILE_KEY = "token_file"
-    TOKEN_FILE_PATH_KEY = "token_file_path"
     INVALID_COMMAND_MINIMUM_SIMILARITY = "invalid_command_minimum_similarity"
 
     ## Defaults
     VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
     DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord\n Visit https://github.com/naschorr/hawking")
-    TOKEN_FILE = CONFIG_OPTIONS.get(TOKEN_FILE_KEY, "token.json")
-    TOKEN_FILE_PATH = CONFIG_OPTIONS.get(TOKEN_FILE_PATH_KEY, os.sep.join([utilities.get_root_path(), TOKEN_FILE]))
 
 
     ## Initialize the bot, and add base cogs
     def __init__(self, **kwargs):
+        ## Make sure there's a Discord token before doing anything else
+        self.token = CONFIG_OPTIONS.get("discord_token")
+        if (not self.token):
+            raise RuntimeError("Unable to get Discord token!")
+
         self.version = kwargs.get(self.VERSION_KEY, self.VERSION)
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
-        self.token_file_path = kwargs.get(self.TOKEN_FILE_PATH_KEY, self.TOKEN_FILE_PATH)
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
+
         self.dynamo_db = dynamo_helper.DynamoHelper()
-        ## Todo: pass kwargs to the their modules
 
         ## Init the bot and module manager
         self.bot = commands.Bot(
@@ -96,8 +95,7 @@ class Hawking:
         @self.bot.event
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
-            
-            logger.exception("Unable to process command.", exc_info=exception)
+
             self.dynamo_db.put(dynamo_helper.DynamoItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
 
@@ -105,11 +103,22 @@ class Hawking:
             most_similar_command = self.find_most_similar_command(ctx.message.content)
 
             if (most_similar_command[0] == ctx.invoked_with):
+                logger.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
+                    ctx.message.content,
+                    ctx.message.author.name,
+                    ctx.guild.name
+                ), exc_info=exception)
                 ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
-                await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\n" \
-                    "Discord is having some issues that won't let me speak right now."
-                    .format(ctx.message.author.id))
+                await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\nSomething went wrong, and I couldn't complete the command.".format(ctx.message.author.id))
             else:
+                logger.exception("Received invalid command: '{0}{1}', suggested: '{0}{2}', for author: {3}, in server: {4}".format(
+                    self.activation_str,
+                    ctx.invoked_with,
+                    most_similar_command[0],
+                    ctx.message.author.name,
+                    ctx.guild.name
+                ), exc_info=exception)
+
                 help_text_chunks = [
                     "Sorry <@{}>, **{}{}** isn't a valid command.".format(ctx.message.author.id, ctx.prefix, ctx.invoked_with)
                 ]
@@ -195,7 +204,7 @@ class Hawking:
         ## long enough to allow for the bot to be forcefully disconnected
 
         logger.info('Starting up the bot.')
-        self.bot.run(utilities.load_json(self.token_file_path)["token"])
+        self.bot.run(self.token)
 
 
 if(__name__ == "__main__"):
