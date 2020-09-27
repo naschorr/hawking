@@ -293,7 +293,7 @@ class AudioPlayer(commands.Cog):
         self.bot = bot
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_helper.DynamoManager()
 
         ## Clamp between 0.0 and 1.0
         self.skip_percentage = max(min(float(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)

@@ -63,7 +63,7 @@ class DynamoItem:
         return base64.b64encode(bytes(concatenated, "utf-8")).decode("utf-8")
     
 
-class DynamoHelper:
+class DynamoManager:
     ## Keys
     BOTO_ENABLE_KEY = "boto_enable"
     BOTO_RESOURCE_KEY = "boto_resource"

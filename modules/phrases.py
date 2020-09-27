@@ -73,7 +73,7 @@ class Phrases(commands.Cog):
         self.command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_helper.DynamoManager()
 
         ## Make sure context is always passed to the callbacks
         self.command_kwargs["pass_context"] = True

@@ -60,7 +60,7 @@ class Hawking:
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_helper.DynamoManager()
 
         ## Init the bot and module manager
         self.bot = commands.Bot(

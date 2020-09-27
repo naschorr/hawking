@@ -258,10 +258,6 @@ class Speech(commands.Cog):
             logger.exception("Timed out building audio for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, it took too long to generate speech for that.".format(ctx.message.author.id))
             return
-        except exceptions.UnableToBuildAudioFileException as e:
-            logger.exception("Unable to build .wav file for message: '{}'".format(message))
-            await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
-            return False
         except exceptions.MessageTooLongException as e:
             logger.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
                 len(message),
@@ -271,6 +267,10 @@ class Speech(commands.Cog):
                 ctx.message.author.id,
                 self.tts_controller.char_limit
             ))
+            return False
+        except exceptions.UnableToBuildAudioFileException as e:
+            logger.exception("Unable to build .wav file for message: '{}'".format(message))
+            await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return False
 
         await self.audio_player_cog.play_audio(ctx, wav_path, target_member, lambda: self.tts_controller.delete(wav_path))

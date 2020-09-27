@@ -24,7 +24,7 @@ class Note:
         self.octave = octave
         self.sub_notes = sub_notes
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_helper.DynamoManager()
 
 
     def __str__(self):

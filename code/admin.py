@@ -19,7 +19,7 @@ class Admin(commands.Cog):
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_helper.DynamoManager()
 
     ## Properties
 
