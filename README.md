@@ -9,6 +9,13 @@ A retro text-to-speech bot for Discord, designed to work with all of the stuff y
 - Hit the "Authorize" button.
 - Start speaking! (_Hint:_ join a voice channel and type in `\help`. You should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
+## Join my Discord server!
+Click [here](https://discord.gg/JJqx8C4) to join!
+- Help me test unstable versions of Hawking and my other bots
+- Let me know if something's broken
+- Post suggestions for improving Hawking and my other bots
+- Got a funny phrase you want added? Suggest it in there!
+
 ## Basic Commands
 These commands allow for the basic operation of the bot, by anyone. Just type them into a public text channel while connected to a public voice channel. (Hawking can also read/join channels that you've given the permissions to)
 - `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
@@ -17,6 +24,8 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
 - `\fortune` - Tells you your magic 8 ball fortune!
 - `\stupidquestion` - Asks you a random, (potentially) stupid question from Reddit.
+- `\invite` - Gets you an invite link for the bot, as well as gets you an invite link for my Discord server.
+- `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking logs. All requests are processed once a week, every Monday at midnight.
 - `\help` - Show the help screen.
 
 ## Hosting it yourself
@@ -82,7 +91,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **version** - String - The bot's current semantic version.
 - **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
 - **activation_str** - String - The string that'll activate the Discord bot from chat messages.
-- **description** - String - The bot's description. This is seen in the help interface.
+- **description** - Array - An array of strings making up the bot's description. Each element in the array goes on a new line in the help interface.
 - **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
 - **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
 - **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
@@ -92,9 +101,9 @@ Admin commands allow for some users to have a little more control over the bot. 
 #### Bot Configuration
 - **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.
 - **log_path** - String - The path where logs should be stored. If left empty, it will default to a `logs` folder inside the Hawking root.
-- **log_max_bytes** - Int - The maximum size (in bytes) of a single log, before it should be rotated out. Defaults to 10MB.
 - **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
 - **discord_token** - String - The token for the bot, used to authenticate with Discord.
+- **delete_request_queue_file_path** - String - The path where the delete requests file should be stored. If left empty, it will default to a `privacy` folder inside the Hawking root.
 - **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
 - **phrases_folder** - String - The name of the folder that contains phrase files.
 - **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
@@ -127,6 +136,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 
 #### Analytics Configuration
 - **boto_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
+- **boto_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
 - **boto_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
 - **boto_region_name** - String - The AWS region of your chosen boto_resource.
 - **boto_table_name** - String - The name of the table to insert into.
