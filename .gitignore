@@ -48,3 +48,6 @@ phrases/*
 # Ignore logfiles
 logs/*
 *.log
+
+# Ignore delete_requests & container
+privacy/*

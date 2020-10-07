@@ -11,7 +11,7 @@ from typing import Callable
 from concurrent import futures
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 import exceptions
 
 import discord
@@ -293,7 +293,7 @@ class AudioPlayer(commands.Cog):
         self.bot = bot
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Clamp between 0.0 and 1.0
         self.skip_percentage = max(min(float(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
@@ -402,7 +402,7 @@ class AudioPlayer(commands.Cog):
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path, callback))
 
-        self.dynamo_db.put(dynamo_helper.DynamoItem(
+        self.dynamo_db.put(dynamo_manager.CommandItem(
             ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         return True

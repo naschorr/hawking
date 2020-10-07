@@ -3,7 +3,7 @@ import sys
 import json
 import logging
 import pathlib
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 
 ## Config
 CONFIG_OPTIONS = {}                 # This'll be populated on import
@@ -21,6 +21,11 @@ def get_root_path():
 def load_json(path):
     with open(path) as fd:
         return json.load(fd)
+
+
+def save_json(path, data):
+    with open(path, 'w') as fd:
+        json.dump(data, fd)
 
 
 def load_config():
@@ -76,12 +81,11 @@ def initialize_logging(logger):
     pathlib.Path(log_path).mkdir(parents=True, exist_ok=True)    # Basically a mkdir -p $log_path
     log_file = os.path.sep.join([log_path, "hawking.log"])   # Build the true path to the log file
 
-    ## Setup and add the rotating log handler to the logger
-    max_bytes = CONFIG_OPTIONS.get("log_max_bytes", 1024 * 1024 * 10)   # 10 MB
-    backup_count = CONFIG_OPTIONS.get("log_backup_count", 10)
-    rotating_log_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
-    rotating_log_handler.setFormatter(formatter)
-    logger.addHandler(rotating_log_handler)
+    ## Setup and add the timed rotating log handler to the logger
+    backup_count = CONFIG_OPTIONS.get("log_backup_count", 7)    # Store a week's logs then start overwriting them
+    log_handler = TimedRotatingFileHandler(log_file, when='midnight', interval=1, backupCount=backup_count)
+    log_handler.setFormatter(formatter)
+    logger.addHandler(log_handler)
 
     return logger
 

@@ -2,7 +2,7 @@ import logging
 import random
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 
 from discord.ext import commands
 from discord.ext.commands import DefaultHelpCommand, Paginator
@@ -35,11 +35,18 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
         """
         Adds the header boilerplate text (Description, Version, How to activate) to the paginator
         """
-        self.paginator.add_line(CONFIG_OPTIONS.get("description"), empty=False)
+        
+        ## Add the description into the help screen
+        description = CONFIG_OPTIONS.get("description", [])
+        for line in description:
+            self.paginator.add_line(line, empty=False)
+        if (len(description) > 0):
+            self.paginator.add_line()
 
         ## Append the version info into the help screen
-        version_note = "Hawking version: {}".format(CONFIG_OPTIONS.get("version", "Beta"))
-        self.paginator.add_line(version_note, empty=True)
+        version = CONFIG_OPTIONS.get("version")
+        if (version):
+            self.paginator.add_line("Hawking version: {}".format(version), empty=True)
 
         ## Append (additional) activation note
         activation_note = "Activate with the '{0}' character (ex. '{0}help')".format(self.clean_prefix)
@@ -149,9 +156,11 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
             phrase_groups = phrase_cog.phrase_groups
 
         self.dump_header_boilerplate()
+        self.paginator.close_page()
 
         ## Dump the non-phrase commands
         self.dump_commands()
+        self.paginator.close_page()
 
         ## Dump the base phrase commands
         if (phrase_groups != None):
@@ -165,6 +174,7 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
 
             self.dump_footer_boilerplate(list(phrase_groups.keys()))
 
+        self.paginator.close_page()
         await self.send_pages()
 
 

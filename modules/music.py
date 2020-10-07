@@ -5,7 +5,7 @@ import logging
 from collections import OrderedDict
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 from discord.ext import commands
 
 ## Config
@@ -24,7 +24,7 @@ class Note:
         self.octave = octave
         self.sub_notes = sub_notes
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
 
     def __str__(self):
