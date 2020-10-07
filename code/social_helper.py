@@ -2,7 +2,7 @@ import inspect
 import logging
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 
 from discord.ext import commands
 from discord.ext.commands import Paginator
@@ -20,7 +20,7 @@ class SocialHelper(commands.Cog):
         self.hawking = hawking
         self.bot = bot
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
     ## Methods
 
@@ -36,7 +36,7 @@ class SocialHelper(commands.Cog):
     async def invite(self, ctx):
         '''Posts invite links for Hawking, and its Discord server.'''
         
-        self.dynamo_db.put(dynamo_helper.DynamoItem(
+        self.dynamo_db.put(dynamo_manager.CommandItem(
             ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
 
         paginator = Paginator()

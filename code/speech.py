@@ -9,7 +9,7 @@ from math import ceil
 
 import utilities
 import message_parser
-import dynamo_helper
+import dynamo_manager
 import exceptions
 
 import async_timeout

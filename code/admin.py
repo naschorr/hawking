@@ -1,7 +1,7 @@
 import inspect
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 from discord.ext import commands
 
 ## Config
@@ -19,7 +19,7 @@ class Admin(commands.Cog):
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
-        self.dynamo_db = dynamo_helper.DynamoManager()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
     ## Properties
 
@@ -69,7 +69,7 @@ class Admin(commands.Cog):
 
         if(not self.is_admin(ctx.message.author)):
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         count = self.phrases_cog.reload_phrases()
@@ -77,7 +77,7 @@ class Admin(commands.Cog):
         loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
         await ctx.send(loaded_clips_string)
 
-        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -88,7 +88,7 @@ class Admin(commands.Cog):
 
         if(not self.is_admin(ctx.message.author)):
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         count = self.hawking.module_manager.reload_all()
@@ -97,7 +97,7 @@ class Admin(commands.Cog):
         loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
         await ctx.send(loaded_cogs_string)
 
-        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -122,11 +122,11 @@ class Admin(commands.Cog):
 
         if(not self.is_admin(ctx.message.author)):
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         state = self.audio_player_cog.get_server_state(ctx)
         await state.ctx.voice_client.disconnect()
 
-        self.dynamo_db.put(dynamo_helper.DynamoItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True

@@ -23,6 +23,11 @@ def load_json(path):
         return json.load(fd)
 
 
+def save_json(path, data):
+    with open(path, 'w') as fd:
+        json.dump(data, fd)
+
+
 def load_config():
     config_path = pathlib.Path(os.sep.join([get_root_path(), CONFIG_NAME]))
     if (not config_path.exists()):

@@ -6,7 +6,7 @@ import logging
 import asyncio
 
 import utilities
-import dynamo_helper
+import dynamo_manager
 from string_similarity import StringSimilarity
 
 from discord import errors
@@ -73,7 +73,7 @@ class Phrases(commands.Cog):
         self.command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
 
-        self.dynamo_db = dynamo_helper.DynamoManager()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Make sure context is always passed to the callbacks
         self.command_kwargs["pass_context"] = True

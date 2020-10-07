@@ -17,7 +17,7 @@ import speech
 import admin
 import message_parser
 import help_command
-import dynamo_helper
+import dynamo_manager
 from string_similarity import StringSimilarity
 from module_manager import ModuleEntry, ModuleManager
 
@@ -62,7 +62,7 @@ class Hawking:
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
 
-        self.dynamo_db = dynamo_helper.DynamoManager()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Init the bot and module manager
         self.bot = commands.Bot(
@@ -100,7 +100,7 @@ class Hawking:
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
 
-            self.dynamo_db.put(dynamo_helper.DynamoItem(
+            self.dynamo_db.put(dynamo_manager.CommandItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
 
             ## Attempt to find a command that's similar to the one they wanted. Otherwise just direct them to the help page

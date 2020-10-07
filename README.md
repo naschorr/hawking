@@ -25,7 +25,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\fortune` - Tells you your magic 8 ball fortune!
 - `\stupidquestion` - Asks you a random, (potentially) stupid question from Reddit.
 - `\invite` - Gets you an invite link for the bot, as well as gets you an invite link for my Discord server.
-- `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking logs. All requests are processed once a week, every Monday at midnight.
+- `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking database. Note that anonymized usage statistics are still kept, however. All requests are processed once a week, currently that happens every Monday at midnight. Furthermore, the previously mentioned identifying information will automatically be removed after a year.
 - `\help` - Show the help screen.
 
 ## Hosting it yourself
@@ -103,7 +103,10 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **log_path** - String - The path where logs should be stored. If left empty, it will default to a `logs` folder inside the Hawking root.
 - **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
 - **discord_token** - String - The token for the bot, used to authenticate with Discord.
-- **delete_request_queue_file_path** - String - The path where the delete requests file should be stored. If left empty, it will default to a `privacy` folder inside the Hawking root.
+- **delete_request_queue_file_path** - String - The path where the delete requests file should be stored. If left empty, it will default to a `privacy/delete_request.txt` file inside the Hawking root.
+- **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
+- **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
+- **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
 - **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
 - **phrases_folder** - String - The name of the folder that contains phrase files.
 - **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
@@ -135,12 +138,14 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one.
 
 #### Analytics Configuration
-- **boto_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
-- **boto_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
-- **boto_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
-- **boto_region_name** - String - The AWS region of your chosen boto_resource.
-- **boto_table_name** - String - The name of the table to insert into.
-- **boto_primary_key** - String - The primary key of your chosen table.
+- **database_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
+- **database_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
+- **database_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
+- **database_region_name** - String - The AWS region of your chosen `database_resource`.
+- **database_detailed_table_name** - String - The name of the table to insert detailed, temporary data into.
+- **database_anonymous_table_name** - String - The name of the table to insert anonymized, long term data into.
+- **database_primary_key** - String - The primary key of the above tables.
+- **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed via the DynamoDB TTL service.
 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
