@@ -16,8 +16,11 @@ tcl/
 etc/
 share/
 
-# Ignore dev environment project files
+# Ignore non-public config environment files
 config.dev.json
+config.prod.json
+
+# Ignore dev environment project files
 *.vscode
 *.sublime-project
 *.sublime-workspace
