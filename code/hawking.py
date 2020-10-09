@@ -10,14 +10,16 @@ from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
 
 import utilities
+import privacy_manager
+import social_helper
 import audio_player
 import speech
 import admin
 import message_parser
 import help_command
-import dynamo_helper
-from module_manager import ModuleEntry, ModuleManager
+import dynamo_manager
 from string_similarity import StringSimilarity
+from module_manager import ModuleEntry, ModuleManager
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -60,12 +62,12 @@ class Hawking:
         self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
 
-        self.dynamo_db = dynamo_helper.DynamoHelper()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Init the bot and module manager
         self.bot = commands.Bot(
             command_prefix=commands.when_mentioned_or(self.activation_str),
-            description=self.description
+            description='\n'.join(self.description)
         )
         self.module_manager = ModuleManager(self, self.bot)
 
@@ -73,6 +75,8 @@ class Hawking:
         self.bot.help_command = help_command.HawkingHelpCommand()
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
+        self.module_manager.register(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register(social_helper.SocialHelper, True, self, self.bot)
         self.module_manager.register(message_parser.MessageParser, False)
         self.module_manager.register(admin.Admin, True, self, self.bot)
         self.module_manager.register(speech.Speech, True, self)
@@ -96,7 +100,7 @@ class Hawking:
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
 
-            self.dynamo_db.put(dynamo_helper.DynamoItem(
+            self.dynamo_db.put(dynamo_manager.CommandItem(
                 ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
 
             ## Attempt to find a command that's similar to the one they wanted. Otherwise just direct them to the help page
