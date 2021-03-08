@@ -107,7 +107,7 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
 - **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
 - **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
-- **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
+- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example, `.json`
 - **phrases_folder** - String - The name of the folder that contains phrase files.
 - **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
 - **tts_file** - String - The name of the text-to-speech executable.

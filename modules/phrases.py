@@ -4,6 +4,7 @@ import random
 import re
 import logging
 import asyncio
+from pathlib import Path
 
 import utilities
 import dynamo_manager
@@ -49,8 +50,6 @@ class Phrases(commands.Cog):
     ## Keys
     PHRASES_KEY = "phrases"
     PHRASES_FILE_EXTENSION_KEY = "phrases_file_extension"
-    PHRASES_FOLDER_KEY = "phrases_folder"
-    PHRASES_FOLDER_PATH_KEY = "phrases_folder_path"
     NAME_KEY = "name"
     MESSAGE_KEY = "message"
     IS_MUSIC_KEY = "music"
@@ -60,18 +59,21 @@ class Phrases(commands.Cog):
 
     ## Defaults
     PHRASES_FILE_EXTENSION = CONFIG_OPTIONS.get(PHRASES_FILE_EXTENSION_KEY, ".json")
-    PHRASES_FOLDER = CONFIG_OPTIONS.get(PHRASES_FOLDER_KEY, "phrases")
-    PHRASES_FOLDER_PATH = CONFIG_OPTIONS.get(PHRASES_FOLDER_PATH_KEY, os.sep.join([utilities.get_root_path(), PHRASES_FOLDER]))
 
 
     def __init__(self, hawking, bot, *args, **command_kwargs):
         self.hawking = hawking
         self.bot = bot
         self.phrases_file_extension = self.PHRASES_FILE_EXTENSION
-        self.phrases_folder_path = self.PHRASES_FOLDER_PATH
         self.command_kwargs = command_kwargs
         self.command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
+
+        phrases_folder_path = CONFIG_OPTIONS.get('phrases_folder_path')
+        if (phrases_folder_path):
+            self.phrases_folder_path = Path(phrases_folder_path)
+        else:
+            self.phrases_folder_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 
@@ -105,24 +107,24 @@ class Phrases(commands.Cog):
 
 
     ## Searches the phrases folder for .json files that can potentially contain phrases.
-    def scan_phrases(self, path_to_scan):
-        def is_phrase_file(file_path):
-            to_check = file_path[-len(self.phrases_file_extension):]
-            return (to_check == self.phrases_file_extension)
+    def scan_phrases(self, path_to_scan: Path):
+        def is_json_file(file_path: Path):
+            return file_path.suffix == self.phrases_file_extension
 
         phrase_files = []
         for file in os.listdir(path_to_scan):
-            if(is_phrase_file(file)):
-                phrase_files.append(os.sep.join([path_to_scan, file]))
+            file_path = Path(file)
+            if(is_json_file(file_path)):
+                phrase_files.append(Path.joinpath(path_to_scan, file_path)) # os.sep.join([path_to_scan, file]))
 
         return phrase_files
 
 
     ## Builds a PhraseGroup object from a phrase file
-    def _build_phrase_group(self, path):
+    def _build_phrase_group(self, path: Path):
         with open(path) as fd:
             group_raw = json.load(fd)
-            name = group_raw.get('name', path.split(os.path.sep)[-1].split('.')[0])
+            name = group_raw.get('name', path.name.split('.')[0])
             key = group_raw.get('key', name)
             description = group_raw.get('description', None)
 
@@ -172,7 +174,7 @@ class Phrases(commands.Cog):
 
 
     ## Load phrases from json into a list of phrase objects
-    def load_phrases(self, path):
+    def load_phrases(self, path: Path):
         ## Insert source[key] (if it exists) into target[key], else insert a default string
         def insert_if_exists(target, source, key, default=None):
             if(key in source):
@@ -289,7 +291,7 @@ class Phrases(commands.Cog):
 
 
     ## Scores a given string (message) based on how many of it's words exist in another string (description)
-    def _calcSubstringScore(self, message, description):
+    def _calc_substring_score(self, message, description):
         ## Todo: shrink instances of repeated letters down to a single letter in both message and description
         ##       (ex. yeeeee => ye or reeeeeboot => rebot)
 
@@ -329,7 +331,7 @@ class Phrases(commands.Cog):
 
                 ## Build a weighted distance using a traditional similarity metric and the previously calculated word
                 ## frequency as well as the similarity of the actual string that invokes the phrase
-                distance =  (self._calcSubstringScore(message, description) * 0.5) + \
+                distance =  (self._calc_substring_score(message, description) * 0.5) + \
                             (StringSimilarity.similarity(description, message) * 0.3) + \
                             (StringSimilarity.similarity(message, phrase.name) * 0.2)
 
