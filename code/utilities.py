@@ -73,6 +73,17 @@ def load_config(directory_path: Path = None) -> dict:
     return config
 
 
+def load_module_config(directory_path: Path) -> dict:
+    config = load_config()
+    module_config = load_config(directory_path)
+
+    ## Merge the module's configuration in, prefering it over any of the root configurations
+    for key, value in module_config.items():
+        config[key] = value
+
+    return config
+
+
 def is_linux():
     return ("linux" in PLATFORM)
 

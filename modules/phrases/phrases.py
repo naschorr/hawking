@@ -15,7 +15,7 @@ from discord.ext import commands
 from discord.ext.commands.errors import MissingRequiredArgument
 
 ## Config
-CONFIG_OPTIONS = utilities.load_config()
+CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
 
 ## Logging
 logger = utilities.initialize_logging(logging.getLogger(__name__))
@@ -49,7 +49,6 @@ class PhraseGroup:
 class Phrases(commands.Cog):
     ## Keys
     PHRASES_KEY = "phrases"
-    PHRASES_FILE_EXTENSION_KEY = "phrases_file_extension"
     NAME_KEY = "name"
     MESSAGE_KEY = "message"
     IS_MUSIC_KEY = "music"
@@ -57,14 +56,11 @@ class Phrases(commands.Cog):
     BRIEF_KEY = "brief"
     DESCRIPTION_KEY = "description"
 
-    ## Defaults
-    PHRASES_FILE_EXTENSION = CONFIG_OPTIONS.get(PHRASES_FILE_EXTENSION_KEY, ".json")
-
 
     def __init__(self, hawking, bot, *args, **command_kwargs):
         self.hawking = hawking
         self.bot = bot
-        self.phrases_file_extension = self.PHRASES_FILE_EXTENSION
+        self.phrases_file_extension = CONFIG_OPTIONS.get('phrases_file_extension', '.json')
         self.command_kwargs = command_kwargs
         self.command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
@@ -73,7 +69,7 @@ class Phrases(commands.Cog):
         if (phrases_folder_path):
             self.phrases_folder_path = Path(phrases_folder_path)
         else:
-            self.phrases_folder_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
+            self.phrases_folder_path = Path.joinpath(Path(__file__).parent, CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 

@@ -4,6 +4,7 @@ import logging
 import inspect
 import importlib
 from collections import OrderedDict
+from pathlib import Path
 
 import utilities
 
@@ -31,14 +32,16 @@ class ModuleEntry:
 
 
 class ModuleManager:
-    ## Keys
-    MODULES_FOLDER_KEY = "modules_folder"
-
     def __init__(self, hawking, bot):
-        self.modules_folder = CONFIG_OPTIONS.get(self.MODULES_FOLDER_KEY, "")
-
         self.hawking = hawking
         self.bot = bot
+
+        modules_dir_path = CONFIG_OPTIONS.get('modules_dir_path')
+        if (modules_dir_path):
+            self.modules_dir_path = Path(modules_dir_path)
+        else:
+            self.modules_dir_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('modules_dir', 'modules'))
+
         self.modules = OrderedDict()
 
     ## Methods
@@ -63,17 +66,22 @@ class ModuleManager:
 
     ## Finds and registers modules inside the modules folder
     def discover(self):
-        ## Assumes that the modules folder is inside the root
-        modules_folder_path = os.path.abspath(os.path.sep.join(["..", self.modules_folder]))
-        ## Expose the modules folder to the interpreter, so modules can be loaded
-        sys.path.append(modules_folder_path)
+        if (not self.modules_dir_path.exists):
+            logger.warn('Modules directory doesn\'t exist, so no modules will be loaded.')
+            return
 
         ## Build a list of potential module paths and iterate through it...
-        candidate_modules = os.listdir(modules_folder_path)
-        for candidate in candidate_modules:
-            ## If the file could be a python file...
-            if(candidate[-3:] == ".py"):
-                name = candidate[:-3]
+        module_directories = os.listdir(self.modules_dir_path)
+        for module_directory in module_directories:
+            module_path = Path.joinpath(self.modules_dir_path, module_directory)
+
+            ## Note that the entrypoint for the module should share the same name as it's parent folder. For example:
+            ## phrases.py is the entrypoint for the phrases/ directory
+            module_entrypoint = Path.joinpath(module_path, module_path.name + '.py')
+            
+            if (module_entrypoint.exists):
+                ## Expose the module directory to the interpreter, so it can be imported
+                sys.path.append(str(module_path))
 
                 ## Attempt to import the module (akin to 'import [name]') and register it normally
                 ## NOTE: Modules MUST have a 'main()' function that essentially returns a list containing all the args
@@ -81,9 +89,14 @@ class ModuleManager:
                 ##       contain a reference to the class that serves as an entry point to the module. You should also
                 ##       specify whether or not a given module is a cog (for discord.py) or not.
                 try:
-                    module = importlib.import_module(name)
+                    module = importlib.import_module(module_path.name)
                     declarations = module.main()
+                except Exception as e:
+                    logger.exception("Unable to import module {} on bot.".format(module_path.name))
+                    del sys.path[-1]    ## Prune back the failed module from the path
+                    continue
 
+                try:
                     ## Validate the shape of the main() method's data, and attempt to tolerate poor formatting
                     if(not isinstance(declarations, list)):
                         declarations = [declarations]
@@ -92,7 +105,8 @@ class ModuleManager:
 
                     self.register(*declarations)
                 except Exception as e:
-                    logger.exception("Unable to register module {} on bot.".format(name))
+                    logger.exception("Unable to register module {} on bot.".format(module_path.name))
+                    del sys.path[-1]    ## Prune back the failed module from the path
                     del module
 
 

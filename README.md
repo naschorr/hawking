@@ -107,9 +107,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
 - **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
 - **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
-- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example, `.json`
-- **phrases_folder** - String - The name of the folder that contains phrase files.
-- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
 - **tts_file** - String - The name of the text-to-speech executable.
 - **\_tts_file_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
@@ -121,7 +118,8 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **wine** - String - The command to invoke Wine on your system. Linux only.
 - **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
 - **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
-- **modules_folder** - String - The name of the folder, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
+- **modules_dir** - String - The name of the directory, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
+- **\_modules_dir_path** - String - The path to the directory that contains the modules to be loaded for the bot. Remove the leading underscore to activate it.
 - **string_similarity_algorithm** - String - The name of the algorithm to use when calculating how similar two given strings are. Currently only supports 'difflib'.
 - **invalid_command_minimum_similarity** - Float - The minimum similarity an invalid command must have with an existing command before the existing command will be suggested as an alternative.
 - **find_command_minimum_similarity** - Float - The minimum similarity the find command must have with an existing command, before the existing command will be suggested for use.
@@ -146,6 +144,14 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **database_anonymous_table_name** - String - The name of the table to insert anonymized, long term data into.
 - **database_primary_key** - String - The primary key of the above tables.
 - **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed via the DynamoDB TTL service.
+
+#### Module Configuration
+Modify the module's `config.json` file to update these properties.
+
+##### Phrases Configuration
+- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example: `.json`.
+- **phrases_folder** - String - The name of the folder that contains phrase files.
+- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
