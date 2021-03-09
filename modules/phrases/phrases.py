@@ -111,7 +111,7 @@ class Phrases(commands.Cog):
         for file in os.listdir(path_to_scan):
             file_path = Path(file)
             if(is_json_file(file_path)):
-                phrase_files.append(Path.joinpath(path_to_scan, file_path)) # os.sep.join([path_to_scan, file]))
+                phrase_files.append(Path.joinpath(path_to_scan, file_path))
 
         return phrase_files
 

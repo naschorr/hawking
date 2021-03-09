@@ -32,14 +32,14 @@ class PrivacyManager(commands.Cog):
         if (delete_request_queue_file_path):
             self.delete_request_queue_file_path = Path(delete_request_queue_file_path)
         else:
-            self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt') # os.sep.join([utilities.get_root_path(), 'privacy', 'delete_requests.txt'])
+            self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt')
 
 
         delete_request_meta_file_path = CONFIG_OPTIONS.get('delete_request_meta_file_path')
         if (delete_request_meta_file_path):
             self.delete_request_meta_file_path = Path(delete_request_meta_file_path)
         else:
-            self.delete_request_meta_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'meta.json') # os.sep.join([utilities.get_root_path(), 'privacy', 'meta.json'])
+            self.delete_request_meta_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'meta.json')
 
         ## Make sure the file containing all delete requests is accessible.
         if (not self.is_file_accessible(self.delete_request_queue_file_path)):

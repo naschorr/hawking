@@ -48,14 +48,14 @@ def load_config(directory_path: Path = None) -> dict:
     else:
         path = get_root_path()
 
-    config_path = Path.joinpath(path, CONFIG_NAME) # Path(os.sep.join([path, CONFIG_NAME]))
+    config_path = Path.joinpath(path, CONFIG_NAME)
     if (not config_path.exists()):
         raise RuntimeError("Unable to find config.json file in root!")
 
     config = load_json(config_path)
 
     ## Override the config values if the prod config file exists.
-    prod_config_path = Path.joinpath(path, PROD_CONFIG_NAME) # Path(os.sep.join([path, PROD_CONFIG_NAME]))
+    prod_config_path = Path.joinpath(path, PROD_CONFIG_NAME)
     if (prod_config_path.exists()):
         prod_config = load_json(prod_config_path)
 
@@ -63,7 +63,7 @@ def load_config(directory_path: Path = None) -> dict:
             config[key] = value
 
     ## Override the config values if the dev config file exists.
-    dev_config_path = Path.joinpath(path, DEV_CONFIG_NAME) # Path(os.sep.join([path, DEV_CONFIG_NAME]))
+    dev_config_path = Path.joinpath(path, DEV_CONFIG_NAME)
     if (dev_config_path.exists()):
         dev_config = load_json(dev_config_path)
 
@@ -116,10 +116,10 @@ def initialize_logging(logger):
     if (log_path):
         log_path = Path(log_path)
     else:
-        log_path = Path.joinpath(get_root_path(), 'logs') # os.path.sep.join([get_root_path(), "logs"]) # Default logs to a 'logs' folder inside the hawking directory
+        log_path = Path.joinpath(get_root_path(), 'logs')
 
     log_path.mkdir(parents=True, exist_ok=True)    # Basically a mkdir -p $log_path
-    log_file = Path(log_path, 'hawking.log') # os.path.sep.join([log_path, "hawking.log"])   # Build the true path to the log file
+    log_file = Path(log_path, 'hawking.log')    # Build the true path to the log file
 
     ## Setup and add the timed rotating log handler to the logger
     backup_count = CONFIG_OPTIONS.get("log_backup_count", 7)    # Store a week's logs then start overwriting them

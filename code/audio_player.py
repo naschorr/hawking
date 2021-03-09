@@ -393,7 +393,7 @@ class AudioPlayer(commands.Cog):
             return False
 
         ## Make sure file_path points to an actual file
-        if (not file_path.is_file()): ## os.path.isfile(file_path)):
+        if (not file_path.is_file()):
             logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             await ctx.send("Sorry, <@{}>, that couldn't be played.".format(ctx.message.author.id))
             return False

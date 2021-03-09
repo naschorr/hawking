@@ -86,7 +86,6 @@ class TTSController:
     def _init_output_dir(self):
         if(not Path.exists(self.output_dir_path)): # os.path.exists(self.output_dir_path)):
             Path.mkdir(parents=True, exist_ok=True) # mkdir -p
-            # os.makedirs(self.output_dir_path)
         else:
             for root, dirs, files in os.walk(str(self.output_dir_path), topdown=False):
                 for file in files:
@@ -155,7 +154,7 @@ class TTSController:
             return None
 
         ## Generate and validate filename
-        output_file_path = Path.joinpath(self.output_dir_path, self._generate_unique_file_name(self.output_extension)) # os.sep.join([self.output_dir_path, self._generate_unique_file_name(self.output_extension)])
+        output_file_path = Path.joinpath(self.output_dir_path, self._generate_unique_file_name(self.output_extension))
 
         ## Parse options and message
         save_option = '-w "{}"'.format(str(output_file_path))
