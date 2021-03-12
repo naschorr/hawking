@@ -26,7 +26,7 @@ class DependencyGraph:
 
     ## Methods
 
-    def insert(self, cls, dependencies = []):
+    def insert(self, cls, dependencies = []) -> DependencyNode:
         class_name = cls.__name__
 
         ## Don't insert duplicates
@@ -64,3 +64,10 @@ class DependencyGraph:
         ## Add it to the list of root nodes
         if (len(node.parents) and len(dependencies) == 0):
             self.roots.append(node)
+
+        return node
+
+
+    def set_graph_loaded_state(self, state: bool):
+        for node in self._node_map.values():
+            node.loaded = False
