@@ -9,6 +9,7 @@ import random
 import math
 from typing import Callable
 from concurrent import futures
+from pathlib import Path
 
 import utilities
 import dynamo_manager
@@ -35,7 +36,7 @@ class AudioPlayRequest:
         member: discord.Member,
         channel: discord.VoiceChannel,
         audio: discord.FFmpegPCMAudio,
-        file_path: str,
+        file_path: Path,
         callback: Callable = None
     ):
         self.member = member
@@ -289,7 +290,7 @@ class AudioPlayer(commands.Cog):
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
 
-    def __init__(self, bot: commands.Bot, channel_timeout_handler, **kwargs):
+    def __init__(self, bot: commands.Bot, channel_timeout_handler, *args, **kwargs):
         self.bot = bot
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
@@ -315,11 +316,11 @@ class AudioPlayer(commands.Cog):
         return server_state
 
 
-    def build_player(self, file_path) -> discord.FFmpegPCMAudio:
+    def build_player(self, file_path: Path) -> discord.FFmpegPCMAudio:
         '''Builds an audio player for playing the file located at 'file_path'.'''
 
         return discord.FFmpegPCMAudio(
-            file_path,
+            str(file_path),
             before_options=self.ffmpeg_parameters,
             options=self.ffmpeg_post_parameters
         )
@@ -377,7 +378,7 @@ class AudioPlayer(commands.Cog):
 
 
     ## Interface for playing the audio file for the invoker's channel
-    async def play_audio(self, ctx, file_path: str, target_member = None, callback: Callable = None):
+    async def play_audio(self, ctx, file_path: Path, target_member = None, callback: Callable = None):
         '''Plays the given audio file aloud to your channel'''
 
         ## Verify that the target/requester is in a channel
@@ -392,7 +393,7 @@ class AudioPlayer(commands.Cog):
             return False
 
         ## Make sure file_path points to an actual file
-        if (not os.path.isfile(file_path)):
+        if (not file_path.is_file()):
             logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             await ctx.send("Sorry, <@{}>, that couldn't be played.".format(ctx.message.author.id))
             return False
@@ -408,11 +409,11 @@ class AudioPlayer(commands.Cog):
         return True
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: str, callback: Callable = None):
+    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: Path, callback: Callable = None):
         '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
 
         ## Make sure file_path points to an actual file
-        if (not os.path.isfile(file_path)):
+        if (not file_path.is_file()):
             logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             return False
 

@@ -75,15 +75,18 @@ class Hawking:
         self.bot.help_command = help_command.HawkingHelpCommand()
 
         ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
-        self.module_manager.register(privacy_manager.PrivacyManager, True, self, self.bot)
-        self.module_manager.register(social_helper.SocialHelper, True, self, self.bot)
-        self.module_manager.register(message_parser.MessageParser, False)
-        self.module_manager.register(admin.Admin, True, self, self.bot)
-        self.module_manager.register(speech.Speech, True, self)
-        self.module_manager.register(audio_player.AudioPlayer, True, self.bot, self.get_speech_cog().play_random_channel_timeout_message)
+        self.module_manager.register_core_module(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register_core_module(social_helper.SocialHelper, True, self, self.bot)
+        self.module_manager.register_core_module(message_parser.MessageParser, False)
+        self.module_manager.register_core_module(admin.Admin, True, self, self.bot)
+        self.module_manager.register_core_module(speech.Speech, True, self)
+        self.module_manager.register_core_module(audio_player.AudioPlayer, True, self.bot, self.get_speech_cog().play_random_channel_timeout_message)
 
-        ## Load any dynamic modules inside the /modules folder
-        self.module_manager.discover()
+        ## Find any dynamic modules, and prep them for loading
+        self.module_manager.discover_modules()
+
+        ## Load all of the previously registered modules!
+        self.module_manager.load_registered_modules()
 
         ## Give some feedback for when the bot is ready to go, and provide some help text via the 'playing' status
         @self.bot.event
@@ -168,11 +171,6 @@ class Hawking:
         return self.bot.get_cog("Music")
 
 
-    ## Register an arbitrary module with hawking (easy wrapper for self.module_manager.register)
-    def register_module(self, cls, is_cog, *init_args, **init_kwargs):
-        self.module_manager.register(cls, is_cog, *init_args, **init_kwargs)
-
-
     ## Finds the most similar command to the supplied one
     def find_most_similar_command(self, command):
         ## Build a message string that we can compare with.
@@ -212,8 +210,4 @@ class Hawking:
 
 
 if(__name__ == "__main__"):
-    hawking = Hawking()
-    # hawking.register_module(ArbitraryClass(*init_args, **init)kwargs))
-    # or,
-    # hawking.add_cog(ArbitaryClass(*args, **kwargs))
-    hawking.run()
+    Hawking().run()

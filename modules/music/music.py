@@ -6,6 +6,8 @@ from collections import OrderedDict
 
 import utilities
 import dynamo_manager
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
 from discord.ext import commands
 
 ## Config
@@ -267,7 +269,7 @@ class MusicParser:
         return notes_list
 
 
-class Music(commands.Cog):
+class Music(DiscoverableCog):
     '''
     Note that there's something wrong with the note parsing logic. It still works, but it takes waaay too long now. I'll
     look into it later.
@@ -509,5 +511,6 @@ class Music(commands.Cog):
         await self.speech_cog._say(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
 
 
-def main():
-    return [Music, False]
+def main() -> ModuleInitializationStruct:
+    ## return ModuleInitializationStruct(Music, True)
+    return False

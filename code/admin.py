@@ -13,7 +13,7 @@ class Admin(commands.Cog):
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, hawking, bot):
+    def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
         self.bot = bot
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])

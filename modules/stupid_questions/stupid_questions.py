@@ -2,22 +2,24 @@ import os
 import logging
 import random
 import time
+from pathlib import Path
 
 import utilities
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
+from reddit import Reddit
 
 import discord
 from discord.ext import commands
-from praw import Reddit
 
 ## Config
-CONFIG_OPTIONS = utilities.load_config()
+CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
 
 ## Logging
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class StupidQuestions(commands.Cog):
-    REDDIT_USER_AGENT = "discord:hawking:{} (by /u/hawking-py)".format(CONFIG_OPTIONS.get("version", "0.0.1"))
+class StupidQuestions(DiscoverableCog):
     THOUGHT_PROVOKING_STRINGS = [
         "🤔?",
         "have you ever pondered:",
@@ -33,7 +35,14 @@ class StupidQuestions(commands.Cog):
 
     def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
-        self.bot = bot 
+        self.bot = bot
+
+        ## Handle Reddit dependency
+        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit', {})
+        self.reddit = reddit_dependency.reddit
+        if (not reddit_dependency.successful):
+            self.successful = False
+            return
 
         self.questions = []
         self.is_mid_question_refresh = False
@@ -43,21 +52,17 @@ class StupidQuestions(commands.Cog):
         self.submission_top_time = CONFIG_OPTIONS.get("stupid_question_top_time", "month")
         self.submission_count = CONFIG_OPTIONS.get("stupid_question_submission_count", 500)
         self.refresh_time_seconds = CONFIG_OPTIONS.get("stupid_question_refresh_time_seconds", 21600)
-        ## Load module specific configs from 'stupid_questions.json' located in modules folder
-        modules_folder_name = CONFIG_OPTIONS.get("modules_folder", "modules")
-        config = utilities.load_json(os.path.sep.join([utilities.get_root_path(), modules_folder_name, "stupid_questions.json"]))
-        reddit_client_id = config.get("reddit_client_id")
-        reddit_secret = config.get("reddit_secret")
-
         subreddits = CONFIG_OPTIONS.get("stupid_question_subreddits", ["NoStupidQuestions"])
+
         try:
-            self.reddit = Reddit(client_id=reddit_client_id, client_secret=reddit_secret, user_agent=self.REDDIT_USER_AGENT)
             ## Use a multireddit to pull random post from any of the chosen subreddits
             self.subreddit = self.reddit.subreddit("+".join(subreddits))
         except Exception:
             logger.exception("Unable to create reddit/subreddit instance")
 
         self.bot.loop.create_task(self.load_questions())
+    
+        self.successful = True
 
 
     async def load_questions(self) -> None:
@@ -114,5 +119,5 @@ class StupidQuestions(commands.Cog):
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 
 
-def main():
-    return [StupidQuestions, True]
+def main() -> ModuleInitializationStruct:
+    return ModuleInitializationStruct(StupidQuestions, True, dependencies=[Reddit.__name__])

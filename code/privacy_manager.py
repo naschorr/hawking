@@ -1,5 +1,4 @@
 import os
-import pathlib
 import stat
 import logging
 import inspect
@@ -7,6 +6,7 @@ import asyncio
 import dateutil
 import datetime
 import json
+from pathlib import Path
 
 import utilities
 import dynamo_manager
@@ -23,18 +23,23 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 class PrivacyManager(commands.Cog):
 
-    def __init__(self, hawking, bot):
+    def __init__(self, hawking, bot, *args, **kwargs):
         self.hawking = hawking
         self.bot = bot
 
         ## Build the filepaths for the various tracking files
-        self.delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
-        if (not self.delete_request_queue_file_path):
-            self.delete_request_queue_file_path = os.sep.join([utilities.get_root_path(), 'privacy', 'delete_requests.txt'])
+        delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
+        if (delete_request_queue_file_path):
+            self.delete_request_queue_file_path = Path(delete_request_queue_file_path)
+        else:
+            self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt')
 
-        self.delete_request_meta_file_path = CONFIG_OPTIONS.get('delete_request_meta_file_path')
-        if (not self.delete_request_meta_file_path):
-            self.delete_request_meta_file_path = os.sep.join([utilities.get_root_path(), 'privacy', 'meta.json'])
+
+        delete_request_meta_file_path = CONFIG_OPTIONS.get('delete_request_meta_file_path')
+        if (delete_request_meta_file_path):
+            self.delete_request_meta_file_path = Path(delete_request_meta_file_path)
+        else:
+            self.delete_request_meta_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'meta.json')
 
         ## Make sure the file containing all delete requests is accessible.
         if (not self.is_file_accessible(self.delete_request_queue_file_path)):
@@ -75,25 +80,23 @@ class PrivacyManager(commands.Cog):
 
     ## Methods
 
-    def is_file_accessible(self, file_path) -> bool:
+    def is_file_accessible(self, file_path: Path) -> bool:
         '''Ensures that the file that holds the delete requests is accessible'''
 
-        path = pathlib.Path(file_path)
-
-        if (path.is_file()):
-            if (    os.access(path, os.R_OK) and
-                    os.access(path, os.W_OK)):
+        if (file_path.is_file()):
+            if (    os.access(file_path, os.R_OK) and
+                    os.access(file_path, os.W_OK)):
                 return True
             else:
                 try:
-                    os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+                    os.chmod(file_path, stat.S_IREAD | stat.S_IWRITE)
                     return True
                 except Exception:
                     return False
         else:
             try:
-                path.parent.mkdir(parents=True, exist_ok=True)    ## Basically mkdir -p on the parent directory
-                path.touch(0o644, exist_ok=True)    ## u+rw, go+r
+                file_path.parent.mkdir(parents=True, exist_ok=True)    ## Basically mkdir -p on the parent directory
+                file_path.touch(0o644, exist_ok=True)    ## u+rw, go+r
                 return True
             except Exception as e:
                 return False
