@@ -17,6 +17,9 @@ class DependencyNode:
         self.parents: list = []
         self.loaded: bool = False
 
+    def __str__(self):
+        return "{}: {}".format(DependencyNode.__name__,  self.name)
+
 
 class DependencyGraph:
     def __init__(self):
@@ -62,7 +65,7 @@ class DependencyGraph:
                     self._orphaned_node_map[dependency] = [node]
 
         ## Add it to the list of root nodes
-        if (len(node.parents) and len(dependencies) == 0):
+        if (len(node.parents) == 0 and len(dependencies) == 0):
             self.roots.append(node)
 
         return node
