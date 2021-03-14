@@ -17,9 +17,13 @@ class DependencyNode:
         self.parents: list = []
         self.loaded: bool = False
 
-    def __str__(self):
-        return "{}: {}".format(DependencyNode.__name__,  self.name)
 
+    def __str__(self):
+        return "{}: {}, children: {}, parents: {}, loaded: {}".format(DependencyNode.__name__,  self.name, self.children, self.parents, self.loaded)
+
+
+    def __repr__(self):
+        return "{}: {}, children: {}, parents: {}, loaded: {}".format(DependencyNode.__name__,  self.name, self.children, self.parents, self.loaded)
 
 class DependencyGraph:
     def __init__(self):

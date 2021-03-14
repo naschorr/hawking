@@ -195,7 +195,7 @@ class TTSController:
 
 class Speech(commands.Cog):
 
-    def __init__(self, hawking):
+    def __init__(self, hawking, *args, **kwargs):
         self.hawking = hawking
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])

@@ -2,6 +2,8 @@ import logging
 from random import choice
 
 import utilities
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
 
 import discord
 from discord.ext import commands
@@ -10,7 +12,7 @@ from discord.ext import commands
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class Fortune(commands.Cog):
+class Fortune(DiscoverableCog):
     ## Defaults
     FORTUNES = [
         ## Positive
@@ -51,5 +53,5 @@ class Fortune(commands.Cog):
         await speech_cog._say(ctx, choice(self.phrases), ignore_char_limit=True)
 
 
-def main():
-    return [Fortune, True]
+def main() -> ModuleInitializationStruct:
+    return ModuleInitializationStruct(Fortune, True)

@@ -290,7 +290,7 @@ class AudioPlayer(commands.Cog):
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
 
-    def __init__(self, bot: commands.Bot, channel_timeout_handler, **kwargs):
+    def __init__(self, bot: commands.Bot, channel_timeout_handler, *args, **kwargs):
         self.bot = bot
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler

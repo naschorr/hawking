@@ -1,0 +1,6 @@
+{
+    "reddit_client_id"                      : "reddit client id goes here",
+    "reddit_secret"                         : "reddit secret goes here",
+    "reddit_user_agent_description"         : "this is a short, unique description of the bot. See https://github.com/reddit-archive/reddit/wiki/API#rules. Make sure to change this.",
+    "reddit_user_agent_contact_name"        : "this is the username that reddit will use to contact you if you're abusing their servers. Make sure to change this."
+}

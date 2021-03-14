@@ -41,11 +41,6 @@
     "newline_replacement"                   : "[_<250,10>]",
     "replace_emoji"                         : true,
 
-    "stupid_question_subreddits"            : ["NoStupidQuestions", "AskRedditAfterDark", "stupidquestions", "TooAfraidToAsk"],
-    "stupid_question_top_time"              : "week",
-    "stupid_question_submission_count"      : 250,
-    "stupid_question_refresh_time_seconds"  : 21600,
-
     "database_enable"                       : false,
     "database_credentials_file_path"        : "",
     "database_resource"                     : "dynamodb",

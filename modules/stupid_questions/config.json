@@ -1,0 +1,6 @@
+{
+    "stupid_question_subreddits"            : ["NoStupidQuestions", "AskRedditAfterDark", "stupidquestions", "TooAfraidToAsk"],
+    "stupid_question_top_time"              : "week",
+    "stupid_question_submission_count"      : 250,
+    "stupid_question_refresh_time_seconds"  : 21600
+}

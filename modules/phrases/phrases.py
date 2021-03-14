@@ -9,6 +9,8 @@ from pathlib import Path
 import utilities
 import dynamo_manager
 from string_similarity import StringSimilarity
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
 
 from discord import errors
 from discord.ext import commands
@@ -46,7 +48,7 @@ class PhraseGroup:
             logger.error("Couldn't add phrase: {}, as it's not a valid Phrase object".format(phrase))
 
 
-class Phrases(commands.Cog):
+class Phrases(DiscoverableCog):
     ## Keys
     PHRASES_KEY = "phrases"
     NAME_KEY = "name"
@@ -84,6 +86,8 @@ class Phrases(commands.Cog):
 
         ## Load and add the phrases
         self.init_phrases()
+
+        self.successful = True
 
     ## Properties
 
@@ -356,5 +360,5 @@ class Phrases(commands.Cog):
             ))
 
 
-def main():
-    return [Phrases, True]
+def main() -> ModuleInitializationStruct:
+    return ModuleInitializationStruct(Phrases, True)
