@@ -153,6 +153,17 @@ Modify the module's `config.json` file to update these properties.
 - **phrases_folder** - String - The name of the folder that contains phrase files.
 - **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
 
+#### Reddit Configuration
+You'll need to get access to the Reddit API via OAuth2, so follow the "First Steps" section of [this guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) to get authenticated.
+
+- **reddit_client_id** - String - This is the `client_id` provided to you by Reddit when you create the script.
+- **reddit_secret** - String - This is the `secret` provided to you by Reddit when you create the script.
+- **reddit_user_agent_platform** - String - The platform that your script will be running on. For example: `discord-bot-py`.
+- **reddit_user_agent_app_id** - String - A unique identifier for the bot. For example: `hawking-tts`.
+- **reddit_user_agent_contact_name** - String - The is the Reddit username that's associated with your script. For example, it should look something like `/u/this-is-my-username`.
+
+All of the above `reddit*` properties are required to use the Reddit module, and thus any modules that depend on it (ex. the StupidQuestions module). Also, the user-agent that'll be sent to Reddit will be built from all of the user-agent properties above. For example, if you use the above examples, the the user-agent `discord-bot:hawking-tts:1.0.5 (by /u/this-is-my-username)` will be generated (assuming that you're running version 1.0.5 of Hawking). Lastly, please note that Reddit has some specific requirements about those user-agent components, so take a look at their [API guide](https://github.com/reddit-archive/reddit/wiki/API) for more details.
+
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
 
