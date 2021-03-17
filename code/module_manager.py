@@ -158,15 +158,6 @@ class ModuleManager:
         self._dependency_graph.insert(cls, dependency_names)
 
 
-    def register_core_module(self, cls, is_cog: bool, *init_args, **init_kwargs):
-        '''Registers a core module with the ModuleManager, and makes it instantly available'''
-
-        self.register_module(cls, is_cog, *init_args, **init_kwargs)
-
-        module_entry = self.modules.get(cls.__name__)
-        self._load_module(module_entry)
-
-
     def discover_modules(self):
         '''Discovers the available modules, and assembles the data needed to register them'''
 

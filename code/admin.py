@@ -2,13 +2,16 @@ import inspect
 
 import utilities
 import dynamo_manager
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
+
 from discord.ext import commands
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
 
-class Admin(commands.Cog):
+class Admin(DiscoverableCog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
@@ -20,6 +23,8 @@ class Admin(commands.Cog):
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
         self.dynamo_db = dynamo_manager.DynamoManager()
+
+        self.successful = True
 
     ## Properties
 
@@ -130,3 +135,6 @@ class Admin(commands.Cog):
 
         self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True
+
+def main() -> ModuleInitializationStruct:
+    return ModuleInitializationStruct(Admin, True)

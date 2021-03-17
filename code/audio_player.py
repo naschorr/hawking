@@ -14,6 +14,8 @@ from pathlib import Path
 import utilities
 import dynamo_manager
 import exceptions
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
 
 import discord
 from discord import errors
@@ -283,7 +285,7 @@ class ServerStateManager:
                 logger.exception('Exception inside audio player event loop', exc_info=e)
 
 
-class AudioPlayer(commands.Cog):
+class AudioPlayer(DiscoverableCog):
     ## Keys
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
@@ -425,3 +427,6 @@ class AudioPlayer(commands.Cog):
         await server_state.add_play_request(play_request)
 
         return True
+
+def main() -> ModuleInitializationStruct:
+    return ModuleInitializationStruct(AudioPlayer, True)

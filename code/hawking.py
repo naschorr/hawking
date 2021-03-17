@@ -74,13 +74,13 @@ class Hawking:
         ## Apply customized HelpCommand
         self.bot.help_command = help_command.HawkingHelpCommand()
 
-        ## Register the modules (Order of registration is important, make sure dependancies are loaded first)
-        self.module_manager.register_core_module(privacy_manager.PrivacyManager, True, self, self.bot)
-        self.module_manager.register_core_module(social_helper.SocialHelper, True, self, self.bot)
-        self.module_manager.register_core_module(message_parser.MessageParser, False)
-        self.module_manager.register_core_module(admin.Admin, True, self, self.bot)
-        self.module_manager.register_core_module(speech.Speech, True, self)
-        self.module_manager.register_core_module(audio_player.AudioPlayer, True, self.bot, self.get_speech_cog().play_random_channel_timeout_message)
+        ## Register the modules
+        self.module_manager.register_module(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register_module(social_helper.SocialHelper, True, self, self.bot)
+        self.module_manager.register_module(message_parser.MessageParser, False)
+        self.module_manager.register_module(admin.Admin, True, self, self.bot)
+        self.module_manager.register_module(speech.Speech, True, self, dependencies = [message_parser.MessageParser.__name__])
+        self.module_manager.register_module(audio_player.AudioPlayer, True, self.bot, lambda _: self.get_speech_cog().play_random_channel_timeout_message, dependencies = [speech.Speech.__name__])
 
         ## Find any dynamic modules, and prep them for loading
         self.module_manager.discover_modules()
