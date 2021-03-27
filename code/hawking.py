@@ -113,6 +113,7 @@ class Hawking:
                 logger.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
                     ctx.message.content,
                     ctx.message.author.name,
+                    ctx.message.channel.name,
                     ctx.guild.name
                 ), exc_info=exception)
                 ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
