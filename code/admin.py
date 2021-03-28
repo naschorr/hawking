@@ -17,14 +17,14 @@ class Admin(DiscoverableCog):
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
     def __init__(self, hawking, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.bot = bot
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
         self.dynamo_db = dynamo_manager.DynamoManager()
-
-        self.successful = True
 
     ## Properties
 
@@ -135,6 +135,3 @@ class Admin(DiscoverableCog):
 
         self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True
-
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(Admin, True)

@@ -15,7 +15,6 @@ import utilities
 import dynamo_manager
 import exceptions
 from discoverable_module import DiscoverableCog
-from module_initialization_struct import ModuleInitializationStruct
 
 import discord
 from discord import errors
@@ -292,7 +291,9 @@ class AudioPlayer(DiscoverableCog):
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
 
-    def __init__(self, bot: commands.Bot, channel_timeout_handler, *args, **kwargs):
+    def __init__(self, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.bot = bot
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
@@ -303,7 +304,28 @@ class AudioPlayer(DiscoverableCog):
         self.ffmpeg_parameters = CONFIG_OPTIONS.get(self.FFMPEG_PARAMETERS_KEY, "")
         self.ffmpeg_post_parameters = CONFIG_OPTIONS.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
 
+    ## Properties
+
+    @property
+    def channel_timeout_handler(self):
+        return self._channel_timeout_handler
+
+    
+    @channel_timeout_handler.setter
+    def channel_timeout_handler(self, handler):
+        self._channel_timeout_handler = handler
+
+        for server_state in self.server_states.values():
+            server_state.channel_timeout_handler = self.channel_timeout_handler
+
+
     ## Methods
+
+    ## This isn't ideal, but in Python 3.6 we can't use the assignment operator in a lambda, so this manual setter has
+    ## to go in it's place.
+    def set_channel_timeout_handler(self, handler):
+        self.channel_timeout_handler = handler
+
 
     def get_server_state(self, ctx) -> ServerStateManager:
         '''Retrieves the server state for the provided server_id, or creates a new one if no others exist'''
@@ -427,6 +449,3 @@ class AudioPlayer(DiscoverableCog):
         await server_state.add_play_request(play_request)
 
         return True
-
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(AudioPlayer, True)

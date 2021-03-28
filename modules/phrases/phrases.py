@@ -60,6 +60,8 @@ class Phrases(DiscoverableCog):
 
 
     def __init__(self, hawking, bot, *args, **command_kwargs):
+        super().__init__(*args, **command_kwargs)
+
         self.hawking = hawking
         self.bot = bot
         self.phrases_file_extension = CONFIG_OPTIONS.get('phrases_file_extension', '.json')

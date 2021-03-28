@@ -16,6 +16,8 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 class Reddit(DiscoverableModule):
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         client_id = CONFIG_OPTIONS.get('reddit_client_id')
         client_secret = CONFIG_OPTIONS.get('reddit_secret')
 
