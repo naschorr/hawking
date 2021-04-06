@@ -66,7 +66,8 @@ class Phrases(DiscoverableCog):
         self.bot = bot
         self.phrases_file_extension = CONFIG_OPTIONS.get('phrases_file_extension', '.json')
         self.command_kwargs = command_kwargs
-        self.command_names = []
+        self.command_names = [] # All command names
+        self.phrase_command_names = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
 
         phrases_folder_path = CONFIG_OPTIONS.get('phrases_folder_path')
@@ -211,6 +212,7 @@ class Phrases(DiscoverableCog):
                     )
                     phrases.append(phrase)
                     self.command_names.append(phrase_name)
+                    self.phrase_command_names.append(phrase_name)
                 except Exception as e:
                     logger.warning("Error loading {} from {}. Skipping...".format(phrase_raw, fd), e)
 
@@ -223,6 +225,7 @@ class Phrases(DiscoverableCog):
         for name in self.command_names:
             self.bot.remove_command(name)
         self.command_names = []
+        self.phrase_command_names = []
         self.phrase_groups = {} # yay garbage collection
 
         return True
@@ -287,7 +290,7 @@ class Phrases(DiscoverableCog):
     async def random(self, ctx):
         """Says a random clip from the list of clips."""
 
-        random_clip = random.choice(self.command_names)
+        random_clip = random.choice(self.phrase_command_names)
         command = self.bot.get_command(random_clip)
         await command.callback(self, ctx)
 
@@ -358,7 +361,7 @@ class Phrases(DiscoverableCog):
             await ctx.send(output_raw.format(
                 ctx.message.author.id,
                 CONFIG_OPTIONS.get("activation_str"),
-                random.choice(self.command_names)
+                random.choice(self.phrase_command_names)
             ))
 
 
