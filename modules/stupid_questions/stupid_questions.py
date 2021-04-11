@@ -34,6 +34,8 @@ class StupidQuestions(DiscoverableCog):
     ]
 
     def __init__(self, hawking, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.bot = bot
 

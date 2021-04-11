@@ -132,8 +132,30 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **newline_replacement** - String - A string that'll replace all newline characters in the text sent to the text-to-speech engine.
 - **replace_emoji** - Boolean - If `true`, indicates that the bot should convert emoji into their textual form (ex. :thinking: -> "thinking face"). This isn't a perfect conversion, as Discord encodes emoji into their unicode representation before the bot is able to parse it. If this is set to `false`, then the bot will just strip out emoji completely, as if they weren't there.
 
-#### Stupid Question Configuration
-- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one.
+#### Module Configuration
+Modify the module's `config.json` file to update these properties.
+
+##### Phrases Configuration
+- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example: `.json`.
+- **phrases_folder** - String - The name of the folder that contains phrase files.
+- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
+
+##### Reddit Configuration
+You'll need to get access to the Reddit API via OAuth2, so follow the "First Steps" section of [this guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) to get authenticated.
+
+- **reddit_client_id** - String - This is the `client_id` provided to you by Reddit when you create the script.
+- **reddit_secret** - String - This is the `secret` provided to you by Reddit when you create the script.
+- **reddit_user_agent_platform** - String - The platform that your script will be running on. For example: `discord-bot-py`.
+- **reddit_user_agent_app_id** - String - A unique identifier for the bot. For example: `hawking-tts`.
+- **reddit_user_agent_contact_name** - String - The is the Reddit username that's associated with your script. For example, it should look something like `/u/this-is-my-username`.
+
+All of the above `reddit*` properties are required to use the Reddit module, and thus any modules that depend on it (ex. the StupidQuestions module). Also, the user-agent that'll be sent to Reddit will be built from all of the user-agent properties above. For example, if you use the above examples, the the user-agent `discord-bot:hawking-tts:1.0.5 (by /u/this-is-my-username)` will be generated (assuming that you're running version 1.0.5 of Hawking). Lastly, please note that Reddit has some specific requirements about those user-agent components, so take a look at their [API guide](https://github.com/reddit-archive/reddit/wiki/API) for more details.
+
+##### StupidQuestion Configuration
+- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one (and ideally that one is "NoStupidQuestions" or similar).
+- **stupid_question_top_time** - String - Length of time to pull top posts from. Must be one of: `hour`, `day`, `week`, `month`, `year`, or `all`.
+- **stupid_question_submission_count** - Int - The number of posts to retrieve when querying Reddit.
+- **stupid_question_refresh_time_seconds** - Int - The number of seconds to wait before loading more questions.
 
 #### Analytics Configuration
 - **database_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
@@ -144,25 +166,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **database_anonymous_table_name** - String - The name of the table to insert anonymized, long term data into.
 - **database_primary_key** - String - The primary key of the above tables.
 - **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed via the DynamoDB TTL service.
-
-#### Module Configuration
-Modify the module's `config.json` file to update these properties.
-
-##### Phrases Configuration
-- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example: `.json`.
-- **phrases_folder** - String - The name of the folder that contains phrase files.
-- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
-
-#### Reddit Configuration
-You'll need to get access to the Reddit API via OAuth2, so follow the "First Steps" section of [this guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) to get authenticated.
-
-- **reddit_client_id** - String - This is the `client_id` provided to you by Reddit when you create the script.
-- **reddit_secret** - String - This is the `secret` provided to you by Reddit when you create the script.
-- **reddit_user_agent_platform** - String - The platform that your script will be running on. For example: `discord-bot-py`.
-- **reddit_user_agent_app_id** - String - A unique identifier for the bot. For example: `hawking-tts`.
-- **reddit_user_agent_contact_name** - String - The is the Reddit username that's associated with your script. For example, it should look something like `/u/this-is-my-username`.
-
-All of the above `reddit*` properties are required to use the Reddit module, and thus any modules that depend on it (ex. the StupidQuestions module). Also, the user-agent that'll be sent to Reddit will be built from all of the user-agent properties above. For example, if you use the above examples, the the user-agent `discord-bot:hawking-tts:1.0.5 (by /u/this-is-my-username)` will be generated (assuming that you're running version 1.0.5 of Hawking). Lastly, please note that Reddit has some specific requirements about those user-agent components, so take a look at their [API guide](https://github.com/reddit-archive/reddit/wiki/API) for more details.
 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.

@@ -12,6 +12,7 @@ import utilities
 import message_parser
 import dynamo_manager
 import exceptions
+from discoverable_module import DiscoverableCog
 
 import async_timeout
 from aioify import aioify
@@ -193,9 +194,11 @@ class TTSController:
             raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
-class Speech(commands.Cog):
+class Speech(DiscoverableCog):
 
     def __init__(self, hawking, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])

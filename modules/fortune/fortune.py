@@ -43,6 +43,8 @@ class Fortune(DiscoverableCog):
 
 
     def __init__(self, hawking, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.phrases = self.FORTUNES
 
