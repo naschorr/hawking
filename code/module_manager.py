@@ -36,7 +36,8 @@ class ModuleEntry:
 
 class ModuleManager:
     '''
-    Manages the modules' lifecycle. Chiefly, the discovery, registration, and installation of modules. It'll also support reloading existing modules/cogs too.
+    Manages the modules' lifecycle. Chiefly, the discovery, registration, and installation of modules. It'll also
+    support reloading existing modules/cogs too.
     '''
 
     def __init__(self, hawking, bot):
@@ -47,7 +48,10 @@ class ModuleManager:
         if (modules_dir_path):
             self.modules_dir_path = Path(modules_dir_path)
         else:
-            self.modules_dir_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('modules_dir', 'modules'))
+            self.modules_dir_path = Path.joinpath(
+                utilities.get_root_path(),
+                CONFIG_OPTIONS.get('modules_dir', 'modules')
+            )
 
         self.modules = OrderedDict()
         self.loaded_modules = {}    # Keep non-cog modules loaded in memory
@@ -108,14 +112,22 @@ class ModuleManager:
         module_invoker = module_entry.get_class_callable()
 
         if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
-            instantiated_module = module_invoker(*module_entry.args, **{'dependencies': module_dependencies}, **module_entry.kwargs)
+            instantiated_module = module_invoker(
+                *module_entry.args,
+                **{'dependencies': module_dependencies},
+                **module_entry.kwargs
+            )
 
             self.bot.add_cog(instantiated_module)
             self.loaded_modules[module_entry.name] = instantiated_module
 
             logger.info("Instantiated cog: {}".format(module_entry.name))
         elif (not module_entry.is_cog):
-            self.loaded_modules[module_entry.name] = module_invoker(*module_entry.args, **{'dependencies': module_dependencies}, **module_entry.kwargs)
+            self.loaded_modules[module_entry.name] = module_invoker(
+                *module_entry.args,
+                **{'dependencies': module_dependencies},
+                **module_entry.kwargs
+            )
 
             logger.info("Instantiated module: {}".format(module_entry.name))
 
@@ -132,6 +144,12 @@ class ModuleManager:
                 module_entry = self.modules.get(node.name)
                 self._load_module(module_entry, module_dependencies=dependencies)
                 node.loaded = True
+
+                ## Default the success state to True when loading a module, as that's kind of the default state. If a failure
+                ## state is entered, than that's much more explicit.
+                loaded_module = self.loaded_modules[module_entry.name]
+                if (loaded_module.successful is None):
+                    loaded_module.successful = True
 
             for child in node.children:
                 load_node(child)
@@ -156,15 +174,6 @@ class ModuleManager:
         self.modules[module_entry.name] = module_entry
 
         self._dependency_graph.insert(cls, dependency_names)
-
-
-    def register_core_module(self, cls, is_cog: bool, *init_args, **init_kwargs):
-        '''Registers a core module with the ModuleManager, and makes it instantly available'''
-
-        self.register_module(cls, is_cog, *init_args, **init_kwargs)
-
-        module_entry = self.modules.get(cls.__name__)
-        self._load_module(module_entry)
 
 
     def discover_modules(self):

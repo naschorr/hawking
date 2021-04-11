@@ -302,6 +302,8 @@ class Music(DiscoverableCog):
 
 
     def __init__(self, hawking, bot, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.bot = bot
 

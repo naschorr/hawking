@@ -2,18 +2,23 @@ import inspect
 
 import utilities
 import dynamo_manager
+from discoverable_module import DiscoverableCog
+from module_initialization_struct import ModuleInitializationStruct
+
 from discord.ext import commands
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
 
-class Admin(commands.Cog):
+class Admin(DiscoverableCog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
     def __init__(self, hawking, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.bot = bot
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
