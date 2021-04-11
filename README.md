@@ -107,9 +107,6 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
 - **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
 - **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
-- **phrases_file_extension** - String - The file extension to look for when searching for phrase files.
-- **phrases_folder** - String - The name of the folder that contains phrase files.
-- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
 - **tts_file** - String - The name of the text-to-speech executable.
 - **\_tts_file_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
@@ -121,7 +118,8 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **wine** - String - The command to invoke Wine on your system. Linux only.
 - **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
 - **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
-- **modules_folder** - String - The name of the folder, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
+- **modules_dir** - String - The name of the directory, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
+- **\_modules_dir_path** - String - The path to the directory that contains the modules to be loaded for the bot. Remove the leading underscore to activate it.
 - **string_similarity_algorithm** - String - The name of the algorithm to use when calculating how similar two given strings are. Currently only supports 'difflib'.
 - **invalid_command_minimum_similarity** - Float - The minimum similarity an invalid command must have with an existing command before the existing command will be suggested as an alternative.
 - **find_command_minimum_similarity** - Float - The minimum similarity the find command must have with an existing command, before the existing command will be suggested for use.
@@ -134,8 +132,30 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **newline_replacement** - String - A string that'll replace all newline characters in the text sent to the text-to-speech engine.
 - **replace_emoji** - Boolean - If `true`, indicates that the bot should convert emoji into their textual form (ex. :thinking: -> "thinking face"). This isn't a perfect conversion, as Discord encodes emoji into their unicode representation before the bot is able to parse it. If this is set to `false`, then the bot will just strip out emoji completely, as if they weren't there.
 
-#### Stupid Question Configuration
-- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one.
+#### Module Configuration
+Modify the module's `config.json` file to update these properties.
+
+##### Phrases Configuration
+- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example: `.json`.
+- **phrases_folder** - String - The name of the folder that contains phrase files.
+- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
+
+##### Reddit Configuration
+You'll need to get access to the Reddit API via OAuth2, so follow the "First Steps" section of [this guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) to get authenticated.
+
+- **reddit_client_id** - String - This is the `client_id` provided to you by Reddit when you create the script.
+- **reddit_secret** - String - This is the `secret` provided to you by Reddit when you create the script.
+- **reddit_user_agent_platform** - String - The platform that your script will be running on. For example: `discord-bot-py`.
+- **reddit_user_agent_app_id** - String - A unique identifier for the bot. For example: `hawking-tts`.
+- **reddit_user_agent_contact_name** - String - The is the Reddit username that's associated with your script. For example, it should look something like `/u/this-is-my-username`.
+
+All of the above `reddit*` properties are required to use the Reddit module, and thus any modules that depend on it (ex. the StupidQuestions module). Also, the user-agent that'll be sent to Reddit will be built from all of the user-agent properties above. For example, if you use the above examples, the the user-agent `discord-bot:hawking-tts:1.0.5 (by /u/this-is-my-username)` will be generated (assuming that you're running version 1.0.5 of Hawking). Lastly, please note that Reddit has some specific requirements about those user-agent components, so take a look at their [API guide](https://github.com/reddit-archive/reddit/wiki/API) for more details.
+
+##### StupidQuestion Configuration
+- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one (and ideally that one is "NoStupidQuestions" or similar).
+- **stupid_question_top_time** - String - Length of time to pull top posts from. Must be one of: `hour`, `day`, `week`, `month`, `year`, or `all`.
+- **stupid_question_submission_count** - Int - The number of posts to retrieve when querying Reddit.
+- **stupid_question_refresh_time_seconds** - Int - The number of seconds to wait before loading more questions.
 
 #### Analytics Configuration
 - **database_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.

@@ -2,16 +2,19 @@ import re
 import emoji
 
 import utilities
+from discoverable_module import DiscoverableModule
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
 
-class MessageParser:
+class MessageParser(DiscoverableModule):
     ## Keys
     REPLACE_EMOJI_KEY = "replace_emoji"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.replace_emoji = CONFIG_OPTIONS.get(self.REPLACE_EMOJI_KEY, True)
 
         ## Invert emoji.UNICODE_EMOJI's emoji dict

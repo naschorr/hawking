@@ -45,8 +45,8 @@ token.json
 modules/*.json
 
 # Ignore misc phrase files, but include default phrases
-phrases/*
-!phrases/phrases.json
+*/phrases/phrases/*
+!*/phrases/phrases/phrases.json
 
 # Ignore logfiles
 logs/*

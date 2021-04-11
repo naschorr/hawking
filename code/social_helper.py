@@ -3,6 +3,7 @@ import logging
 
 import utilities
 import dynamo_manager
+from discoverable_module import DiscoverableCog
 
 from discord.ext import commands
 from discord.ext.commands import Paginator
@@ -14,9 +15,11 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class SocialHelper(commands.Cog):
+class SocialHelper(DiscoverableCog):
 
-    def __init__(self, hawking, bot):
+    def __init__(self, hawking, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
         self.bot = bot
 

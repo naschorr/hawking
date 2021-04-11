@@ -6,11 +6,13 @@ import inspect
 import logging
 import random
 from math import ceil
+from pathlib import Path
 
 import utilities
 import message_parser
 import dynamo_manager
 import exceptions
+from discoverable_module import DiscoverableCog
 
 import async_timeout
 from aioify import aioify
@@ -29,8 +31,6 @@ class TTSController:
     ## Keys
     TTS_FILE_KEY = "tts_file"
     TTS_FILE_PATH_KEY = "tts_file_path"
-    TTS_OUTPUT_DIR_KEY = "tts_output_dir"
-    TTS_OUTPUT_DIR_PATH_KEY = "tts_output_dir_path"
     ARGS_KEY = "args"
     PREPEND_KEY = "prepend"
     APPEND_KEY = "append"
@@ -44,8 +44,6 @@ class TTSController:
     ## Defaults
     TTS_FILE = CONFIG_OPTIONS.get(TTS_FILE_KEY, "say.exe")
     TTS_FILE_PATH = CONFIG_OPTIONS.get(TTS_FILE_PATH_KEY, os.sep.join([os.path.dirname(os.path.abspath(__file__)), TTS_FILE]))
-    TTS_OUTPUT_DIR = CONFIG_OPTIONS.get(TTS_OUTPUT_DIR_KEY, "temp")
-    TTS_OUTPUT_DIR_PATH = CONFIG_OPTIONS.get(TTS_OUTPUT_DIR_PATH_KEY, os.sep.join([utilities.get_root_path(), TTS_OUTPUT_DIR]))
     PREPEND = CONFIG_OPTIONS.get(PREPEND_KEY, "[:phoneme on]")
     APPEND = CONFIG_OPTIONS.get(APPEND_KEY, "")
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
@@ -58,7 +56,6 @@ class TTSController:
 
     def __init__(self, **kwargs):
         self.exe_path = kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
-        self.output_dir_path = kwargs.get(self.TTS_OUTPUT_DIR_PATH_KEY, self.TTS_OUTPUT_DIR_PATH)
         self.args = kwargs.get(self.ARGS_KEY, {})
         self.audio_generate_timeout_seconds = CONFIG_OPTIONS.get("audio_generate_timeout_seconds", 3)
         self.prepend = kwargs.get(self.PREPEND_KEY, self.PREPEND)
@@ -70,23 +67,28 @@ class TTSController:
         self.xvfb_prepend = kwargs.get(self.XVFB_PREPEND_KEY, self.XVFB_PREPEND)
         self.is_headless = kwargs.get(self.HEADLESS_KEY, self.HEADLESS)
 
+        output_dir_path = CONFIG_OPTIONS.get('tts_output_dir_path')
+        if (output_dir_path):
+            self.output_dir_path = Path(output_dir_path)
+        else:
+            self.output_dir_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('tts_output_dir', 'temp'))
+
         self.paths_to_delete = []
-
-        if(self.output_dir_path):
-            self._init_dir()
-
         self.async_os = aioify(obj=os, name='async_os')
+
+        ## Prep the output directory
+        self._init_output_dir()
 
 
     def __del__(self):
-        self._init_dir()
+        self._init_output_dir()
 
 
-    def _init_dir(self):
-        if(not os.path.exists(self.output_dir_path)):
-            os.makedirs(self.output_dir_path)
+    def _init_output_dir(self):
+        if(not Path.exists(self.output_dir_path)): # os.path.exists(self.output_dir_path)):
+            Path.mkdir(parents=True, exist_ok=True) # mkdir -p
         else:
-            for root, dirs, files in os.walk(self.output_dir_path, topdown=False):
+            for root, dirs, files in os.walk(str(self.output_dir_path), topdown=False):
                 for file in files:
                     try:
                         os.remove(os.sep.join([root, file]))
@@ -148,21 +150,15 @@ class TTSController:
 
 
     async def save(self, message, ignore_char_limit=False):
-        ## Validate output directory
-        if(not self.output_dir_path):
-            logger.warning("Unable to save without output_dir_path set.")
-            return None
-
         ## Check message size
         if(not self.check_length(message) and not ignore_char_limit):
             return None
 
         ## Generate and validate filename
-        output_file_path = os.sep.join([self.output_dir_path, 
-                                        self._generate_unique_file_name(self.output_extension)])
+        output_file_path = Path.joinpath(self.output_dir_path, self._generate_unique_file_name(self.output_extension))
 
         ## Parse options and message
-        save_option = '-w "{}"'.format(output_file_path)
+        save_option = '-w "{}"'.format(str(output_file_path))
         message = self._parse_message(message)
 
         ## Format and invoke
@@ -198,9 +194,11 @@ class TTSController:
             raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
-class Speech(commands.Cog):
+class Speech(DiscoverableCog):
 
-    def __init__(self, hawking):
+    def __init__(self, hawking, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.hawking = hawking
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
