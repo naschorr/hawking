@@ -8,6 +8,7 @@ import utilities
 from discoverable_module import DiscoverableCog
 from module_initialization_struct import ModuleInitializationStruct
 from reddit import Reddit
+from question import Question
 
 import discord
 from discord.ext import commands
@@ -87,7 +88,7 @@ class StupidQuestions(DiscoverableCog):
             return
 
         for submission in submission_generator:
-            questions.append(submission.title)
+            questions.append(Question(submission.title, submission.subreddit.display_name, submission.shortlink))
 
         self.last_question_refresh_time = time.time()
         self.questions = questions
@@ -108,15 +109,19 @@ class StupidQuestions(DiscoverableCog):
     @commands.command(name="stupidquestion", brief="Ask a stupid question, via Reddit.")
     async def stupid_question(self, ctx):
         question = self.get_question()
+        # question_link = 
 
         if (question):
-            say_result = await self.hawking.get_speech_cog()._say(ctx, question, ignore_char_limit = True)
+            say_result = await self.hawking.get_speech_cog()._say(ctx, question.text, ignore_char_limit = True)
             if (say_result):
-                await ctx.send("Hey <@{}>, {} ```{}```".format(
+                embedded_question = discord.Embed(description="{}\n\nvia [/r/{}]({})".format(question.text, question.subreddit, question.url))
+
+                await ctx.send("Hey <@{}>, {}".format(
                     ctx.message.author.id,
                     random.choice(self.THOUGHT_PROVOKING_STRINGS),
-                    question
-                ))
+                ),
+                    embed=embedded_question
+                )
         else:
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 
