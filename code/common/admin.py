@@ -1,9 +1,9 @@
 import inspect
 
-import utilities
-import dynamo_manager
-from discoverable_module import DiscoverableCog
-from module_initialization_struct import ModuleInitializationStruct
+from common import utilities
+from common import dynamo_manager
+from common.module.discoverable_module import DiscoverableCog
+from common.module.module_initialization_struct import ModuleInitializationStruct
 
 from discord.ext import commands
 

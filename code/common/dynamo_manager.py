@@ -6,7 +6,7 @@ import uuid
 import boto3
 from boto3.dynamodb.conditions import Key
 
-import utilities
+from common import utilities
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()

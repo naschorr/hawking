@@ -9,17 +9,17 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
 
-import utilities
-import privacy_manager
-import social_helper
-import audio_player
-import speech
-import admin
-import message_parser
-import help_command
-import dynamo_manager
-from string_similarity import StringSimilarity
-from module_manager import ModuleEntry, ModuleManager
+from core import speech
+from core import message_parser
+from core.commands import help_command
+from core.commands import social_helper
+from common import utilities
+from common import admin
+from common import audio_player
+from common import dynamo_manager
+from common import privacy_manager
+from common.string_similarity import StringSimilarity
+from common.module.module_manager import ModuleManager
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -56,6 +56,10 @@ class Hawking:
         self.token = CONFIG_OPTIONS.get("discord_token")
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
+
+        ## Set the current working directory to that of the tts executable ASAP, so there's not weird issues arising
+        ## from bot init and speech execution potentially being in different working directories.
+        speech.TTSController.set_current_working_dir_to_tts_executable()
 
         self.version = kwargs.get(self.VERSION_KEY, self.VERSION)
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)

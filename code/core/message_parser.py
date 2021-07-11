@@ -1,8 +1,8 @@
 import re
 import emoji
 
-import utilities
-from discoverable_module import DiscoverableModule
+from common import utilities
+from common.module.discoverable_module import DiscoverableModule
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()

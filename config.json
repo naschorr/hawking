@@ -1,5 +1,5 @@
 {
-    "version"                               : "1.5.0",
+    "version"                               : "1.6.0",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : ["A retro TTS bot for Discord.", "Contribute or star me at https://github.com/naschorr/hawking", "Add Hawking to your server, and join the Hawking Discord server too! Type '\\invite' for links."],
@@ -18,8 +18,8 @@
     "delete_request_meta_file_path"         : "",
     "delete_request_weekday_to_process"     : 0,
     "delete_request_time_to_process"        : "T00:00:00Z",
-    "tts_file"                              : "say.exe",
-    "_tts_file_path"                        : "",
+    "tts_executable"                        : "say.exe",
+    "_tts_executable_path"                  : "",
     "tts_output_dir"                        : "temp",
     "_tts_output_dir_path"                  : "",
     "audio_generate_timeout_seconds"        : 3,
