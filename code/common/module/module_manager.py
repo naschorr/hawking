@@ -7,9 +7,9 @@ from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
 
-import utilities
-from dependency_graph import DependencyGraph, DependencyNode
-from module_initialization_struct import ModuleInitializationStruct
+from common import utilities
+from .dependency_graph import DependencyGraph
+from .module_initialization_struct import ModuleInitializationStruct
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()

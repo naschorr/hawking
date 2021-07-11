@@ -11,10 +11,10 @@ from typing import Callable
 from concurrent import futures
 from pathlib import Path
 
-import utilities
-import dynamo_manager
-import exceptions
-from discoverable_module import DiscoverableCog
+from common import utilities
+from common import dynamo_manager
+from common.exceptions import AlreadyInVoiceChannelException, UnableToConnectToVoiceChannelException
+from common.module.discoverable_module import DiscoverableCog
 
 import discord
 from discord import errors
@@ -116,7 +116,7 @@ class ServerStateManager:
         ## Make sure the bot can actually connect to the requested VoiceChannel
         permissions = channel.guild.me.permissions_in(channel)
         if (not permissions.connect or not permissions.speak):
-            raise exceptions.UnableToConnectToVoiceChannelException(
+            raise UnableToConnectToVoiceChannelException(
                 "Unable to speak and/or connect to the channel",
                 channel,
                 can_speak=permissions.speak,
@@ -135,7 +135,7 @@ class ServerStateManager:
             ## See: https://github.com/Rapptz/discord.py/issues/2284
             already_in_channel = next(filter(lambda member: member.id == self.bot.user.id, channel.members), None)
             if (already_in_channel):
-                raise exceptions.AlreadyInVoiceChannelException(
+                raise AlreadyInVoiceChannelException(
                     "Old instance of bot already exists in the channel",
                     channel
                 )
@@ -224,7 +224,7 @@ class ServerStateManager:
                     await self.ctx.send("Sorry <@{}>, I can't connect to that channel right now.".format(active_play_request.member.id))
                     continue
 
-                except exceptions.UnableToConnectToVoiceChannelException as e:
+                except excepons.UnableToConnectToVoiceChannelException as e:
                     logger.error("Unable to connect to voice channel")
 
                     required_permission_phrases = []
@@ -239,7 +239,7 @@ class ServerStateManager:
                     ))
                     continue
 
-                except exceptions.AlreadyInVoiceChannelException as e:
+                except AlreadyInVoiceChannelException as e:
                     logger.error("Unable to connect to voice channel, old instance of the bot already exists")
 
                     await self.ctx.send(

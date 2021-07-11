@@ -8,9 +8,9 @@ import datetime
 import json
 from pathlib import Path
 
-import utilities
-import dynamo_manager
-from discoverable_module import DiscoverableCog
+from common import utilities
+from common import dynamo_manager
+from common.module.discoverable_module import DiscoverableCog
 
 from discord.user import User
 from discord.ext import commands

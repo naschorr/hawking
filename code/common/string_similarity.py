@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 
-import utilities
+from common import utilities
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()

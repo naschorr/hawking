@@ -8,17 +8,14 @@ import random
 from math import ceil
 from pathlib import Path
 
-import utilities
-import message_parser
-import dynamo_manager
-import exceptions
-from discoverable_module import DiscoverableCog
+from core import message_parser
+from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
+from common import utilities
+from common.module.discoverable_module import DiscoverableCog
 
 import async_timeout
 from aioify import aioify
-from discord import errors
 from discord.ext import commands
-from discord.member import Member
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -29,8 +26,6 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 class TTSController:
     ## Keys
-    TTS_FILE_KEY = "tts_file"
-    TTS_FILE_PATH_KEY = "tts_file_path"
     ARGS_KEY = "args"
     PREPEND_KEY = "prepend"
     APPEND_KEY = "append"
@@ -42,8 +37,6 @@ class TTSController:
     HEADLESS_KEY = "headless"
 
     ## Defaults
-    TTS_FILE = CONFIG_OPTIONS.get(TTS_FILE_KEY, "say.exe")
-    TTS_FILE_PATH = CONFIG_OPTIONS.get(TTS_FILE_PATH_KEY, os.sep.join([os.path.dirname(os.path.abspath(__file__)), TTS_FILE]))
     PREPEND = CONFIG_OPTIONS.get(PREPEND_KEY, "[:phoneme on]")
     APPEND = CONFIG_OPTIONS.get(APPEND_KEY, "")
     CHAR_LIMIT = CONFIG_OPTIONS.get(CHAR_LIMIT_KEY, 1250)
@@ -55,7 +48,7 @@ class TTSController:
 
 
     def __init__(self, **kwargs):
-        self.exe_path = kwargs.get(self.TTS_FILE_PATH_KEY, self.TTS_FILE_PATH)
+        self.exe_path = TTSController.get_tts_executable_path()
         self.args = kwargs.get(self.ARGS_KEY, {})
         self.audio_generate_timeout_seconds = CONFIG_OPTIONS.get("audio_generate_timeout_seconds", 3)
         self.prepend = kwargs.get(self.PREPEND_KEY, self.PREPEND)
@@ -84,6 +77,29 @@ class TTSController:
         self._init_output_dir()
 
 
+    @staticmethod
+    def get_tts_executable_path() -> Path:
+        tts_executable_path = CONFIG_OPTIONS.get('tts_executable_path')
+
+        if (tts_executable_path is not None):
+            return Path(tts_executable_path)
+        else:
+            return Path(utilities.get_root_path(), 'code', 'core', 'tts', CONFIG_OPTIONS.get('tts_executable', 'say.exe'))
+
+
+    @staticmethod
+    def set_current_working_dir_to_tts_executable():
+        '''
+        Conveniently ensures that the current working directory is set to the location of the tts executable. This is
+        ESSENTIAL for the tts executable to work properly.
+        '''
+
+        exe_path = TTSController.get_tts_executable_path()
+
+        if (exe_path.parent != Path(os.getcwd())):
+            os.chdir(exe_path.parent)
+
+
     def _init_output_dir(self):
         if(not Path.exists(self.output_dir_path)): # os.path.exists(self.output_dir_path)):
             Path.mkdir(parents=True, exist_ok=True) # mkdir -p
@@ -92,7 +108,7 @@ class TTSController:
                 for file in files:
                     try:
                         os.remove(os.sep.join([root, file]))
-                    except OSError as e:
+                    except OSError:
                         logger.exception("Error removing file: {}".format(file))
 
 
@@ -163,7 +179,7 @@ class TTSController:
 
         ## Format and invoke
         args = '{} {} "{}"'.format(
-            self.exe_path,
+            str(self.exe_path),
             save_option,
             message
         )
@@ -183,7 +199,7 @@ class TTSController:
                 retval = await self.async_os.system(command=args)
         except asyncio.TimeoutError:
             has_timed_out = True
-            raise exceptions.BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))
+            raise BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))
         except asyncio.CancelledError as e:
             if (not has_timed_out):
                 logger.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
@@ -191,7 +207,7 @@ class TTSController:
         if(retval == 0):
             return output_file_path
         else:
-            raise exceptions.UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
+            raise UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
 class Speech(DiscoverableCog):
@@ -232,7 +248,7 @@ class Speech(DiscoverableCog):
 
         ## Make sure the message isn't too long
         if(not self.tts_controller.check_length(message) and not ignore_char_limit):
-            raise exceptions.MessageTooLongException(
+            raise MessageTooLongException(
                 "Message is {} characters long when it should be less than {}".format(
                     len(message),
                     self.tts_controller.char_limit
@@ -252,11 +268,11 @@ class Speech(DiscoverableCog):
 
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
-        except exceptions.BuildingAudioFileTimedOutExeption as e:
+        except BuildingAudioFileTimedOutExeption as e:
             logger.exception("Timed out building audio for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, it took too long to generate speech for that.".format(ctx.message.author.id))
             return
-        except exceptions.MessageTooLongException as e:
+        except MessageTooLongException as e:
             logger.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
                 len(message),
                 self.tts_controller.char_limit
@@ -266,7 +282,7 @@ class Speech(DiscoverableCog):
                 self.tts_controller.char_limit
             ))
             return False
-        except exceptions.UnableToBuildAudioFileException as e:
+        except UnableToBuildAudioFileException as e:
             logger.exception("Unable to build .wav file for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return False
