@@ -37,9 +37,6 @@ pip-selfcheck.json
 # Ignore venv files
 pyvenv.cfg
 
-# Ignore my notes
-voices.txt
-
 # Ignore credentials
 token.json
 modules/*.json
