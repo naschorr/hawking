@@ -1,5 +1,5 @@
 __all__ = [
     'help_command',
-    'social_helper',
+    'social_invite_command',
     'speech_config_help_command'
 ]

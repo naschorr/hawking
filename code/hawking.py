@@ -12,7 +12,7 @@ from discord.ext.commands.errors import CommandInvokeError
 from core import speech
 from core import message_parser
 from core.commands import help_command
-from core.commands import social_helper
+from core.commands import social_invite_command
 from core.commands import speech_config_help_command
 from common import utilities
 from common import admin
@@ -81,9 +81,8 @@ class Hawking:
 
         ## Register the modules
         self.module_manager.register_module(privacy_manager.PrivacyManager, True, self, self.bot)
-        ## technically requires HawkingHelpCommand, but that's not a cog and will always be initialized first.
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, True, self.bot)
-        self.module_manager.register_module(social_helper.SocialHelper, True, self, self.bot)
+        self.module_manager.register_module(social_invite_command.SocialInviteCommand, True, self, self.bot)
         self.module_manager.register_module(message_parser.MessageParser, False)
         self.module_manager.register_module(admin.Admin, True, self, self.bot)
         self.module_manager.register_module(
