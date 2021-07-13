@@ -17,7 +17,7 @@ Select a preset voice with the `[:name<n>]` command, where `<n>` is one of:
 You can also shorten the command to just `[:n<n>]` where `<n>` is the first letter of the name you want to use. For example: `[:nf]`.
 
 ## Changing how fast Hawking speaks
-Change the rate of speech with `[:rate<r>]`, where `<r>` is the words per minute to speak. The default is 200, and must be between 75 and 600.
+The rate of speech can be changed with `[:rate<r>]`, where `<r>` is the words per minute to speak. The default is 200, and must be between 75 and 600. For example, `[:rate100]` will cause all future speech to be spoken at 100 words per minute, which is half of the default.
 
 ## Playing tones
 Tones are pure noise, a sound and a duration. They're usually used to simulate dial tones (see the `\pizza` command), and all manner of beeps and boops. They follow the form `[:tone<f>,<l>]`, where `<f>` is the frequency of the tone, and `<l>` is the length of the tone in milliseconds. For example, `[:tone100,2000]` will generate a 100 hertz tone for 2 seconds, and `[:tone750,150]` will generate a beep at 750 hertz over 150 milliseconds.
