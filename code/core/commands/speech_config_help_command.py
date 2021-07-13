@@ -24,10 +24,6 @@ class SpeechConfigHelpCommand(DiscoverableCog):
 
         self.bot = bot
         self.dynamo_db = dynamo_manager.DynamoManager()
-
-        # self.help_command = self.bot.get_command('help')
-        # if (not self.help_command):
-        #     raise RuntimeError('Unable to locate default help command')
         
         self.build_add_speech_config_help_command()
 
