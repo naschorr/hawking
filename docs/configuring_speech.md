@@ -19,8 +19,10 @@ You can also shorten the command to just `[:n<n>]` where `<n>` is the first lett
 ## Changing how fast Hawking speaks
 The rate of speech can be changed with `[:rate<r>]`, where `<r>` is the words per minute to speak. The default is 200, and must be between 75 and 600. For example, `[:rate100]` will cause all future speech to be spoken at 100 words per minute, which is half of the default.
 
-## Playing tones
-Tones are pure noise, a sound and a duration. They're usually used to simulate dial tones (see the `\pizza` command), and all manner of beeps and boops. They follow the form `[:tone<f>,<l>]`, where `<f>` is the frequency of the tone, and `<l>` is the length of the tone in milliseconds. For example, `[:tone100,2000]` will generate a 100 hertz tone for 2 seconds, and `[:tone750,150]` will generate a beep at 750 hertz over 150 milliseconds.
+## Playing tones and dialing phones
+Tones are pure noise, simply a sound over a duration. They're usually used to simulate of beeps and boops. They follow the form `[:tone<f>,<l>]`, where `<f>` is the frequency of the tone, and `<l>` is the length of the tone in milliseconds. For example, `[:tone100,2000]` will generate a 100 hertz tone for 2 seconds, and `[:tone750,150]` will generate a beep at 750 hertz over 150 milliseconds.
+
+Similar to tones is the dial command, which can be used to emulate the touch tones used when dialing a phone number (see the `\pizza` command). It takes the form `[:dial<n>]`, where `<n>` is the number to dial, though it can take any arbitrary amount of digits. For example, `[:dial8675309]` would generate the dial tone for the phone number "867-5309".
 
 ## Advanced customization
 Customize the sound of the voice with `[:dv <commands>]`. This requires additional subcommands to fine-tune your desired behavior. Below are the more common/noticeable ones:
