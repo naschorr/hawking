@@ -19,6 +19,9 @@ You can also shorten the command to just `[:n<n>]` where `<n>` is the first lett
 ## Changing how fast Hawking speaks
 Change the rate of speech with `[:rate<r>]`, where `<r>` is the words per minute to speak. The default is 200, and must be between 75 and 600.
 
+## Playing tones
+Tones are pure noise, a sound and a duration. They're usually used to simulate dial tones (see the `\pizza` command), and all manner of beeps and boops. They follow the form `[:tone<f>,<l>]`, where `<f>` is the frequency of the tone, and `<l>` is the length of the tone in milliseconds. For example, `[:tone100,2000]` will generate a 100 hertz tone for 2 seconds, and `[:tone750,150]` will generate a beep at 750 hertz over 150 milliseconds.
+
 ## Advanced customization
 Customize the sound of the voice with `[:dv <commands>]`. This requires additional subcommands to fine-tune your desired behavior. Below are the more common/noticeable ones:
 - Pitch can be changed with `ap <p>` where `<p>` is the average pitch in hertz.
@@ -47,4 +50,3 @@ There's also a wealth of Moonbase Alpha guides on Steam, like [this one](https:/
 
 ## Todo
 - Phonemes
-- Tones
