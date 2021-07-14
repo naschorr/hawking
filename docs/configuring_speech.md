@@ -27,17 +27,17 @@ Similar to tones is the dial command, which can be used to emulate the touch ton
 ## Advanced customization
 Customize the sound of the voice with `[:dv <commands>]`. This requires additional subcommands to fine-tune your desired behavior. Below are the more common/noticeable ones:
 - Pitch can be changed with `ap <p>` where `<p>` is the average pitch in hertz.
-- Change the size of the speaker\'s head with `hs <s>` where `<s>` is the amount of change in percentage.
+- Change the size of the speaker\'s head with `hs <s>` where `<s>` is the amount of change in percentage. For example, `50` would represent a halved head size. Defaults to `100`.
 - Gender can be changed with `sx <g>` where `<g>` is `0` for female, or `1` for male.
-- Breathiness can be changed with `br <b>` where `<b>` is the amount of breathiness added in decibels.
-- Smoothness can be changed with `sm <s>` where `<s>` adjusts how smooth the voice sounds as a percentage.
-- Richness can be changed with `ri <r>`, where `<r>` is the amount of change in percentage.
+- Breathiness can be changed with `br <b>` where `<b>` is the amount of breathiness added in decibels. Default to `0`.
+- Smoothness can be changed with `sm <s>` where `<s>` adjusts how smooth the voice sounds as a percentage. Defaults to `30`.
+- Richness can be changed with `ri <r>`, where `<r>` is the amount of change in percentage. Defaults to `70`.
 
 Note that the `[:dv]` command can support multiple subcommands, each one separated by a space. Also note that you can't have the subcommand next to its parameter, they must have a space between them. Check out these examples to get a feel for it:
-- `[:dv ap 15]`
-- `[:dv hs 150 ap 10]`
-- `[:dv sx 0 ap 200 hs 50]`
-- `[:dv ap 20 sm 0 ri 90]`
+- Set the average pitch to 15 hertz: `[:dv ap 15]`
+- Increase the head size by 50%, and set the average pitch to 10 hertz: `[:dv hs 150 ap 10]`
+- Set the gender to female, the averate pitch to 200 hertz, and half the head size: `[:dv sx 0 ap 200 hs 50]`
+- Set the average pitch to 20 hertz, make the voice as un-smooth as possible, and 90% richness: `[:dv ap 20 sm 0 ri 90]`
 
 ## Examples
 - Use the "Harry" voice: `\say [:name harry] my name is harry`
@@ -49,6 +49,3 @@ Note that the `[:dv]` command can support multiple subcommands, each one separat
 You can check out the sources for Hawking's preset phrases [here](https://github.com/naschorr/hawking-phrases), to see how those are created.
 
 There's also a wealth of Moonbase Alpha guides on Steam, like [this one](https://steamcommunity.com/sharedfiles/filedetails/?id=128648903) which has some useful examples.
-
-## Todo
-- Phonemes
