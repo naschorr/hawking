@@ -99,6 +99,9 @@ Note that the `[:dv]` command can support multiple subcommands, each one separat
 ## Examples
 - Use the "Harry" voice: `\say [:name harry] my name is harry`
 - Speed up the "Kit" voice to 350 words per minute: `\say [:nk] [:rate 350] my name's Kit, and I can speak pretty quickly!`
+- Use tones to play the beginning of the Tetris theme: `\say [:t430,500][:t320,250][:t350,250][:t390,500][:t350,250][:t330,250][:t290,500][:t290,250][:t350,250][:t430,500]`
+- Dial the phone number "867-5309": `\say [:dial8675309]`
+- The famous John Madden song: `\say [ey<900,24>iyuw<450,27>ey<900,34>iyuw<450,32>jhah<900,27>nmae<225,25>ae<225,24>deh<1350,22>n]`
 - Pitch down the default voice: `\say [:dv ap 5] my name's Paul`
 - Create a demonic child to do your evil bidding: `\say [:nk] started at the top [:dv ap 2 ri 90 hs 125] [:rate 150] now we're down here.`
 
