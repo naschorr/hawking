@@ -101,8 +101,8 @@ class TTSController:
 
 
     def _init_output_dir(self):
-        if(not Path.exists(self.output_dir_path)): # os.path.exists(self.output_dir_path)):
-            Path.mkdir(parents=True, exist_ok=True) # mkdir -p
+        if(not Path.exists(self.output_dir_path)):
+            self.output_dir_path.mkdir(parents=True, exist_ok=True) # mkdir -p
         else:
             for root, dirs, files in os.walk(str(self.output_dir_path), topdown=False):
                 for file in files:
@@ -170,15 +170,14 @@ class TTSController:
         if(not self.check_length(message) and not ignore_char_limit):
             return None
 
-        ## Generate and validate filename
+        ## Generate and validate filename, build the output path save option, and parse the message
         output_file_path = Path.joinpath(self.output_dir_path, self._generate_unique_file_name(self.output_extension))
-
-        ## Parse options and message
         save_option = '-w "{}"'.format(str(output_file_path))
         message = self._parse_message(message)
 
-        ## Format and invoke
-        args = '{} {} "{}"'.format(
+        ## Build args for execution
+        ## The quotes fix an issue with spaces in the path, see: https://github.com/naschorr/hawking/issues/1
+        args = '\"\"{}\" {} \"{}\"\"'.format(
             str(self.exe_path),
             save_option,
             message
