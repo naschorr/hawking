@@ -27,6 +27,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\invite` - Gets you an invite link for the bot, as well as gets you an invite link for my Discord server.
 - `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking database. Note that anonymized usage statistics are still kept, however. All requests are processed once a week, currently that happens every Monday at midnight. Furthermore, the previously mentioned identifying information will automatically be removed after a year.
 - `\help` - Show the help screen.
+- `\speech_config` - Shows the help screen for configuring Hawking's speech.
 
 ## Hosting it yourself
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but Discord.py requires at least 3.5.3 currently)
