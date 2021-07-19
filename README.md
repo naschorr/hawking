@@ -27,6 +27,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\invite` - Gets you an invite link for the bot, as well as gets you an invite link for my Discord server.
 - `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking database. Note that anonymized usage statistics are still kept, however. All requests are processed once a week, currently that happens every Monday at midnight. Furthermore, the previously mentioned identifying information will automatically be removed after a year.
 - `\help` - Show the help screen.
+- `\speech_config` - Shows the help screen for configuring Hawking's speech.
 
 ## Hosting it yourself
 - Make sure you've got [Python 3.6](https://www.python.org/downloads/) installed, and support for virtual environments (This assumes that you're on Python 3.6 with `venv` support, but Discord.py requires at least 3.5.3 currently)
@@ -107,8 +108,8 @@ Admin commands allow for some users to have a little more control over the bot. 
 - **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
 - **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
 - **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
-- **tts_file** - String - The name of the text-to-speech executable.
-- **\_tts_file_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
+- **tts_executable** - String - The name of the text-to-speech executable.
+- **\_tts_executable_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
 - **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
 - **\_tts_output_dir_path** - String - Force the bot to use a specific text-to-speech output folder, rather than the normal `temp/` folder. Remove the leading underscore to activate it.
 - **audio_generate_timeout_seconds** - Int - Number of seconds to wait before timing out of the audio generation. Certain 'expanded' phrases can crash Hawking if too many are used at once (See: https://github.com/naschorr/hawking/issues/50)

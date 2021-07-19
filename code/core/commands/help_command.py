@@ -1,8 +1,8 @@
 import logging
 import random
 
-import utilities
-import dynamo_manager
+from common import utilities
+from common import dynamo_manager
 
 from discord.ext import commands
 from discord.ext.commands import DefaultHelpCommand, Paginator

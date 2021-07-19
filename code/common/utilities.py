@@ -3,21 +3,21 @@ import sys
 import json
 import logging
 from pathlib import Path
-from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 
 ## Config
 CONFIG_OPTIONS = {}                     # This'll be populated on import
 CONFIG_NAME = "config.json"	            # The name of the config file
 DEV_CONFIG_NAME = "config.dev.json"     # The name of the dev config file (overrides properties stored in the normal and prod config files)
 PROD_CONFIG_NAME = "config.prod.json"   # The name of the prod config file (overrides properties stored in the normal config file)
-DIRS_FROM_ROOT = 1			            # How many directories away this script is from the root
+DIRS_FROM_ROOT = 2			            # How many directories away this script is from the root
 PLATFORM = sys.platform
 
 
 def get_root_path() -> Path:
     path = Path(__file__)
 
-    for distance in range(DIRS_FROM_ROOT + 1):  # the '+ 1' includes this script in the path
+    for _ in range(DIRS_FROM_ROOT + 1):  # the '+ 1' includes this script in the path
         path = path.parent
 
     return path

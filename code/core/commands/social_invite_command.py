@@ -1,9 +1,9 @@
 import inspect
 import logging
 
-import utilities
-import dynamo_manager
-from discoverable_module import DiscoverableCog
+from common import utilities
+from common import dynamo_manager
+from common.module.discoverable_module import DiscoverableCog
 
 from discord.ext import commands
 from discord.ext.commands import Paginator
@@ -15,7 +15,7 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class SocialHelper(DiscoverableCog):
+class SocialInviteCommand(DiscoverableCog):
 
     def __init__(self, hawking, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,5 +54,3 @@ class SocialHelper(DiscoverableCog):
         paginator.close_page()
 
         await self.send_pages(ctx, paginator)
-
-        

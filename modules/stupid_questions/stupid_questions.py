@@ -4,9 +4,9 @@ import random
 import time
 from pathlib import Path
 
-import utilities
-from discoverable_module import DiscoverableCog
-from module_initialization_struct import ModuleInitializationStruct
+from common import utilities
+from common.module.discoverable_module import DiscoverableCog
+from common.module.module_initialization_struct import ModuleInitializationStruct
 from reddit import Reddit
 from question import Question
 
@@ -109,7 +109,6 @@ class StupidQuestions(DiscoverableCog):
     @commands.command(name="stupidquestion", brief="Ask a stupid question, via Reddit.")
     async def stupid_question(self, ctx):
         question = self.get_question()
-        # question_link = 
 
         if (question):
             say_result = await self.hawking.get_speech_cog()._say(ctx, question.text, ignore_char_limit = True)

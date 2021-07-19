@@ -1,9 +1,9 @@
 import logging
 from pathlib import Path
 
-import utilities
-from discoverable_module import DiscoverableModule
-from module_initialization_struct import ModuleInitializationStruct
+from common import utilities
+from common.module.discoverable_module import DiscoverableModule
+from common.module.module_initialization_struct import ModuleInitializationStruct
 
 from praw import Reddit as PrawReddit
 
