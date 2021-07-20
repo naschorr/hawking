@@ -77,4 +77,4 @@ class DependencyGraph:
 
     def set_graph_loaded_state(self, state: bool):
         for node in self._node_map.values():
-            node.loaded = False
+            node.loaded = state
