@@ -80,7 +80,7 @@ class Hawking:
         self.bot.help_command = help_command.HawkingHelpCommand()
 
         ## Register the modules
-        self.module_manager.register_module(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register_module(privacy_manager.PrivacyManager, True, self.bot, name='Hawking')
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, True, self.bot)
         self.module_manager.register_module(social_invite_command.SocialInviteCommand, True, self, self.bot)
         self.module_manager.register_module(message_parser.MessageParser, False)
