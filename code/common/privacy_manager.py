@@ -24,11 +24,11 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 class PrivacyManager(DiscoverableCog):
 
-    def __init__(self, hawking, bot, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.hawking = hawking
         self.bot = bot
+        self.name = kwargs.get('name')
 
         ## Build the filepaths for the various tracking files
         delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
@@ -206,7 +206,7 @@ class PrivacyManager(DiscoverableCog):
     @commands.command(no_pm=True, hidden=True)
     async def delete_my_data(self, ctx):
         '''
-        Initiates a request to delete all of your user data from Hawking's logs.
+        Initiates a request to delete all of your user data from the bot's logs.
         All delete requests are queued up and performed in a batch every Monday.
         '''
 
@@ -220,4 +220,9 @@ class PrivacyManager(DiscoverableCog):
 
         await self.store_user_id_for_batch_delete(user.id)
 
-        await user.send("Hey <@{}>, your delete request has been received, and it'll happen automagically next Monday. Thanks for using Hawking!".format(user.id))
+        ## Todo: don't hard code the day the delete request happens
+        confirmation_text = "Hey <@{}>, your delete request has been received, and it'll happen automagically next Monday.".format(ctx.message.author.id)
+        if (self.name):
+            confirmation_text += ' Thanks for using {}!'.format(self.name[0].upper() + self.name[1:])   # Make sure the bot's name is capitalized.
+
+        await user.send(confirmation_text)
