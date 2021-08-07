@@ -11,11 +11,11 @@ from discord.ext.commands.errors import CommandInvokeError
 
 from core import speech
 from core import message_parser
+from core.commands import admin
 from core.commands import help_command
 from core.commands import social_invite_command
 from core.commands import speech_config_help_command
 from common import utilities
-from common import admin
 from common import audio_player
 from common import dynamo_manager
 from common import privacy_manager

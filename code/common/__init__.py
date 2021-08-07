@@ -1,5 +1,4 @@
 __all__ = [
-    'admin',
     'audio_player',
     'dynamo_manager',
     'exceptions',
