@@ -88,7 +88,7 @@ class Admin(DiscoverableCog):
 
     ## Tries to reload the addon cogs (admin only)
     @admin.command(no_pm=True)
-    async def reload_cogs(self, ctx):
+    async def reload_modules(self, ctx):
         """Reloads the bot's cogs."""
 
         if(not self.is_admin(ctx.message.author)):
