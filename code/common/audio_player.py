@@ -224,7 +224,7 @@ class ServerStateManager:
                     await self.ctx.send("Sorry <@{}>, I can't connect to that channel right now.".format(active_play_request.member.id))
                     continue
 
-                except excepons.UnableToConnectToVoiceChannelException as e:
+                except UnableToConnectToVoiceChannelException as e:
                     logger.error("Unable to connect to voice channel")
 
                     required_permission_phrases = []
