@@ -24,27 +24,10 @@ class SpeechConfigHelpCommand(DiscoverableCog):
 
         self.bot = bot
         self.dynamo_db = dynamo_manager.DynamoManager()
-        
-        self.build_add_speech_config_help_command()
 
     ## Methods
 
-    def build_add_speech_config_help_command(self):
-        '''
-        The `\help speech_config` command must be parented to the main HawkingHelpCommand, so it'll properly render in
-        the list of help commands. However, setting `parent=self.help_command` won't work as decorators don't have
-        access to `self`. This means we've gotta build the Command manually.
-        '''
-
-        speech_config_help_command = commands.Command(
-            self.speech_config,
-            name='speech_config',
-            no_pm=True,
-            help='Posts a link to the Hawking speech configuration documentation.'
-        )
-        self.bot.add_command(speech_config_help_command)
-
-
+    @commands.command(no_pm=True)
     async def speech_config(self, ctx):
         '''Posts a link to the speech documentation.'''
         

@@ -11,11 +11,11 @@ from discord.ext.commands.errors import CommandInvokeError
 
 from core import speech
 from core import message_parser
+from core.commands import admin
 from core.commands import help_command
 from core.commands import social_invite_command
 from core.commands import speech_config_help_command
 from common import utilities
-from common import admin
 from common import audio_player
 from common import dynamo_manager
 from common import privacy_manager
@@ -74,13 +74,13 @@ class Hawking:
             command_prefix=commands.when_mentioned_or(self.activation_str),
             description='\n'.join(self.description)
         )
-        self.module_manager = ModuleManager(self, self.bot)
+        self._module_manager = ModuleManager(self, self.bot)
 
         ## Apply customized HelpCommand
         self.bot.help_command = help_command.HawkingHelpCommand()
 
         ## Register the modules
-        self.module_manager.register_module(privacy_manager.PrivacyManager, True, self, self.bot)
+        self.module_manager.register_module(privacy_manager.PrivacyManager, True, self.bot, name='Hawking')
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, True, self.bot)
         self.module_manager.register_module(social_invite_command.SocialInviteCommand, True, self, self.bot)
         self.module_manager.register_module(message_parser.MessageParser, False)
@@ -157,6 +157,12 @@ class Hawking:
                 ## Dump output to user
                 await ctx.send(" ".join(help_text_chunks))
                 return
+
+    ## Properties
+
+    @property
+    def module_manager(self) -> ModuleManager:
+        return self._module_manager
 
     ## Methods
 
