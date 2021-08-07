@@ -74,7 +74,7 @@ class Hawking:
             command_prefix=commands.when_mentioned_or(self.activation_str),
             description='\n'.join(self.description)
         )
-        self.module_manager = ModuleManager(self, self.bot)
+        self._module_manager = ModuleManager(self, self.bot)
 
         ## Apply customized HelpCommand
         self.bot.help_command = help_command.HawkingHelpCommand()
@@ -157,6 +157,12 @@ class Hawking:
                 ## Dump output to user
                 await ctx.send(" ".join(help_text_chunks))
                 return
+
+    ## Properties
+
+    @property
+    def module_manager(self) -> ModuleManager:
+        return self._module_manager
 
     ## Methods
 

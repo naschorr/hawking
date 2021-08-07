@@ -1,5 +1,7 @@
 import inspect
+import logging
 
+from hawking import Hawking
 from common import utilities
 from common import dynamo_manager
 from common.module.discoverable_module import DiscoverableCog
@@ -10,13 +12,16 @@ from discord.ext import commands
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
+## Logging
+logger = utilities.initialize_logging(logging.getLogger(__name__))
+
 
 class Admin(DiscoverableCog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, hawking, bot, *args, **kwargs):
+    def __init__(self, hawking: Hawking, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.hawking = hawking
@@ -73,6 +78,7 @@ class Admin(DiscoverableCog):
             return False
 
         if(not self.is_admin(ctx.message.author)):
+            logger.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
@@ -92,11 +98,12 @@ class Admin(DiscoverableCog):
         """Reloads the bot's cogs."""
 
         if(not self.is_admin(ctx.message.author)):
+            logger.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
-        count = self.hawking.module_manager.reload_all()
+        count = self.hawking.module_manager.reload_registered_modules()
         total = len(self.hawking.module_manager.modules)
 
         loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
@@ -114,6 +121,7 @@ class Admin(DiscoverableCog):
         if(not self.is_admin(ctx.message.author)):
             logger.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
 
         await self.audio_player_cog.skip(ctx, force = True)
@@ -126,6 +134,7 @@ class Admin(DiscoverableCog):
         """ Disconnect from the current voice channel."""
 
         if(not self.is_admin(ctx.message.author)):
+            logger.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
             return False
