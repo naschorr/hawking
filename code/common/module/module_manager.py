@@ -8,6 +8,7 @@ from pathlib import Path
 from functools import reduce
 
 from common import utilities
+from common.exceptions import ModuleLoadException
 from .dependency_graph import DependencyGraph
 from .module_initialization_struct import ModuleInitializationStruct
 
@@ -160,7 +161,11 @@ class ModuleManager:
 
         ## todo: parallelize?
         for node in self._dependency_graph.roots:
-            load_node(node)
+            try:
+                load_node(node)
+            except ModuleLoadException as e:
+                logger.warn(f"{e}. This module and all modules that depend on it will be skipped.")
+                continue
 
 
     def register_module(self, cls, is_cog: bool, *init_args, **init_kwargs):

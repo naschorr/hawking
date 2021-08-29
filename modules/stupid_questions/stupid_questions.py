@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from common import utilities
+from common.exceptions import ModuleLoadException
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_struct import ModuleInitializationStruct
 from reddit import Reddit
@@ -60,8 +61,8 @@ class StupidQuestions(DiscoverableCog):
         try:
             ## Use a multireddit to pull random post from any of the chosen subreddits
             self.subreddit = self.reddit.subreddit("+".join(subreddits))
-        except Exception:
-            logger.exception("Unable to create reddit/subreddit instance")
+        except Exception as e:
+            raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
         self.bot.loop.create_task(self.load_questions())
     
