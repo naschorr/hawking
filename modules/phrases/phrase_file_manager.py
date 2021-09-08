@@ -22,6 +22,12 @@ class PhraseFileManager:
         self.phrases_file_extension = CONFIG_OPTIONS.get('phrases_file_extension', '.json')
         self.non_letter_regex = re.compile('\W+')   # Compile a regex for filtering non-letter characters
 
+        phrases_folder_path = CONFIG_OPTIONS.get('phrases_folder_path')
+        if (phrases_folder_path):
+            self.phrases_folder_path = Path(phrases_folder_path)
+        else:
+            self.phrases_folder_path = Path.joinpath(Path(__file__).parent, CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
+
 
     def discover_phrase_groups(self, path_to_scan: Path) -> List[Path]:
         '''Searches the phrases folder for .json files that can potentially contain phrase groups & phrases'''
@@ -35,7 +41,7 @@ class PhraseFileManager:
         return phrase_files
 
 
-    def _build_phrases(self, phrases_json: dict) -> List[Phrase]:
+    def _build_phrases(self, phrases_json: dict, decode = True) -> List[Phrase]:
         '''
         Given a JSON dict representing an unparsed PhraseGroup's list of Phrases, build a list of Phrase objects from
         it, and return that list
@@ -74,7 +80,7 @@ class PhraseFileManager:
                 )
 
                 ## Decode the phrase!
-                if (phrase.encoded):
+                if (decode and phrase.encoded):
                     PhraseEncoderDecoder.decode(phrase)
 
                 phrases.append(phrase)
@@ -85,7 +91,7 @@ class PhraseFileManager:
         return sorted(phrases, key=lambda phrase: phrase.name)
 
 
-    def load_phrase_group(self, path: Path) -> PhraseGroup:
+    def load_phrase_group(self, path: Path, decode = True) -> PhraseGroup:
         '''
         Loads a PhraseGroup from a given phrase file json path.
 
@@ -113,7 +119,7 @@ class PhraseFileManager:
                     elif  (key == 'description'):
                         phrase_group_description = value
                     elif (key == 'phrases'):
-                        phrases = self._build_phrases(value)
+                        phrases = self._build_phrases(value, decode)
                     else:
                         kwargs[key] = value
 

@@ -41,12 +41,7 @@ class Phrases(DiscoverableCog):
         self.phrase_command_names: List[str] = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
         self.phrase_groups: Dict[str, PhraseGroup] = {}
-
-        phrases_folder_path = CONFIG_OPTIONS.get('phrases_folder_path')
-        if (phrases_folder_path):
-            self.phrases_folder_path = Path(phrases_folder_path)
-        else:
-            self.phrases_folder_path = Path.joinpath(Path(__file__).parent, CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
+        self.phrases_folder_path = self.phrase_file_manager.phrases_folder_path
 
         ## Make sure context is always passed to the callbacks
         self.command_kwargs["pass_context"] = True
