@@ -8,6 +8,7 @@ from typing import List
 from common import utilities
 from models.phrase import Phrase
 from models.phrase_group import PhraseGroup
+from models.phrase_encoding import PhraseEncoding
 from phrase_encoder_decoder import PhraseEncoderDecoder
 
 ## Config
@@ -41,6 +42,15 @@ class PhraseFileManager:
         return phrase_files
 
 
+    def _build_phrase_encoding(self, phrase_json: dict) -> PhraseEncoding:
+        '''Builds a PhraseEncoding object from raw JSON'''
+
+        if ('cipher' in phrase_json and 'fields' in phrase_json):
+            return PhraseEncoding(phrase_json['cipher'], phrase_json['fields'])
+        else:
+            return None
+
+
     def _build_phrases(self, phrases_json: dict, decode = True) -> List[Phrase]:
         '''
         Given a JSON dict representing an unparsed PhraseGroup's list of Phrases, build a list of Phrase objects from
@@ -56,7 +66,13 @@ class PhraseFileManager:
         phrases = []
         for phrase_raw in phrases_json:
             try:
+                name = phrase_raw['name']
                 message = phrase_raw['message']
+
+                if ('encoding' in phrase_raw != None):
+                    encoding = self._build_phrase_encoding(phrase_raw['encoding'])
+                else:
+                    encoding = None
 
                 ## Todo: make this less ugly
                 kwargs = {}
@@ -70,12 +86,17 @@ class PhraseFileManager:
                     kwargs['description'] = phrase_raw['description']
                 else:
                     kwargs['description'] = self.non_letter_regex.sub(' ', message).lower()
+                    
+                    ## If the message attribute is encoded, then the derived description should also be encoded.
+                    if ('message' in encoding.fields):
+                        encoding.fields.append('description')
+                
+                kwargs['is_music'] = phrase_raw.get('music', False),
 
-                phrase_name = phrase_raw['name']
                 phrase = Phrase(
-                    phrase_name,
+                    name,
                     message,
-                    phrase_raw.get('music', False),
+                    encoding,
                     **kwargs
                 )
 

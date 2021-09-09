@@ -23,13 +23,14 @@ class PhraseEncoderDecoder:
         place, nothing is returned.
         '''
 
-        if (phrase.encoding != None and phrase.encoded == False):
+        if (not phrase.encoding or phrase.encoded == False):
             return
 
-        if (phrase.encoding.cipher == PhraseEncoderDecoder.CIPHER and len(phrase.encoding.fields) > 0):
+        if (phrase.encoding.cipher == PhraseEncoderDecoder.CIPHER.value and len(phrase.encoding.fields) > 0):
             for key, value in vars(phrase).items():
                 if (key in phrase.encoding.fields):
-                    setattr(phrase, key, codecs.decode(value, PhraseEncoderDecoder.CIPHER))
+                    decoded = codecs.decode(value, PhraseEncoderDecoder.CIPHER.value)
+                    setattr(phrase, key, decoded)
 
         phrase._encoded = False
 
@@ -41,12 +42,13 @@ class PhraseEncoderDecoder:
         in place, nothing is returned.
         '''
 
-        if (phrase.encoding != None and phrase.encoded == True):
+        if (not phrase.encoding or phrase.encoded == True):
             return
 
-        if (phrase.encoding.cipher == PhraseEncoderDecoder.CIPHER and len(phrase.encoding.fields) > 0):
+        if (phrase.encoding.cipher == PhraseEncoderDecoder.CIPHER.value and len(phrase.encoding.fields) > 0):
             for key, value in vars(phrase).items():
                 if (key in phrase.encoding.fields):
-                    setattr(phrase, key, codecs.encode(value, PhraseEncoderDecoder.CIPHER))
+                    encoded = codecs.encode(value, PhraseEncoderDecoder.CIPHER.value)
+                    setattr(phrase, key, encoded)
 
         phrase._encoded = True
