@@ -1,5 +1,4 @@
 import copy
-from typing import Tuple
 
 class ToDict:
     def to_dict(self) -> dict:
