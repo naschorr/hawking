@@ -16,7 +16,7 @@ Click [here](https://discord.gg/JJqx8C4) to join!
 - Post suggestions for improving Hawking and my other bots
 - Got a funny phrase you want added? Suggest it in there!
 
-## Basic Commands
+## Commands
 These commands allow for the basic operation of the bot, by anyone. Just type them into a public text channel while connected to a public voice channel. (Hawking can also read/join channels that you've given the permissions to)
 - `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
 - `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
