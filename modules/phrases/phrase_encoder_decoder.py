@@ -32,7 +32,7 @@ class PhraseEncoderDecoder:
                     decoded = codecs.decode(value, PhraseEncoderDecoder.CIPHER.value)
                     setattr(phrase, key, decoded)
 
-        phrase._encoded = False
+        phrase.encoded = False
 
 
     @staticmethod
@@ -51,4 +51,4 @@ class PhraseEncoderDecoder:
                     encoded = codecs.encode(value, PhraseEncoderDecoder.CIPHER.value)
                     setattr(phrase, key, encoded)
 
-        phrase._encoded = True
+        phrase.encoded = True

@@ -68,14 +68,16 @@ class PhraseFileManager:
             try:
                 name = phrase_raw['name']
                 message = phrase_raw['message']
+                kwargs = {}
 
                 if ('encoding' in phrase_raw != None):
                     encoding = self._build_phrase_encoding(phrase_raw['encoding'])
                 else:
                     encoding = None
 
+                kwargs['encoded'] = phrase_raw.get('encoded', False)
+
                 ## Todo: make this less ugly
-                kwargs = {}
                 help_value = phrase_raw.get('help')  # fallback for the help submenus
                 kwargs = insert_if_exists(kwargs, phrase_raw, 'help')
                 kwargs = insert_if_exists(kwargs, phrase_raw, 'brief', help_value)
@@ -86,12 +88,9 @@ class PhraseFileManager:
                     kwargs['description'] = phrase_raw['description']
                 else:
                     kwargs['description'] = self.non_letter_regex.sub(' ', message).lower()
-                    
-                    ## If the message attribute is encoded, then the derived description should also be encoded.
-                    if ('message' in encoding.fields):
-                        encoding.fields.append('description')
+                    kwargs['derived_description'] = True
                 
-                kwargs['is_music'] = phrase_raw.get('music', False),
+                kwargs['is_music'] = phrase_raw.get('music', False)
 
                 phrase = Phrase(
                     name,
@@ -160,4 +159,9 @@ class PhraseFileManager:
 
 
     def save_phrase_group(self, path: Path, phrase_group: PhraseGroup):
-        pass
+        '''Saves the given PhraseGroup as a JSON object at the given path.'''
+
+        data = phrase_group.to_dict()
+
+        with open(path, 'w') as fd:
+            json.dump(data, fd, indent=4, ensure_ascii=False)
