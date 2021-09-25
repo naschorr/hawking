@@ -37,7 +37,7 @@ Your Hawking module may need to depend on another module to provide certain func
 For example, if you've got a module `Foo`, and a cog `Bar` that depends on `Foo`, you might instantiate `Bar`'s `ModuleInitializationStruct` to be something like:
 
 ```
-ModuleInitializationStruct(Bar, True, dependencies=[Foo.__name__])
+ModuleInitializationStruct(Bar, True, dependencies=[Foo])
 ```
 
 ### After Initialization

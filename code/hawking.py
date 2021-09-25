@@ -89,14 +89,14 @@ class Hawking:
             speech.Speech,
             True,
             self,
-            dependencies = [message_parser.MessageParser.__name__]
+            dependencies = [message_parser.MessageParser]
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
             True,
             self.bot,
             None,
-            dependencies = [speech.Speech.__name__],
+            dependencies = [speech.Speech],
             afterSuccessfulInit = lambda: self.get_audio_player_cog().set_channel_timeout_handler(self.get_speech_cog().play_random_channel_timeout_message)
         )
 

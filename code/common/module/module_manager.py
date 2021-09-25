@@ -171,14 +171,14 @@ class ModuleManager:
     def register_module(self, cls, is_cog: bool, *init_args, **init_kwargs):
         '''Registers module data with the ModuleManager, and prepares any necessary dependencies'''
 
-        dependency_names = init_kwargs.get('dependencies', [])
+        dependencies = init_kwargs.get('dependencies', [])
         if ('dependencies' in init_kwargs):
             del init_kwargs['dependencies']
 
         module_entry = ModuleEntry(cls, is_cog, *init_args, **init_kwargs)
         self.modules[module_entry.name] = module_entry
 
-        self._dependency_graph.insert(cls, dependency_names)
+        self._dependency_graph.insert(cls, dependencies)
 
 
     def discover_modules(self):
