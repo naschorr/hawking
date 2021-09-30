@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-import inspect
 import importlib
 from collections import OrderedDict
 from pathlib import Path
@@ -10,7 +9,9 @@ from functools import reduce
 from common import utilities
 from common.exceptions import ModuleLoadException
 from .dependency_graph import DependencyGraph
-from .module_initialization_struct import ModuleInitializationStruct
+from .module_initialization_container import ModuleInitializationContainer
+
+from discord.ext import commands
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -41,8 +42,8 @@ class ModuleManager:
     support reloading existing modules/cogs too.
     '''
 
-    def __init__(self, hawking, bot):
-        self.hawking = hawking
+    def __init__(self, bot_controller, bot: commands.Bot):
+        self.bot_controller = bot_controller
         self.bot = bot
 
         modules_dir_path = CONFIG_OPTIONS.get('modules_dir_path')
@@ -215,11 +216,11 @@ class ModuleManager:
                     continue
 
                 ## Filter out any malformed modules
-                if (not isinstance(module_init, ModuleInitializationStruct) and type(module_init) != bool):
+                if (not isinstance(module_init, ModuleInitializationContainer) and type(module_init) != bool):
                     logger.exception(
                         "Unable to add module {}, as it's neither an instance of {}, nor a boolean.".format(
                             module_path.name,
-                            ModuleInitializationStruct.__name__
+                            ModuleInitializationContainer.__name__
                         )
                     )
 
@@ -228,17 +229,25 @@ class ModuleManager:
                     logger.info("Skipping module {}, as it's initialization data was false".format(module_path.name))
                     continue
 
-                ## Build register_module args
-                register_module_args = [module_init.cls, module_init.is_cog]
-                if (module_init.use_root_instance):
-                    register_module_args.append(self.hawking)
-                if (module_init.use_bot_instance):
+                ## Build args to register the module
+                register_module_args = []
+                register_module_kwargs = {**module_init.init_kwargs}
+
+                if (module_init.is_cog):
+                    ## Cogs will need these set explicitly
+                    register_module_args.append(self.bot_controller)
                     register_module_args.append(self.bot)
+                else:
+                    ## Otherwise, modules can use them as needed
+                    register_module_kwargs['bot_controller'] = self.bot_controller
+                    register_module_kwargs['bot'] = self.bot
+
                 if (len(module_init.init_args) > 0):
                     register_module_args.append(*module_init.init_args)
 
+                ## Register the module!
                 try:
-                    self.register_module(*register_module_args, **module_init.init_kwargs)
+                    self.register_module(module_init.cls, module_init.is_cog, *register_module_args, **register_module_kwargs)
                 except Exception as e:
                     logger.exception("Unable to register module {} on bot.".format(module_path.name))
                     del sys.path[-1]    ## Prune back the failed module from the path

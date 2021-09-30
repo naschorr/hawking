@@ -4,7 +4,7 @@ from pathlib import Path
 from common import utilities
 from common.exceptions import ModuleLoadException
 from common.module.discoverable_module import DiscoverableModule
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module_initialization_container import ModuleInitializationContainer
 
 from praw import Reddit as PrawReddit
 
@@ -67,5 +67,5 @@ class Reddit(DiscoverableModule):
         )
 
 
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(Reddit, False, use_root_instance=False, use_bot_instance=False)
+def main() -> ModuleInitializationContainer:
+    return ModuleInitializationContainer(Reddit)

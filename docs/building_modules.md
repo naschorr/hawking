@@ -20,24 +20,24 @@ super().__init__(*args, **kwargs)
 
 ### Return Value
 
-Hawking modules must have a `main()` method that returns an instance of `ModuleInitializationStruct`. This is an object that informs the module manager of the basic information it needs to successfully initialize its respective module.
+Hawking modules must have a `main()` method that returns an instance of `ModuleInitializationContainer`. This is an object that informs the module manager of the basic information it needs to successfully initialize its respective module.
 
-The `ModuleInitializationStruct`'s initialization signature looks like:
+The `ModuleInitializationContainer`'s initialization signature looks like:
 
 ```
-def __init__(self, cls, is_cog: bool, *init_args, **init_kwargs):
+def __init__(self, cls, *init_args, **init_kwargs):
 ```
 
 You can see that at a minumum, this object requires the class it'll be initializing, and a boolean indicating whether or not it's a cog or not. Additionally, you can provide a list of arguments, and a dict of keyword arguments, which will be supplied to the class during creation.
 
 ### Dependencies
 
-Your Hawking module may need to depend on another module to provide certain functionality, and that can be specified in the `ModuleInitializationStruct`, using the `dependencies` keyword argument.
+Your Hawking module may need to depend on another module to provide certain functionality, and that can be specified in the `ModuleInitializationContainer`, using the `dependencies` keyword argument.
 
-For example, if you've got a module `Foo`, and a cog `Bar` that depends on `Foo`, you might instantiate `Bar`'s `ModuleInitializationStruct` to be something like:
+For example, if you've got a module `Foo`, and a cog `Bar` that depends on `Foo`, you might instantiate `Bar`'s `ModuleInitializationContainer` to be something like:
 
 ```
-ModuleInitializationStruct(Bar, True, dependencies=[Foo])
+ModuleInitializationContainer(Bar, dependencies=[Foo])
 ```
 
 ### After Initialization
@@ -46,10 +46,10 @@ ModuleInitializationStruct(Bar, True, dependencies=[Foo])
 
 They've also got an optional boolean `successful` property, which can be set inside the child module to alert subscribers that it was successfully initialized or not. This property being set defines which post-initialization function is called.
 
-For example, these post-initialization actions can be added to a module via it's `ModuleInitializationStruct` like so:
+For example, these post-initialization actions can be added to a module via it's `ModuleInitializationContainer` like so:
 
 ```
-ModuleInitializationStruct(Bar, True, afterSuccessfulInit=lambda: print('Module initialized successfully!'))
+ModuleInitializationContainer(Bar, afterSuccessfulInit=lambda: print('Module initialized successfully!'))
 ```
 
 ## Configuration

@@ -7,7 +7,7 @@ from pathlib import Path
 from common import utilities
 from common.exceptions import ModuleLoadException
 from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module_initialization_container import ModuleInitializationContainer
 from reddit import Reddit
 from question import Question
 
@@ -126,5 +126,5 @@ class StupidQuestions(DiscoverableCog):
             await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
 
 
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(StupidQuestions, True, dependencies=[Reddit.__name__])
+def main() -> ModuleInitializationContainer:
+    return ModuleInitializationContainer(StupidQuestions, dependencies=[Reddit])

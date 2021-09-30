@@ -9,7 +9,7 @@ from discord.ext import commands
 from common import utilities
 from common import dynamo_manager
 from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module_initialization_container import ModuleInitializationContainer
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -514,6 +514,6 @@ class Music(DiscoverableCog):
         await self.speech_cog._say(ctx, " ".join(tts_configs) + tts_notes, ignore_char_limit=ignore_char_limit)
 
 
-def main() -> ModuleInitializationStruct:
-    ## return ModuleInitializationStruct(Music, True)
+def main() -> ModuleInitializationContainer:
+    ## return ModuleInitializationContainer(Music)
     return False
