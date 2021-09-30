@@ -11,7 +11,7 @@ from common import utilities
 from common.dynamo_manager import DynamoManager
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module_initialization_container import ModuleInitializationContainer
 from phrase_file_manager import PhraseFileManager
 from models.phrase_group import PhraseGroup
 from models.phrase import Phrase
@@ -265,5 +265,5 @@ class Phrases(DiscoverableCog):
             ))
 
 
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(Phrases, True)
+def main() -> ModuleInitializationContainer:
+    return ModuleInitializationContainer(Phrases)
