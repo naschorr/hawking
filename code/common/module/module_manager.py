@@ -226,7 +226,7 @@ class ModuleManager:
 
                 ## Allow modules to be skipped if they're in a falsy 'disabled' state
                 if (module_init == False):
-                    logger.info("Skipping module {}, as it's initialization data was false".format(module_path.name))
+                    logger.info("Skipping module {}, as its initialization data was false".format(module_path.name))
                     continue
 
                 ## Build args to register the module

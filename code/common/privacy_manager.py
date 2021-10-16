@@ -10,7 +10,7 @@ from pathlib import Path
 
 from common import utilities
 from common import dynamo_manager
-from common.module.discoverable_module import DiscoverableCog
+from common.module.module import Cog
 
 from discord.user import User
 from discord.ext import commands
@@ -22,7 +22,7 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class PrivacyManager(DiscoverableCog):
+class PrivacyManager(Cog):
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)

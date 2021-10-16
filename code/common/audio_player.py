@@ -14,7 +14,7 @@ from pathlib import Path
 from common import utilities
 from common import dynamo_manager
 from common.exceptions import AlreadyInVoiceChannelException, UnableToConnectToVoiceChannelException
-from common.module.discoverable_module import DiscoverableCog
+from common.module.module import Cog
 
 import discord
 from discord import errors
@@ -284,7 +284,7 @@ class ServerStateManager:
                 logger.exception('Exception inside audio player event loop', exc_info=e)
 
 
-class AudioPlayer(DiscoverableCog):
+class AudioPlayer(Cog):
     ## Keys
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"

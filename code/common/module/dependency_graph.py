@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 from common import utilities
-from common.module.discoverable_module import DiscoverableModule
+from common.module.module import Module
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -35,7 +35,7 @@ class DependencyGraph:
 
     ## Methods
 
-    def insert(self, cls, dependencies = List[DiscoverableModule]) -> DependencyNode:
+    def insert(self, cls, dependencies = List[Module]) -> DependencyNode:
         class_name = cls.__name__
 
         ## Don't insert duplicates
@@ -58,7 +58,7 @@ class DependencyGraph:
             del self._orphaned_node_map[class_name]
 
         ## Process the dependencies by searching for existing nodes, otherwise populate the orphaned child map
-        dependency: DiscoverableModule
+        dependency: Module
         for dependency in dependencies:
             dependency_name = dependency.__name__
 

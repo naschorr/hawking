@@ -2,13 +2,13 @@ import re
 import emoji
 
 from common import utilities
-from common.module.discoverable_module import DiscoverableModule
+from common.module.module import Module
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
 
-class MessageParser(DiscoverableModule):
+class MessageParser(Module):
     ## Keys
     REPLACE_EMOJI_KEY = "replace_emoji"
 

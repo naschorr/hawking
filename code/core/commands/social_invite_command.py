@@ -3,7 +3,7 @@ import logging
 
 from common import utilities
 from common import dynamo_manager
-from common.module.discoverable_module import DiscoverableCog
+from common.module.module import Cog
 
 from discord.ext import commands
 from discord.ext.commands import Paginator
@@ -15,7 +15,7 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class SocialInviteCommand(DiscoverableCog):
+class SocialInviteCommand(Cog):
 
     def __init__(self, hawking, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)

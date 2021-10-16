@@ -8,7 +8,7 @@ Hawking modules are just normal classes, with a few extra requirements:
 
 ### Inheritance
 
-Hawking modules must inherit from `DiscoverableCog` or `DiscoverableModule`. In short, you're likely just going to want to use the `DiscoverableCog`. The idea of "cogs" comes from [discord.py](https://github.com/Rapptz/discord.py), wherein cogs are just classes that extend upon existing Discord functionality. Modules are basically just normal Pythonic modules, and have no connection to Discord at all. Note that all `DiscoverableCog`s are also `DiscoverableModule`s, but all `DiscoverableModule`s are **not** `DiscoverableCog`s.
+Hawking modules must inherit from either `DiscoverableCog` or `DiscoverableModule` (see [`discoverable_module.py`](https://github.com/naschorr/hawking/blob/master/code/common/module/discoverable_module.py) and [`module.py`](https://github.com/naschorr/hawking/blob/master/code/common/module/module.py)). In short, you're likely just going to want to use the `DiscoverableCog`. The idea of "cogs" comes from [discord.py](https://github.com/Rapptz/discord.py), wherein cogs are just classes that extend upon existing Discord functionality. Modules are basically just normal Pythonic modules, and have no connection to Discord at all. Note that all `DiscoverableCog`s are also `DiscoverableModule`s, but all `DiscoverableModule`s are **not** `DiscoverableCog`s.
 
 For example, if you'd like to add a new command to Hawking that outputs the current time, then you'd have to use `DiscoverableCog`, since your new module needs to hook into the command system.
 
