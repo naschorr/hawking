@@ -13,8 +13,8 @@ class Module():
             raise TypeError('{} should be treated as abstract, and shouldn\'t be directly instantiated.'.format(self.__class__.__name__))
 
         self._successful = None
-        self._afterSuccessfulInit = kwargs.get('afterSuccessfulInit')
-        self._afterFailedInit = kwargs.get('afterFailedInit')
+        self._after_successful_init = kwargs.get('after_successful_init')
+        self._after_failed_init = kwargs.get('after_failed_init')
 
     ## Properties
 
@@ -26,30 +26,30 @@ class Module():
     def successful(self, value: bool):
         self._successful = value
 
-        if (value and self.afterSuccessfulInit is not None):
-            self.afterSuccessfulInit()
-        elif (not value and self.afterFailedInit is not None):
-            self.afterFailedInit()
+        if (value and self.after_successful_init is not None):
+            self.after_successful_init()
+        elif (not value and self.after_failed_init is not None):
+            self.after_failed_init()
 
 
     @property
-    def afterSuccessfulInit(self) -> Callable[[], None]:
-        return self._afterSuccessfulInit
+    def after_successful_init(self) -> Callable[[], None]:
+        return self._after_successful_init
 
 
-    @afterSuccessfulInit.setter
-    def afterSuccessfulInit(self, value: Callable[[], None]):
-        self._afterSuccessfulInit = value
+    @after_successful_init.setter
+    def after_successful_init(self, value: Callable[[], None]):
+        self._after_successful_init = value
 
 
     @property
-    def afterFailedInit(self) -> Callable[[], None]:
-        return self._afterFailedInit
+    def after_failed_init(self) -> Callable[[], None]:
+        return self._after_failed_init
 
     
-    @afterFailedInit.setter
-    def afterFailedInit(self, value: Callable[[], None]):
-        self._afterFailedInit = value
+    @after_failed_init.setter
+    def after_failed_init(self, value: Callable[[], None]):
+        self._after_failed_init = value
 
 
 class Cog(Module, commands.Cog):
