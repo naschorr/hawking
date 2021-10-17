@@ -97,7 +97,7 @@ class Hawking:
             self.bot,
             None,
             dependencies = [speech.Speech],
-            afterSuccessfulInit = lambda: self.get_audio_player_cog().set_channel_timeout_handler(self.get_speech_cog().play_random_channel_timeout_message)
+            after_successful_init = lambda: self.get_audio_player_cog().set_channel_timeout_handler(self.get_speech_cog().play_random_channel_timeout_message)
         )
 
         ## Find any dynamic modules, and prep them for loading
