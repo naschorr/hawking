@@ -8,6 +8,7 @@ from functools import reduce
 
 from common import utilities
 from common.exceptions import ModuleLoadException
+from common.module.module import Module
 from .dependency_graph import DependencyGraph
 from .module_initialization_container import ModuleInitializationContainer
 
@@ -32,7 +33,7 @@ class ModuleEntry:
     ## Methods
 
     ## Returns an invokable object to instantiate the class defined in self.cls
-    def get_class_callable(self):
+    def get_class_callable(self) -> Module:
         return getattr(self.module, self.name)
 
 
@@ -111,27 +112,35 @@ class ModuleManager:
 
 
     def _load_module(self, module_entry: ModuleEntry, module_dependencies = []):
-        module_invoker = module_entry.get_class_callable()
+        if(self.bot.get_cog(module_entry.name)):
+            logger.warn(
+                'Cog with name \'{}\' has already been loaded onto the bot, skipping...'.format(module_entry.name)
+            )
+            return
 
-        if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
+        module_invoker = module_entry.get_class_callable()
+        instantiated_module: Module
+        try:
             instantiated_module = module_invoker(
                 *module_entry.args,
                 **{'dependencies': module_dependencies},
                 **module_entry.kwargs
             )
+        except Exception:
+            ## Only set the unsuccessful state if it hasn't already been set. Setting the successful state happens later
+            if (
+                    instantiated_module is None
+                    or hasattr(instantiated_module, 'successful')
+                    and instantiated_module.successful is not False
+            ):
+                instantiated_module.successful = False
+            return
 
+        if (module_entry.is_cog):
             self.bot.add_cog(instantiated_module)
-            self.loaded_modules[module_entry.name] = instantiated_module
-
-            logger.info("Instantiated cog: {}".format(module_entry.name))
-        elif (not module_entry.is_cog):
-            self.loaded_modules[module_entry.name] = module_invoker(
-                *module_entry.args,
-                **{'dependencies': module_dependencies},
-                **module_entry.kwargs
-            )
-
-            logger.info("Instantiated module: {}".format(module_entry.name))
+        
+        self.loaded_modules[module_entry.name] = instantiated_module
+        logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
 
 
     def load_registered_modules(self):
