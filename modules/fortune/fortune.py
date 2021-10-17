@@ -3,7 +3,7 @@ from random import choice
 
 from common import utilities
 from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module_initialization_container import ModuleInitializationContainer
 
 import discord
 from discord.ext import commands
@@ -55,5 +55,5 @@ class Fortune(DiscoverableCog):
         await speech_cog._say(ctx, choice(self.phrases), ignore_char_limit=True)
 
 
-def main() -> ModuleInitializationStruct:
-    return ModuleInitializationStruct(Fortune, True)
+def main() -> ModuleInitializationContainer:
+    return ModuleInitializationContainer(Fortune)

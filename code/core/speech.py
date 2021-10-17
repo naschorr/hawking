@@ -11,7 +11,7 @@ from pathlib import Path
 from core import message_parser
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from common import utilities
-from common.module.discoverable_module import DiscoverableCog
+from common.module.module import Cog
 
 import async_timeout
 from aioify import aioify
@@ -209,7 +209,7 @@ class TTSController:
             raise UnableToBuildAudioFileException("Couldn't build the wav file for '{}', retval={}".format(message, retval))
 
 
-class Speech(DiscoverableCog):
+class Speech(Cog):
 
     def __init__(self, hawking, *args, **kwargs):
         super().__init__(*args, **kwargs)

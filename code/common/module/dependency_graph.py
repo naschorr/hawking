@@ -1,6 +1,8 @@
 import logging
+from typing import List
 
 from common import utilities
+from common.module.module import Module
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -33,7 +35,7 @@ class DependencyGraph:
 
     ## Methods
 
-    def insert(self, cls, dependencies = []) -> DependencyNode:
+    def insert(self, cls, dependencies = List[Module]) -> DependencyNode:
         class_name = cls.__name__
 
         ## Don't insert duplicates
@@ -56,17 +58,20 @@ class DependencyGraph:
             del self._orphaned_node_map[class_name]
 
         ## Process the dependencies by searching for existing nodes, otherwise populate the orphaned child map
+        dependency: Module
         for dependency in dependencies:
-            if (dependency in self._node_map):
-                dependency_node = self._node_map[dependency]
+            dependency_name = dependency.__name__
+
+            if (dependency_name in self._node_map):
+                dependency_node = self._node_map[dependency_name]
 
                 node.parents.append(dependency_node)
                 dependency_node.children.append(node)
             else:
-                if (dependency in self._orphaned_node_map):
-                    self._orphaned_node_map[dependency].append(node)
+                if (dependency_name in self._orphaned_node_map):
+                    self._orphaned_node_map[dependency_name].append(node)
                 else:
-                    self._orphaned_node_map[dependency] = [node]
+                    self._orphaned_node_map[dependency_name] = [node]
 
         ## Add it to the list of root nodes
         if (len(node.parents) == 0 and len(dependencies) == 0):

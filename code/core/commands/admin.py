@@ -4,8 +4,8 @@ import logging
 from hawking import Hawking
 from common import utilities
 from common import dynamo_manager
-from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_struct import ModuleInitializationStruct
+from common.module.module import Cog
+from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
 
@@ -16,7 +16,7 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class Admin(DiscoverableCog):
+class Admin(Cog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"

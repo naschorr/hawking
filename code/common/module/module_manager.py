@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-import inspect
 import importlib
 from collections import OrderedDict
 from pathlib import Path
@@ -9,8 +8,11 @@ from functools import reduce
 
 from common import utilities
 from common.exceptions import ModuleLoadException
+from common.module.module import Module
 from .dependency_graph import DependencyGraph
-from .module_initialization_struct import ModuleInitializationStruct
+from .module_initialization_container import ModuleInitializationContainer
+
+from discord.ext import commands
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
@@ -31,7 +33,7 @@ class ModuleEntry:
     ## Methods
 
     ## Returns an invokable object to instantiate the class defined in self.cls
-    def get_class_callable(self):
+    def get_class_callable(self) -> Module:
         return getattr(self.module, self.name)
 
 
@@ -41,8 +43,8 @@ class ModuleManager:
     support reloading existing modules/cogs too.
     '''
 
-    def __init__(self, hawking, bot):
-        self.hawking = hawking
+    def __init__(self, bot_controller, bot: commands.Bot):
+        self.bot_controller = bot_controller
         self.bot = bot
 
         modules_dir_path = CONFIG_OPTIONS.get('modules_dir_path')
@@ -110,27 +112,35 @@ class ModuleManager:
 
 
     def _load_module(self, module_entry: ModuleEntry, module_dependencies = []):
-        module_invoker = module_entry.get_class_callable()
+        if(self.bot.get_cog(module_entry.name)):
+            logger.warn(
+                'Cog with name \'{}\' has already been loaded onto the bot, skipping...'.format(module_entry.name)
+            )
+            return
 
-        if(not self.bot.get_cog(module_entry.name) and module_entry.is_cog):
+        module_invoker = module_entry.get_class_callable()
+        instantiated_module: Module
+        try:
             instantiated_module = module_invoker(
                 *module_entry.args,
                 **{'dependencies': module_dependencies},
                 **module_entry.kwargs
             )
+        except Exception:
+            ## Only set the unsuccessful state if it hasn't already been set. Setting the successful state happens later
+            if (
+                    instantiated_module is None
+                    or hasattr(instantiated_module, 'successful')
+                    and instantiated_module.successful is not False
+            ):
+                instantiated_module.successful = False
+            return
 
+        if (module_entry.is_cog):
             self.bot.add_cog(instantiated_module)
-            self.loaded_modules[module_entry.name] = instantiated_module
-
-            logger.info("Instantiated cog: {}".format(module_entry.name))
-        elif (not module_entry.is_cog):
-            self.loaded_modules[module_entry.name] = module_invoker(
-                *module_entry.args,
-                **{'dependencies': module_dependencies},
-                **module_entry.kwargs
-            )
-
-            logger.info("Instantiated module: {}".format(module_entry.name))
+        
+        self.loaded_modules[module_entry.name] = instantiated_module
+        logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
 
 
     def load_registered_modules(self):
@@ -171,14 +181,14 @@ class ModuleManager:
     def register_module(self, cls, is_cog: bool, *init_args, **init_kwargs):
         '''Registers module data with the ModuleManager, and prepares any necessary dependencies'''
 
-        dependency_names = init_kwargs.get('dependencies', [])
+        dependencies = init_kwargs.get('dependencies', [])
         if ('dependencies' in init_kwargs):
             del init_kwargs['dependencies']
 
         module_entry = ModuleEntry(cls, is_cog, *init_args, **init_kwargs)
         self.modules[module_entry.name] = module_entry
 
-        self._dependency_graph.insert(cls, dependency_names)
+        self._dependency_graph.insert(cls, dependencies)
 
 
     def discover_modules(self):
@@ -215,30 +225,38 @@ class ModuleManager:
                     continue
 
                 ## Filter out any malformed modules
-                if (not isinstance(module_init, ModuleInitializationStruct) and type(module_init) != bool):
+                if (not isinstance(module_init, ModuleInitializationContainer) and type(module_init) != bool):
                     logger.exception(
                         "Unable to add module {}, as it's neither an instance of {}, nor a boolean.".format(
                             module_path.name,
-                            ModuleInitializationStruct.__name__
+                            ModuleInitializationContainer.__name__
                         )
                     )
 
                 ## Allow modules to be skipped if they're in a falsy 'disabled' state
                 if (module_init == False):
-                    logger.info("Skipping module {}, as it's initialization data was false".format(module_path.name))
+                    logger.info("Skipping module {}, as its initialization data was false".format(module_path.name))
                     continue
 
-                ## Build register_module args
-                register_module_args = [module_init.cls, module_init.is_cog]
-                if (module_init.use_root_instance):
-                    register_module_args.append(self.hawking)
-                if (module_init.use_bot_instance):
+                ## Build args to register the module
+                register_module_args = []
+                register_module_kwargs = {**module_init.init_kwargs}
+
+                if (module_init.is_cog):
+                    ## Cogs will need these set explicitly
+                    register_module_args.append(self.bot_controller)
                     register_module_args.append(self.bot)
+                else:
+                    ## Otherwise, modules can use them as needed
+                    register_module_kwargs['bot_controller'] = self.bot_controller
+                    register_module_kwargs['bot'] = self.bot
+
                 if (len(module_init.init_args) > 0):
                     register_module_args.append(*module_init.init_args)
 
+                ## Register the module!
                 try:
-                    self.register_module(*register_module_args, **module_init.init_kwargs)
+                    self.register_module(module_init.cls, module_init.is_cog, *register_module_args, **register_module_kwargs)
                 except Exception as e:
                     logger.exception("Unable to register module {} on bot.".format(module_path.name))
                     del sys.path[-1]    ## Prune back the failed module from the path

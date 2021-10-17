@@ -3,7 +3,7 @@ import logging
 
 from common import utilities
 from common import dynamo_manager
-from common.module.discoverable_module import DiscoverableCog
+from common.module.module import Cog
 
 import discord
 from discord.ext import commands
@@ -15,7 +15,7 @@ CONFIG_OPTIONS = utilities.load_config()
 logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
-class SpeechConfigHelpCommand(DiscoverableCog):
+class SpeechConfigHelpCommand(Cog):
 
     HAWKING_SPEECH_CONFIG_URL = 'https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md'
 
