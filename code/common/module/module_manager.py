@@ -66,7 +66,7 @@ class ModuleManager:
 
     ## Methods
 
-    def _load_module(self, module_entry: ModuleEntry, module_dependencies = []):
+    def _load_module(self, module_entry: ModuleEntry, module_dependencies = []) -> bool:
         if(self.bot.get_cog(module_entry.name)):
             logger.warn(
                 'Cog with name \'{}\' has already been loaded onto the bot, skipping...'.format(module_entry.name)
@@ -81,7 +81,9 @@ class ModuleManager:
                 **{'dependencies': module_dependencies},
                 **module_entry.kwargs
             )
-        except Exception:
+        except ModuleLoadException as e:
+            logger.error(f"Error: '{e.message}' while loading module: {module_entry.name}.")
+
             ## Only set the unsuccessful state if it hasn't already been set. Setting the successful state happens later
             if (
                     instantiated_module is not None
@@ -89,13 +91,15 @@ class ModuleManager:
                     and instantiated_module.successful is not False
             ):
                 instantiated_module.successful = False
-            return
+            return False
 
         if (module_entry.is_cog):
             self.bot.add_cog(instantiated_module)
         
         self.loaded_modules[module_entry.name] = instantiated_module
         logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
+
+        return True
 
 
     def load_registered_modules(self) -> int:
@@ -110,8 +114,10 @@ class ModuleManager:
                     dependencies[parent.name] = self.loaded_modules[parent.name]
 
                 module_entry = self.modules.get(node.name)
-                self._load_module(module_entry, module_dependencies=dependencies)
-                node.loaded = True
+                node.loaded = self._load_module(module_entry, module_dependencies=dependencies)
+
+                if (not node.loaded):
+                    return 0
 
                 ## Default the success state to True when loading a module, as that's kind of the default state. If a
                 ## failure state is entered, than that's much more explicit.
