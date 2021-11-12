@@ -22,18 +22,22 @@ logger = utilities.initialize_logging(logging.getLogger(__name__))
 
 
 class ModuleEntry:
-    def __init__(self, cls, is_cog, *init_args, **init_kwargs):
+    def __init__(self, cls: Module, *init_args, **init_kwargs):
         self.module = sys.modules[cls.__module__]
         self.cls = cls
         self.name = cls.__name__
-        self.is_cog = is_cog
+        self.is_cog = issubclass(cls, commands.Cog)
         self.args = init_args
         self.kwargs = init_kwargs
 
+        self.dependencies = init_kwargs.get('dependencies', [])
+        if ('dependencies' in init_kwargs):
+            del init_kwargs['dependencies']
+
     ## Methods
 
-    ## Returns an invokable object to instantiate the class defined in self.cls
     def get_class_callable(self) -> Module:
+        '''Returns an invokable object to instantiate the class defined in self.cls'''
         return getattr(self.module, self.name)
 
 
@@ -62,56 +66,7 @@ class ModuleManager:
 
     ## Methods
 
-    def _reimport_registered_module(self, module) -> bool:
-        '''Reimports a given module'''
-
-        try:
-            importlib.reload(module)
-            return True
-        except Exception as e:
-            logger.error("Error: ({}) reloading module: {}".format(e, module))
-            return False
-
-
-    def _reload_registered_module(self, module_name: str):
-        '''Reloads a module matching the provided name'''
-
-        module_entry = self.modules.get(module_name)
-        assert module_entry is not None
-
-        return self._reimport_registered_module(module_entry.module)
-
-
-    def _reload_cog(self, cog_name):
-        '''Reloads a cog that's already been attached to the bot'''
-
-        module_entry = self.modules.get(cog_name)
-        assert module_entry is not None
-
-        self.bot.remove_cog(cog_name)
-        self._reimport_registered_module(module_entry.module)
-        cog_cls = module_entry.get_class_callable()
-        self.bot.add_cog(cog_cls(*module_entry.args, **module_entry.kwargs))
-
-
-    def reload_registered_modules(self):
-        counter = 0
-        for module_name in self.modules:
-            try:
-                if(self.modules[module_name].is_cog):
-                    self._reload_cog(module_name)
-                else:
-                    self._reload_registered_module(module_name)
-            except Exception as e:
-                logger.error("Error: {} when reloading cog: {}".format(e, module_name))
-            else:
-                counter += 1
-
-        logger.info("Loaded {}/{} cogs.".format(counter, len(self.modules)))
-        return counter
-
-
-    def _load_module(self, module_entry: ModuleEntry, module_dependencies = []):
+    def _load_module(self, module_entry: ModuleEntry, module_dependencies = []) -> bool:
         if(self.bot.get_cog(module_entry.name)):
             logger.warn(
                 'Cog with name \'{}\' has already been loaded onto the bot, skipping...'.format(module_entry.name)
@@ -119,22 +74,24 @@ class ModuleManager:
             return
 
         module_invoker = module_entry.get_class_callable()
-        instantiated_module: Module
+        instantiated_module: Module = None
         try:
             instantiated_module = module_invoker(
                 *module_entry.args,
                 **{'dependencies': module_dependencies},
                 **module_entry.kwargs
             )
-        except Exception:
+        except ModuleLoadException as e:
+            logger.error(f"Error: '{e.message}' while loading module: {module_entry.name}.")
+
             ## Only set the unsuccessful state if it hasn't already been set. Setting the successful state happens later
             if (
-                    instantiated_module is None
+                    instantiated_module is not None
                     or hasattr(instantiated_module, 'successful')
                     and instantiated_module.successful is not False
             ):
                 instantiated_module.successful = False
-            return
+            return False
 
         if (module_entry.is_cog):
             self.bot.add_cog(instantiated_module)
@@ -142,53 +99,86 @@ class ModuleManager:
         self.loaded_modules[module_entry.name] = instantiated_module
         logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
 
+        return True
 
-    def load_registered_modules(self):
+
+    def load_registered_modules(self) -> int:
         '''Performs the initial load of modules, and adds them to the bot'''
 
-        def load_node(node):
+        def load_node(node) -> int:
+            counter = 0
+
             if (not node.loaded and reduce(lambda value, node: node.loaded and value, node.parents, True)):
                 dependencies = {}
                 for parent in node.parents:
                     dependencies[parent.name] = self.loaded_modules[parent.name]
 
                 module_entry = self.modules.get(node.name)
-                self._load_module(module_entry, module_dependencies=dependencies)
-                node.loaded = True
+                node.loaded = self._load_module(module_entry, module_dependencies=dependencies)
 
-                ## Default the success state to True when loading a module, as that's kind of the default state. If a failure
-                ## state is entered, than that's much more explicit.
+                if (not node.loaded):
+                    return 0
+
+                ## Default the success state to True when loading a module, as that's kind of the default state. If a
+                ## failure state is entered, than that's much more explicit.
                 loaded_module = self.loaded_modules[module_entry.name]
                 if (loaded_module.successful is None):
                     loaded_module.successful = True
+                
+                counter += 1
 
             for child in node.children:
-                load_node(child)
+                counter += load_node(child)
+
+            ## Number of loaded modules + the root node itself
+            return counter
+
 
         ## Clear out the loaded_modules (if any)
         self.loaded_modules = {}
         self._dependency_graph.set_graph_loaded_state(False)
 
+        ## Keep track of the number of successfully loaded modules
+        counter = 0
+
         ## todo: parallelize?
         for node in self._dependency_graph.roots:
             try:
-                load_node(node)
+                counter += load_node(node)
             except ModuleLoadException as e:
                 logger.warn(f"{e}. This module and all modules that depend on it will be skipped.")
                 continue
 
+        return counter
 
-    def register_module(self, cls, is_cog: bool, *init_args, **init_kwargs):
+
+    def reload_registered_modules(self) -> int:
+        module_entry: ModuleEntry
+        for module_entry in self.modules.values():
+            ## Detach loaded cogs
+            if (module_entry.is_cog):
+                self.bot.remove_cog(module_entry.name)
+
+            ## Reimport the module itself
+            try:
+                importlib.reload(module_entry.module)
+            except Exception as e:
+                logger.error("Error: ({}) reloading module: {}. Attempting to continue...".format(e, module_entry.name))
+
+        ## Reload the modules via dependency graph
+        loaded_module_count = self.load_registered_modules()
+        logger.info("Loaded {}/{} modules.".format(loaded_module_count, len(self.modules)))
+
+        return loaded_module_count
+
+
+    def register_module(self, cls: Module, *init_args, **init_kwargs):
         '''Registers module data with the ModuleManager, and prepares any necessary dependencies'''
 
-        dependencies = init_kwargs.get('dependencies', [])
-        if ('dependencies' in init_kwargs):
-            del init_kwargs['dependencies']
-
-        module_entry = ModuleEntry(cls, is_cog, *init_args, **init_kwargs)
+        module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
         self.modules[module_entry.name] = module_entry
 
-        self._dependency_graph.insert(cls, dependencies)
+        self._dependency_graph.insert(cls, module_entry.dependencies)
 
 
     def discover_modules(self):
@@ -256,7 +246,7 @@ class ModuleManager:
 
                 ## Register the module!
                 try:
-                    self.register_module(module_init.cls, module_init.is_cog, *register_module_args, **register_module_kwargs)
+                    self.register_module(module_init.cls, *register_module_args, **register_module_kwargs)
                 except Exception as e:
                     logger.exception("Unable to register module {} on bot.".format(module_path.name))
                     del sys.path[-1]    ## Prune back the failed module from the path
