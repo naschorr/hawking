@@ -9,7 +9,8 @@
     + You may need to run: `apt install python3.6-venv` to enable virtual environments for Python 3.6 on Linux
 - Activate your newly created venv
 - `pip install -r requirements.txt`
-    + If you run into issues during PyNaCl's installation, you may need to run: `apt install build-essential libffi-dev python3.6-dev` to install some supplemental features for the setup process.
+    + If you run into issues during `PyNaCl`'s installation on Linux, you may need to run: `apt install build-essential libffi-dev python3.6-dev` to install some supplemental features for the setup process.
+    + If you run into issue during `cffi`'s installation on Windows, you may need to install the Microsoft C++ Build Tools. You can find them [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
 - Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token inside `config.json`, next to the `discord_token` key.
 - Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=53803072`, but make sure to replace CLIENT_ID with your bot's client id.
