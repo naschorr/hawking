@@ -51,3 +51,6 @@ logs/*
 
 # Ignore delete_requests & container
 privacy/*
+
+# Ignore linter config
+*.pylintrc
