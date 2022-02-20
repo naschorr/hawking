@@ -9,9 +9,10 @@ import json
 from pathlib import Path
 
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.module.module import Cog
 
+import discord
 from discord.user import User
 from discord.ext import commands
 
@@ -28,7 +29,16 @@ class PrivacyManager(Cog):
         super().__init__(*args, **kwargs)
 
         self.bot = bot
-        self.name = kwargs.get('name')
+
+        # Make sure the bot's name is capitalized, since it's used exclusively when interacting with users textually.
+        name = kwargs.get('name', 'bot')
+        self.name = name[0].upper() + name[1:]
+
+        self.privacy_policy_url = CONFIG_OPTIONS.get('privacy_policy_url')
+        if (self.privacy_policy_url):
+            ## Don't add a privacy policy link if there isn't a URL to link to
+            command = self.build_privacy_policy_command()
+            self.bot.add_command(command)
 
         ## Build the filepaths for the various tracking files
         delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
@@ -36,7 +46,6 @@ class PrivacyManager(Cog):
             self.delete_request_queue_file_path = Path(delete_request_queue_file_path)
         else:
             self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt')
-
 
         delete_request_meta_file_path = CONFIG_OPTIONS.get('delete_request_meta_file_path')
         if (delete_request_meta_file_path):
@@ -201,17 +210,26 @@ class PrivacyManager(Cog):
         await asyncio.sleep(seconds_to_wait)
         await self.process_delete_request_queue()
 
+
+    def build_privacy_policy_command(self) -> commands.Command:
+        ## Manually build command to be added
+        return commands.Command(
+            self.privacy_policy,
+            name = "privacy_policy",
+            help = f"Gives the user a link to {self.name}'s privacy policy.",
+            hidden = True
+        )
+
     ## Commands
 
-    @commands.command(no_pm=True, hidden=True)
+    @commands.command(hidden=True)
     async def delete_my_data(self, ctx):
         '''
         Initiates a request to delete all of your user data from the bot's logs.
         All delete requests are queued up and performed in a batch every Monday.
         '''
 
-        self.dynamo_db.put(dynamo_manager.CommandItem(
-            ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put_message_context(ctx)
 
         user = ctx.message.author
         if (user.id in self.queued_user_ids):
@@ -221,8 +239,19 @@ class PrivacyManager(Cog):
         await self.store_user_id_for_batch_delete(user.id)
 
         ## Todo: don't hard code the day the delete request happens
-        confirmation_text = "Hey <@{}>, your delete request has been received, and it'll happen automagically next Monday.".format(ctx.message.author.id)
-        if (self.name):
-            confirmation_text += ' Thanks for using {}!'.format(self.name[0].upper() + self.name[1:])   # Make sure the bot's name is capitalized.
+        confirmation_text = f"Hey <@{ctx.message.author.id}>, your delete request has been received, and it'll happen automagically next Monday. Thanks for using {self.name}!"
 
         await user.send(confirmation_text)
+
+
+    async def privacy_policy(self, ctx):
+        '''
+        Generates an embed with a link to the privacy policy.
+        '''
+
+        user = ctx.message.author
+        embedded_privacy_policy = discord.Embed(
+            description=f"Take a look at {self.name}'s [privacy policy]({self.privacy_policy_url})."
+        )
+
+        await user.send(f"Hey <@{ctx.message.author.id}>,", embed=embedded_privacy_policy)

@@ -29,11 +29,12 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `\help` - Show the help screen.
 - `\speech_config` - Shows the help screen for configuring Hawking's speech.
 
-## Hosting, Configuring, Commanding, and Extending Hawking
+## Hosting, Configuring, Commanding, and Extending Hawking (and more)!
 - Take a look at the [Hawking installation guide](https://github.com/naschorr/hawking/blob/master/docs/installing_hawking.md)
 - After you've got Hawking intalled, check out the [Hawking configuration guide](https://github.com/naschorr/hawking/blob/master/docs/configuring_hawking.md)
 - Once Hawking has been configured, flex those admin muscles with the [admin command guide](https://github.com/naschorr/hawking/blob/master/docs/admin_commands.md) (_Hint:_ type in `\help admin`)
 - Want to add features to your Hawking installation? Take a look at the [module building guide](https://github.com/naschorr/hawking/blob/master/docs/building_modules.md)!
+- Check out the [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md) too
 
 ## Lastly...
 Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.

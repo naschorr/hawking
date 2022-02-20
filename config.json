@@ -1,5 +1,5 @@
 {
-    "version"                               : "1.14.1",
+    "version"                               : "1.15.0",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : ["A retro TTS bot for Discord.", "Contribute or star me at https://github.com/naschorr/hawking", "Add Hawking to your server, and join the Hawking Discord server too! Type '\\invite' for links."],
@@ -8,6 +8,7 @@
     "channel_timeout_seconds"               : 300,
     "channel_timeout_phrases"               : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "ight i'm a head out"],
     "skip_percentage"                       : 0.5,
+    "privacy_policy_url"                    : "https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md",
 
     "log_level"                             : "DEBUG",
     "log_path"                              : "",

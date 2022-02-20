@@ -2,7 +2,7 @@ import inspect
 import logging
 
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.module.module import Cog
 
 import discord
@@ -31,8 +31,7 @@ class SpeechConfigHelpCommand(Cog):
     async def speech_config(self, ctx):
         '''Posts a link to the speech documentation.'''
         
-        self.dynamo_db.put(dynamo_manager.CommandItem(
-            ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put_message_context(ctx)
 
         embed = discord.Embed(
             description='Take a look at Hawking\'s [speech configuration documentation]({}), it\'s got everything you need to get started with tweaking Hawking to do pretty much anything you\'d like.'
