@@ -12,7 +12,7 @@ from concurrent import futures
 from pathlib import Path
 
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.exceptions import AlreadyInVoiceChannelException, UnableToConnectToVoiceChannelException
 from common.module.module import Cog
 
@@ -427,8 +427,7 @@ class AudioPlayer(Cog):
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(ctx.message.author, voice_channel, player, file_path, callback))
 
-        self.dynamo_db.put(dynamo_manager.CommandItem(
-            ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put_message_context(ctx)
 
         return True
 

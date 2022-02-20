@@ -3,7 +3,7 @@ import logging
 
 from hawking import Hawking
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
@@ -79,16 +79,18 @@ class Admin(Cog):
 
         if(not self.is_admin(ctx.message.author)):
             logger.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
+            self.dynamo_db.put_message_context(ctx, False)
+
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+
             return False
 
         count = self.phrases_cog.reload_phrases()
 
         loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
         await ctx.send(loaded_clips_string)
+        self.dynamo_db.put_message_context(ctx)
 
-        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -100,7 +102,8 @@ class Admin(Cog):
         if(not self.is_admin(ctx.message.author)):
             logger.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put_message_context(ctx, False)
+
             return False
 
         count = self.hawking.module_manager.reload_registered_modules()
@@ -108,8 +111,8 @@ class Admin(Cog):
 
         loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
         await ctx.send(loaded_cogs_string)
+        self.dynamo_db.put_message_context(ctx)
 
-        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return (count >= 0)
 
 
@@ -121,7 +124,7 @@ class Admin(Cog):
         if(not self.is_admin(ctx.message.author)):
             logger.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put_message_context(ctx, False)
             return False
 
         await self.audio_player_cog.skip(ctx, force = True)
@@ -136,11 +139,12 @@ class Admin(Cog):
         if(not self.is_admin(ctx.message.author)):
             logger.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False))
+            self.dynamo_db.put_message_context(ctx, False)
+
             return False
 
         state = self.audio_player_cog.get_server_state(ctx)
         await state.ctx.voice_client.disconnect()
+        self.dynamo_db.put_message_context(ctx)
 
-        self.dynamo_db.put(dynamo_manager.CommandItem(ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
         return True
