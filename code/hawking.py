@@ -42,13 +42,11 @@ class Hawking:
     ## Keys
     VERSION_KEY = "version"
     ACTIVATION_STR_KEY = "activation_str"
-    DESCRIPTION_KEY = "description"
     INVALID_COMMAND_MINIMUM_SIMILARITY = "invalid_command_minimum_similarity"
 
     ## Defaults
     VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
-    DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord\n Visit https://github.com/naschorr/hawking")
 
 
     ## Initialize the bot, and add base cogs
@@ -64,7 +62,7 @@ class Hawking:
 
         self.version = kwargs.get(self.VERSION_KEY, self.VERSION)
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
-        self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
+        self.description = kwargs.get("description", ["The retro TTS bot for Discord"])
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
 
         self.dynamo_db = dynamo_manager.DynamoManager()
