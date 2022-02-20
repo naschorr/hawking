@@ -249,6 +249,8 @@ class PrivacyManager(Cog):
         Generates an embed with a link to the privacy policy.
         '''
 
+        self.dynamo_db.put_message_context(ctx)
+
         user = ctx.message.author
         embedded_privacy_policy = discord.Embed(
             description=f"Take a look at {self.name}'s [privacy policy]({self.privacy_policy_url})."
