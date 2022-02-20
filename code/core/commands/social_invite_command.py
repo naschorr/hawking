@@ -2,7 +2,7 @@ import inspect
 import logging
 
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.module.module import Cog
 
 from discord.ext import commands
@@ -39,11 +39,9 @@ class SocialInviteCommand(Cog):
     async def invite(self, ctx):
         '''Posts invite links for Hawking, and its Discord server.'''
         
-        self.dynamo_db.put(dynamo_manager.CommandItem(
-            ctx, ctx.message.content, inspect.currentframe().f_code.co_name, True))
+        self.dynamo_db.put_message_context(ctx)
 
         paginator = Paginator()
-
         paginator.add_line('Add Hawking to your server with this link: https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072')
         paginator.close_page()
         paginator.add_line('Also, join my Discord server via: https://discord.gg/JJqx8C4')

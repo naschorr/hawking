@@ -7,7 +7,7 @@ from collections import OrderedDict
 from discord.ext import commands
 
 from common import utilities
-from common import dynamo_manager
+from common.database import dynamo_manager
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 

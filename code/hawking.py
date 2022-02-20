@@ -17,9 +17,9 @@ from core.commands import social_invite_command
 from core.commands import speech_config_help_command
 from common import utilities
 from common import audio_player
-from common import dynamo_manager
 from common import privacy_manager
 from common.string_similarity import StringSimilarity
+from common.database import dynamo_manager
 from common.module.module_manager import ModuleManager
 
 ## Config
@@ -42,13 +42,11 @@ class Hawking:
     ## Keys
     VERSION_KEY = "version"
     ACTIVATION_STR_KEY = "activation_str"
-    DESCRIPTION_KEY = "description"
     INVALID_COMMAND_MINIMUM_SIMILARITY = "invalid_command_minimum_similarity"
 
     ## Defaults
     VERSION = CONFIG_OPTIONS.get(VERSION_KEY, "Invalid version")
     ACTIVATION_STR = CONFIG_OPTIONS.get(ACTIVATION_STR_KEY, "\\")
-    DESCRIPTION = CONFIG_OPTIONS.get(DESCRIPTION_KEY, "A retro TTS bot for Discord\n Visit https://github.com/naschorr/hawking")
 
 
     ## Initialize the bot, and add base cogs
@@ -64,7 +62,7 @@ class Hawking:
 
         self.version = kwargs.get(self.VERSION_KEY, self.VERSION)
         self.activation_str = kwargs.get(self.ACTIVATION_STR_KEY, self.ACTIVATION_STR)
-        self.description = kwargs.get(self.DESCRIPTION_KEY, self.DESCRIPTION)
+        self.description = kwargs.get("description", ["The retro TTS bot for Discord"])
         self.invalid_command_minimum_similarity = float(kwargs.get(self.INVALID_COMMAND_MINIMUM_SIMILARITY, 0.66))
 
         self.dynamo_db = dynamo_manager.DynamoManager()
@@ -119,8 +117,7 @@ class Hawking:
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
 
-            self.dynamo_db.put(dynamo_manager.CommandItem(
-                ctx, ctx.message.content, inspect.currentframe().f_code.co_name, False, str(exception)))
+            self.dynamo_db.put_message_context(ctx, False)
 
             ## Attempt to find a command that's similar to the one they wanted. Otherwise just direct them to the help page
             most_similar_command = self.find_most_similar_command(ctx.message.content)

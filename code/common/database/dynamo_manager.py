@@ -1,103 +1,17 @@
 import os
-import base64
-import time
 import logging
-import uuid
+import inspect
 import boto3
 from boto3.dynamodb.conditions import Key
 
 from common import utilities
+from .detailed_item import DetailedItem
 
 ## Config
 CONFIG_OPTIONS = utilities.load_config()
 
 ## Logging
 logger = utilities.initialize_logging(logging.getLogger(__name__))
-
-class CommandItem:
-    def __init__(self, discord_context, query, command, is_valid, error=None):
-        self.discord_context = discord_context
-        author = self.discord_context.message.author
-        channel = self.discord_context.message.channel
-        guild = self.discord_context.message.guild
-
-        self.user_id = int(author.id)
-        self.user_name = "{}#{}".format(author.name, author.discriminator)
-        self.timestamp = int(self.discord_context.message.created_at.timestamp() * 1000)    # float to milliseconds timestamp
-        self.channel_id = channel.id
-        self.channel_name = channel.name
-        self.server_id = guild.id
-        self.server_name = guild.name
-
-        self.query = query
-        self.command = command
-        self.is_valid = is_valid
-        ## Milliseconds timestamp to seconds, as AWS TTL only works in seconds increments. Defaults to a year from the timestamp
-        self.expires_on = (self.timestamp / 1000) + CONFIG_OPTIONS.get("database_detailed_table_ttl_seconds", 31536000)
-
-        self.primary_key_name = CONFIG_OPTIONS.get("boto_primary_key", "QueryId")
-        self.primary_key = self.build_primary_key()
-
-    ## Methods
-
-    def getDict(self):
-        output = {
-            "user_id": int(self.user_id),
-            "user_name": str(self.user_name),
-            "timestamp": int(self.timestamp),
-            "channel_id": int(self.channel_id),
-            "channel_name": str(self.channel_name),
-            "server_id": int(self.server_id),
-            "server_name": str(self.server_name),
-            "query": str(self.query),
-            "command": str(self.command),
-            "is_valid": bool(self.is_valid),
-            "expires_on": int(self.expires_on)
-        }
-
-        output[self.primary_key_name] = str(self.primary_key)
-
-        return output
-
-
-    def build_primary_key(self):
-        concatenated = "{}{}".format(self.user_id, self.timestamp)
-
-        return base64.b64encode(bytes(concatenated, "utf-8")).decode("utf-8")
-
-
-    def to_anonymous_command_item(self):
-        return AnonymousCommandItem(self.discord_context, self.command, self.query, self.is_valid)
-
-
-class AnonymousCommandItem:
-    def __init__(self, discord_context, command, query, is_valid):
-        self.timestamp = int(discord_context.message.created_at.timestamp() * 1000)
-        self.command = command
-        self.query = query
-        self.is_valid = is_valid
-
-        self.primary_key_name = CONFIG_OPTIONS.get("boto_primary_key", "QueryId")
-        self.primary_key = self.build_primary_key()
-
-    ## Methods
-
-    def getDict(self):
-        output = {
-            "timestamp": int(self.timestamp),
-            "command": str(self.command),
-            "query": str(self.query),
-            "is_valid": str(self.is_valid)
-        }
-
-        output[self.primary_key_name] = str(self.primary_key)
-
-        return output
-
-
-    def build_primary_key(self):
-        ## Use a UUID because we can't really guarantee that there won't be collisions with the existing data (however unlikely)
-        return str(uuid.uuid4())
 
 
 class DynamoManager:
@@ -133,7 +47,7 @@ class DynamoManager:
 
     ## Methods
 
-    def put(self, dynamo_item: CommandItem):
+    def put(self, dynamo_item: DetailedItem):
         '''
         Handles storing the given dynamo_item representing the audio command, as well as storing the anonymized version
         of the command.
@@ -142,8 +56,8 @@ class DynamoManager:
         if (not self.enabled):
             return None
 
-        detailed_item = dynamo_item.getDict()
-        anonymous_item = dynamo_item.to_anonymous_command_item().getDict()
+        detailed_item = dynamo_item.to_json()
+        anonymous_item = dynamo_item.to_anonymous_item().to_json()
 
         try:
             self.anonymous_table.put_item(Item=anonymous_item)
@@ -158,6 +72,32 @@ class DynamoManager:
             ## Don't let issues with dynamo tank the bot's functionality
             logger.exception("Exception while performing database put into {}".format(self.anonymous_table_name), e)
             return None
+
+
+    def build_message_context(self, discord_context, valid=True) -> DetailedItem:
+        '''
+        Builds a DetailedItem from the given discord_context, pulled from the message that invoked the bot
+        '''
+
+        # Traverse framestack to find first non-dynamo-manager function, that must be the command that was invoked
+        frame_stack = inspect.stack()
+        frame_index = 0
+        frame_info = frame_stack[frame_index]
+        while (__file__ in frame_info.frame.f_code.co_filename and frame_index < len(frame_stack)):
+            frame_index += 1
+            frame_info = frame_stack[frame_index]
+
+        return DetailedItem(discord_context, discord_context.message.content, frame_info.frame.f_code.co_name, valid)
+
+
+    def put_message_context(self, discord_context, valid=True):
+        '''
+        Handles the process of storing a given message in the database. Converts the context into a DetailedItem and an
+        AnonymousItem, and puts them into the database
+        '''
+
+        detailed_item = self.build_message_context(discord_context, valid)
+        self.put(detailed_item)
 
 
     def build_multi_user_filter_expression(self, user_ids=[]):
@@ -216,8 +156,7 @@ class DynamoManager:
 
         with table.batch_writer() as batch:
             for key in primary_keys:
-                key_value = {}
-                key_value[self.primary_key] = key
+                key_value = {self.primary_key: key}
 
                 batch.delete_item(
                     Key = key_value

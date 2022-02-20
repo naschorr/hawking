@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from common import utilities
-from common.dynamo_manager import DynamoManager
+from common.database import dynamo_manager
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
@@ -32,7 +32,7 @@ class Phrases(DiscoverableCog):
         super().__init__(*args, **command_kwargs)
 
         self.phrase_file_manager = PhraseFileManager()
-        self.dynamo_db = DynamoManager()
+        self.dynamo_db = dynamo_manager.DynamoManager()
 
         self.hawking = hawking
         self.bot = bot
