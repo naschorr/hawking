@@ -237,6 +237,11 @@ class PrivacyManager(Cog):
             return
 
         await self.store_user_id_for_batch_delete(user.id)
+        try:
+            await ctx.message.add_reaction("👍")
+        except discord.errors.Forbidden:
+            ## If the bot doesn't have the permission to add reactions, then don't bother
+            pass
 
         ## Todo: don't hard code the day the delete request happens
         confirmation_text = f"Hey <@{ctx.message.author.id}>, your delete request has been received, and it'll happen automagically next Monday. Thanks for using {self.name}!"
@@ -257,3 +262,8 @@ class PrivacyManager(Cog):
         )
 
         await user.send(f"Hey <@{ctx.message.author.id}>,", embed=embedded_privacy_policy)
+        try:
+            await ctx.message.add_reaction("👍")
+        except discord.errors.Forbidden:
+            ## If the bot doesn't have the permission to add reactions, then don't bother
+            pass
