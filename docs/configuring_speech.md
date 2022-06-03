@@ -106,6 +106,4 @@ Note that the `[:dv]` command can support multiple subcommands, each one separat
 - Create a demonic child to do your evil bidding: `\say [:nk] started at the top [:dv ap 2 ri 90 hs 125] [:rate 150] now we're down here.`
 
 ## Links
-You can check out the sources for Hawking's preset phrases [here](https://github.com/naschorr/hawking-phrases), to see how those are created.
-
 There's also a wealth of Moonbase Alpha guides on Steam, like [this one](https://steamcommunity.com/sharedfiles/filedetails/?id=128648903) which has some useful examples.
