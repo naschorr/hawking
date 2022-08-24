@@ -60,7 +60,3 @@ class DetailedItem(CommandItem):
         concatenated = "{}{}".format(self.user_id, self.timestamp)
 
         return base64.b64encode(bytes(concatenated, "utf-8")).decode("utf-8")
-
-
-    def to_anonymous_item(self) -> AnonymousItem:
-        return AnonymousItem(self.discord_context, self.command, self.query, self.is_valid)
