@@ -5,6 +5,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 from common import utilities
+from .anonymous_item_factory import AnonymousItemFactory
 from .detailed_item import DetailedItem
 
 ## Config
@@ -24,6 +25,8 @@ class DynamoManager:
         self.anonymous_table_name = CONFIG_OPTIONS.get('database_anonymous_table_name', 'HawkingAnonymous')
         self.primary_key = CONFIG_OPTIONS.get('database_primary_key', 'QueryId')
         self.detailed_table_ttl_seconds = CONFIG_OPTIONS.get('database_detailed_table_ttl_seconds', 31536000)
+
+        self._anonymous_item_factory = AnonymousItemFactory()
 
         self.dynamo_db = boto3.resource(self.resource, region_name=self.region_name)
         self.detailed_table = self.dynamo_db.Table(self.detailed_table_name)
@@ -56,18 +59,18 @@ class DynamoManager:
         if (not self.enabled):
             return None
 
-        detailed_item = dynamo_item.to_json()
-        anonymous_item = dynamo_item.to_anonymous_item().to_json()
+        detailed_item_json = dynamo_item.to_json()
+        anonymous_item_json = self._anonymous_item_factory.create(dynamo_item).to_json()
 
         try:
-            self.anonymous_table.put_item(Item=anonymous_item)
+            self.anonymous_table.put_item(Item=anonymous_item_json)
         except Exception as e:
             ## Don't let issues with dynamo tank the bot's functionality
             logger.exception("Exception while performing database put into {}".format(self.detailed_table_name), e)
             return None
 
         try:
-            self.detailed_table.put_item(Item=detailed_item)
+            self.detailed_table.put_item(Item=detailed_item_json)
         except Exception as e:
             ## Don't let issues with dynamo tank the bot's functionality
             logger.exception("Exception while performing database put into {}".format(self.anonymous_table_name), e)
@@ -108,7 +111,7 @@ class DynamoManager:
 
         if (len(user_ids) == 0):
             return None
-        
+
         filter_expression = Key('user_id').eq(user_ids[0])
         for user_id in user_ids[1:]:
             filter_expression |= Key('user_id').eq(user_id)
