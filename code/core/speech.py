@@ -176,12 +176,11 @@ class TTSController:
         message = self._parse_message(message)
 
         ## Build args for execution
-        ## The quotes fix an issue with spaces in the path, see: https://github.com/naschorr/hawking/issues/1
-        args = '\"\"{}\" {} \"{}\"\"'.format(
-            str(self.exe_path),
-            save_option,
-            message
-        )
+        args = f'\"{str(self.exe_path)}\" {save_option} \"{message}\"'
+
+        ## Address issue with spaces in the path on Windows (see: https://github.com/naschorr/hawking/issues/1 and 178)
+        if (utilities.is_windows()):
+            args = f'\"{args}\"'
 
         ## Prepend the windows emulator if using linux (I'm aware of what WINE means)
         if(utilities.is_linux()):
