@@ -38,7 +38,7 @@ class SocialInviteCommand(Cog):
     @commands.command(no_pm=True)
     async def invite(self, ctx):
         '''Posts invite links for Hawking, and its Discord server.'''
-        
+
         self.dynamo_db.put_message_context(ctx)
 
         paginator = Paginator()
