@@ -178,7 +178,7 @@ class ModuleManager:
         module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
         self.modules[module_entry.name] = module_entry
 
-        self._dependency_graph.insert(cls, module_entry.dependencies)
+        self._dependency_graph.insert(cls.__name__, module_entry.dependencies)
 
 
     def discover_modules(self):

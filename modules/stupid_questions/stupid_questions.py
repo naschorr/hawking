@@ -8,7 +8,6 @@ from common import utilities
 from common.exceptions import ModuleLoadException
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
-from reddit import Reddit
 from question import Question
 
 import discord
@@ -19,7 +18,6 @@ CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
 
 ## Logging
 logger = utilities.initialize_logging(logging.getLogger(__name__))
-
 
 class StupidQuestions(DiscoverableCog):
     THOUGHT_PROVOKING_STRINGS = [
@@ -127,4 +125,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=[Reddit])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit"])
