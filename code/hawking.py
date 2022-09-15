@@ -56,6 +56,10 @@ class Hawking:
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
 
+        ## todo: this will eventually be removed upon the transistion to slash commands
+        self.intents = discord.Intents.default();
+        self.intents.message_content = True;
+
         ## Set the current working directory to that of the tts executable ASAP, so there's not weird issues arising
         ## from bot init and speech execution potentially being in different working directories.
         speech.TTSController.set_current_working_dir_to_tts_executable()
@@ -69,6 +73,7 @@ class Hawking:
 
         ## Init the bot and module manager
         self.bot = commands.Bot(
+            intents=self.intents,
             command_prefix=commands.when_mentioned_or(self.activation_str),
             description='\n'.join(self.description)
         )

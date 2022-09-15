@@ -14,7 +14,6 @@ from common import utilities
 from common.module.module import Cog
 
 import async_timeout
-from aioify import aioify
 from discord.ext import commands
 
 ## Config
@@ -67,7 +66,6 @@ class TTSController:
             self.output_dir_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get('tts_output_dir', 'temp'))
 
         self.paths_to_delete = []
-        self.async_os = aioify(obj=os, name='async_os')
 
         ## Prep the output directory
         self._init_output_dir()
@@ -194,7 +192,7 @@ class TTSController:
         try:
             ## See https://github.com/naschorr/hawking/issues/50
             async with async_timeout.timeout(self.audio_generate_timeout_seconds):
-                retval = await self.async_os.system(command=args)
+                retval = os.system(args)
         except asyncio.TimeoutError:
             has_timed_out = True
             raise BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))

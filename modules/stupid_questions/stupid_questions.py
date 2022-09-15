@@ -2,6 +2,7 @@ import os
 import logging
 import random
 import time
+import asyncio
 from pathlib import Path
 
 from common import utilities
@@ -62,8 +63,8 @@ class StupidQuestions(DiscoverableCog):
         except Exception as e:
             raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
-        self.bot.loop.create_task(self.load_questions())
-    
+        asyncio.run(self.load_questions())
+
         self.successful = True
 
 

@@ -2,6 +2,7 @@
 See `config.json` in the Hawking installation's root.
 
 ### Discord Configuration
+- **name** - String - The bot's name.
 - **version** - String - The bot's current semantic version.
 - **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
 - **activation_str** - String - The string that'll activate the Discord bot from chat messages.

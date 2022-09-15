@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import importlib
+import asyncio
 from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
@@ -94,8 +95,8 @@ class ModuleManager:
             return False
 
         if (module_entry.is_cog):
-            self.bot.add_cog(instantiated_module)
-        
+            asyncio.run(self.bot.add_cog(instantiated_module))
+
         self.loaded_modules[module_entry.name] = instantiated_module
         logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
 
@@ -124,7 +125,7 @@ class ModuleManager:
                 loaded_module = self.loaded_modules[module_entry.name]
                 if (loaded_module.successful is None):
                     loaded_module.successful = True
-                
+
                 counter += 1
 
             for child in node.children:

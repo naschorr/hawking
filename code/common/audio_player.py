@@ -114,14 +114,15 @@ class ServerStateManager:
         '''Handles voice client management by connecting, and moving between voice channels'''
 
         ## Make sure the bot can actually connect to the requested VoiceChannel
-        permissions = channel.guild.me.permissions_in(channel)
-        if (not permissions.connect or not permissions.speak):
-            raise UnableToConnectToVoiceChannelException(
-                "Unable to speak and/or connect to the channel",
-                channel,
-                can_speak=permissions.speak,
-                can_connect=permissions.connect
-            )
+        ## todo: permissions checks somewhere. Decorator over commands seems to be the new way?
+        # permissions = channel.guild.me.permissions_in(channel)
+        # if (not permissions.connect or not permissions.speak):
+        #     raise UnableToConnectToVoiceChannelException(
+        #         "Unable to speak and/or connect to the channel",
+        #         channel,
+        #         can_speak=permissions.speak,
+        #         can_connect=permissions.connect
+        #     )
 
         if (self.ctx.voice_client is not None):
             ## Check to see if the bot isn't already in the correct channel
@@ -172,7 +173,7 @@ class ServerStateManager:
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name,
                 self.channel_timeout_seconds
-            ))  
+            ))
 
             await self.channel_timeout_handler(self, self.ctx.voice_client.disconnect)
         else:
@@ -254,7 +255,7 @@ class ServerStateManager:
                 def after_play_callback_builder():
                     ## Wrap this in a closure to keep it available even when it should be out of scope
                     current_active_play_request = active_play_request
-                    
+
                     def after_play(_):
                         self.skip_votes.clear()
 
@@ -279,7 +280,7 @@ class ServerStateManager:
                 ))
                 voice_client.play(self.active_play_request.audio, after=after_play_callback_builder())
                 await self.next.wait()
-            
+
             except Exception as e:
                 logger.exception('Exception inside audio player event loop', exc_info=e)
 
@@ -310,7 +311,7 @@ class AudioPlayer(Cog):
     def channel_timeout_handler(self):
         return self._channel_timeout_handler
 
-    
+
     @channel_timeout_handler.setter
     def channel_timeout_handler(self, handler):
         self._channel_timeout_handler = handler

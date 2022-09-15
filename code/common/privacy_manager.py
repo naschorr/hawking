@@ -1,7 +1,6 @@
 import os
 import stat
 import logging
-import inspect
 import asyncio
 import dateutil
 import datetime
@@ -86,9 +85,9 @@ class PrivacyManager(Cog):
         ## Perform or prepare the deletion process
         seconds_until_process_delete_request = self.get_seconds_until_process_delete_request_queue_is_due()
         if (seconds_until_process_delete_request <= 0):
-            self.bot.loop.create_task(self.process_delete_request_queue())
+            asyncio.run(self.process_delete_request_queue())
         else:
-            self.bot.loop.create_task(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
+            asyncio.run(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
     ## Methods
 
@@ -212,9 +211,12 @@ class PrivacyManager(Cog):
 
 
     def build_privacy_policy_command(self) -> commands.Command:
+        async def privacy_policy_wrapper(ctx):
+            await self.privacy_policy(ctx)
+
         ## Manually build command to be added
         return commands.Command(
-            self.privacy_policy,
+            privacy_policy_wrapper,
             name = "privacy_policy",
             help = f"Gives the user a link to {self.name}'s privacy policy.",
             hidden = True
@@ -264,6 +266,6 @@ class PrivacyManager(Cog):
         await user.send(f"Hey <@{ctx.message.author.id}>,", embed=embedded_privacy_policy)
         try:
             await ctx.message.add_reaction("👍")
-        except discord.errors.Forbidden:
+        except discord.errors.Forbidden as e:
             ## If the bot doesn't have the permission to add reactions, then don't bother
-            pass
+            logger.debug(f"Unable to add reaction to invoking message: {e.text}")
