@@ -2,15 +2,14 @@ import codecs
 import logging
 from pathlib import Path
 
-from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 from phrase_cipher_enum import PhraseCipher
 from models.phrase import Phrase
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseEncoderDecoder:

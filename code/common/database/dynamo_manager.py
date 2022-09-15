@@ -4,15 +4,14 @@ import inspect
 import boto3
 from boto3.dynamodb.conditions import Key
 
-from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 from .anonymous_item_factory import AnonymousItemFactory
 from .detailed_item import DetailedItem
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class DynamoManager:
@@ -66,14 +65,14 @@ class DynamoManager:
             self.anonymous_table.put_item(Item=anonymous_item_json)
         except Exception as e:
             ## Don't let issues with dynamo tank the bot's functionality
-            logger.exception("Exception while performing database put into {}".format(self.detailed_table_name), e)
+            LOGGER.exception("Exception while performing database put into {}".format(self.detailed_table_name), e)
             return None
 
         try:
             self.detailed_table.put_item(Item=detailed_item_json)
         except Exception as e:
             ## Don't let issues with dynamo tank the bot's functionality
-            logger.exception("Exception while performing database put into {}".format(self.anonymous_table_name), e)
+            LOGGER.exception("Exception while performing database put into {}".format(self.anonymous_table_name), e)
             return None
 
 

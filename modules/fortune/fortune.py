@@ -1,7 +1,7 @@
 import logging
 from random import choice
 
-from common import utilities
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
@@ -9,7 +9,7 @@ import discord
 from discord.ext import commands
 
 ## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Fortune(DiscoverableCog):

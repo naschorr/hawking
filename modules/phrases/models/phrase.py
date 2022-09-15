@@ -2,12 +2,12 @@ import copy
 import logging
 from pathlib import Path
 
-from common import utilities
+from common.logging import Logging
 from models.phrase_encoding import PhraseEncoding
 from to_dict import ToDict
 
 ## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class Phrase(ToDict):
     def __init__(self, name: str, message: str, encoding: PhraseEncoding, **kwargs):

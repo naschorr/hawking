@@ -2,10 +2,11 @@ import re
 import emoji
 
 from common import utilities
+from common.configuration import Configuration
 from common.module.module import Module
 
 ## Config
-CONFIG_OPTIONS = utilities.load_config()
+CONFIG_OPTIONS = Configuration.load_config()
 
 
 class MessageParser(Module):

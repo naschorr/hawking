@@ -1,18 +1,17 @@
 import inspect
 import logging
 
-from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.module.module import Cog
 
 from discord.ext import commands
 from discord.ext.commands import Paginator
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class SocialInviteCommand(Cog):

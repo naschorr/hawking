@@ -1,14 +1,13 @@
 import logging
 from typing import List
 
-from common import utilities
 from common.module.module import Module
+from common.configuration import Configuration
+from common.logging import Logging
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class DependencyNode:
@@ -37,7 +36,7 @@ class DependencyGraph:
     def insert(self, class_name: str, dependencies = list) -> DependencyNode:
         ## Don't insert duplicates
         if (class_name in self._node_map):
-            logger.warn('Unable to insert {}, as it\'s already been added.'.format(class_name))
+            LOGGER.warn('Unable to insert {}, as it\'s already been added.'.format(class_name))
             return
 
         ## Build initial node & update mappings

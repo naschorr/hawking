@@ -11,16 +11,16 @@ from pathlib import Path
 from core import message_parser
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 from common.module.module import Cog
 
 import async_timeout
 from discord.ext import commands
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class TTSController:
@@ -107,7 +107,7 @@ class TTSController:
                     try:
                         os.remove(os.sep.join([root, file]))
                     except OSError:
-                        logger.exception("Error removing file: {}".format(file))
+                        LOGGER.exception("Error removing file: {}".format(file))
 
 
     def _generate_unique_file_name(self, extension):
@@ -155,7 +155,7 @@ class TTSController:
                 ## The goal was to remove the file, and as long as it doesn't exist then we're good.
                 continue
             except Exception:
-                logger.exception("Error deleting file: {}".format(path))
+                LOGGER.exception("Error deleting file: {}".format(path))
                 to_delete.append(path)
 
         self.paths_to_delete = to_delete[:]
@@ -198,7 +198,7 @@ class TTSController:
             raise BuildingAudioFileTimedOutExeption("Building wav timed out for '{}'".format(message))
         except asyncio.CancelledError as e:
             if (not has_timed_out):
-                logger.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
+                LOGGER.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
 
         if(retval == 0):
             return output_file_path
@@ -235,7 +235,7 @@ class Speech(Cog):
 
                 await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
         except Exception as e:
-            logger.exception("Exception during channel sign-off")
+            LOGGER.exception("Exception during channel sign-off")
             await callback()
 
 
@@ -265,11 +265,11 @@ class Speech(Cog):
         try:
             wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
         except BuildingAudioFileTimedOutExeption as e:
-            logger.exception("Timed out building audio for message: '{}'".format(message))
+            LOGGER.exception("Timed out building audio for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, it took too long to generate speech for that.".format(ctx.message.author.id))
             return
         except MessageTooLongException as e:
-            logger.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
+            LOGGER.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
                 len(message),
                 self.tts_controller.char_limit
             ))
@@ -279,7 +279,7 @@ class Speech(Cog):
             ))
             return False
         except UnableToBuildAudioFileException as e:
-            logger.exception("Unable to build .wav file for message: '{}'".format(message))
+            LOGGER.exception("Unable to build .wav file for message: '{}'".format(message))
             await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
             return False
 
