@@ -8,18 +8,18 @@ import json
 from pathlib import Path
 
 from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.module.module import Cog
 
 import discord
 from discord.user import User
 from discord.ext import commands
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PrivacyManager(Cog):
@@ -56,14 +56,14 @@ class PrivacyManager(Cog):
         if (not self.is_file_accessible(self.delete_request_queue_file_path)):
             message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_queue_file_path)
 
-            logger.error(message)
+            LOGGER.error(message)
             raise RuntimeError(message)
 
         ## Make sure the file containing the delete request metadata is accessible.
         if (not self.is_file_accessible(self.delete_request_meta_file_path)):
             message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_meta_file_path)
 
-            logger.error(message)
+            LOGGER.error(message)
             raise RuntimeError(message)
 
         ## Make sure there's a dynamo manager available for database operations
@@ -143,7 +143,7 @@ class PrivacyManager(Cog):
                     fd.write(str(user_id) + '\n')
                 user_id_written = True
             except IOError as e:
-                logger.exception('Unable to write id {} to file at {}.'.format(user_id, self.delete_request_queue_file_path), e)
+                LOGGER.exception('Unable to write id {} to file at {}.'.format(user_id, self.delete_request_queue_file_path), e)
                 ## Give the file some time to close
                 await asyncio.sleep(1);
 
@@ -160,23 +160,23 @@ class PrivacyManager(Cog):
         user_ids = list(self.get_all_queued_delete_request_ids())
 
         if (len(user_ids) == 0):
-            logger.info('Skipping delete request processing, as queue is empty.')
+            LOGGER.info('Skipping delete request processing, as queue is empty.')
             return
 
-        logger.info('Starting to process {} delete requests'.format(len(user_ids)))
+        LOGGER.info('Starting to process {} delete requests'.format(len(user_ids)))
         primary_keys_to_delete = list(map(
             lambda item: item[self.dynamo_db.primary_key],
             await self.dynamo_db.get_keys_from_users(self.dynamo_db.detailed_table, user_ids)
         ))
 
-        logger.info('Starting to batch delete {} documents.'.format(len(primary_keys_to_delete)))
+        LOGGER.info('Starting to batch delete {} documents.'.format(len(primary_keys_to_delete)))
         await self.dynamo_db.batch_delete(self.dynamo_db.detailed_table, primary_keys_to_delete)
 
-        logger.info('Successfully performed batch delete')
+        LOGGER.info('Successfully performed batch delete')
         self.queued_user_ids = set()
         self.empty_queued_delete_request_file()
 
-        logger.info('Updating metadata file with time of completion.')
+        LOGGER.info('Updating metadata file with time of completion.')
         self.update_last_process_delete_request_queue_time(datetime.datetime.utcnow())
 
 
@@ -268,4 +268,4 @@ class PrivacyManager(Cog):
             await ctx.message.add_reaction("👍")
         except discord.errors.Forbidden as e:
             ## If the bot doesn't have the permission to add reactions, then don't bother
-            logger.debug(f"Unable to add reaction to invoking message: {e.text}")
+            LOGGER.debug(f"Unable to add reaction to invoking message: {e.text}")

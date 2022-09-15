@@ -1,16 +1,15 @@
 import logging
 import random
 
-from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 
 from discord.ext import commands
 from discord.ext.commands import DefaultHelpCommand, Paginator
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class HawkingHelpCommand(commands.DefaultHelpCommand):
     @property

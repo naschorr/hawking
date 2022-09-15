@@ -12,8 +12,10 @@ from concurrent import futures
 from pathlib import Path
 
 from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
 from common.exceptions import UnableToConnectToVoiceChannelException
+from common.logging import Logging
 from common.module.module import Cog
 
 import discord
@@ -22,8 +24,8 @@ from discord.ext import commands
 from discord.member import Member
 
 ## Config & logging
-CONFIG_OPTIONS = utilities.load_config()
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class AudioPlayRequest:
@@ -138,7 +140,7 @@ class ServerStateManager:
         '''Skips the currently playing audio. If more audio is queued up, it will be played immediately.'''
 
         if(self.is_playing()):
-            logger.debug("Skipping file at: {}, in channel: {}, in server: {}, for user: {}".format(
+            LOGGER.debug("Skipping file at: {}, in channel: {}, in server: {}, for user: {}".format(
                 self.active_play_request.file_path,
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name,
@@ -159,7 +161,7 @@ class ServerStateManager:
 
         ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
         if (inactive and self.channel_timeout_handler):
-            logger.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
+            LOGGER.debug("Attempting to leave channel: {}, in server: {}, due to inactivity for past {} seconds".format(
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name,
                 self.channel_timeout_seconds
@@ -167,7 +169,7 @@ class ServerStateManager:
 
             await self.channel_timeout_handler(self, self.ctx.voice_client.disconnect)
         else:
-            logger.debug("Attempting to leave channel: {}, in server: {}".format(
+            LOGGER.debug("Attempting to leave channel: {}, in server: {}".format(
                 self.ctx.voice_client.channel.name,
                 self.ctx.guild.name
             ))
@@ -175,7 +177,7 @@ class ServerStateManager:
             ## Otherwise just default to a normal voice_client disconnect
             await self.ctx.voice_client.disconnect()
 
-        logger.debug("Successfully disconnected voice client from channel: {}, in server: {}".format(
+        LOGGER.debug("Successfully disconnected voice client from channel: {}, in server: {}".format(
             self.ctx.voice_client.channel.name,
             self.ctx.guild.name,
         ))
@@ -202,7 +204,7 @@ class ServerStateManager:
                         self.bot.loop.create_task(self.disconnect(inactive=True))
                     continue
                 except asyncio.CancelledError:
-                    logger.exception("CancelledError during audio_player_loop, ignoring and continuing loop.")
+                    LOGGER.exception("CancelledError during audio_player_loop, ignoring and continuing loop.")
                     continue
 
                 ## Join the requester's voice channel & play their requested audio (Or Handle the appropriate exception)
@@ -210,13 +212,13 @@ class ServerStateManager:
                 try:
                     voice_client = await self.get_voice_client(self.active_play_request.channel)
                 except futures.TimeoutError:
-                    logger.error("Timed out trying to connect to the voice channel")
+                    LOGGER.error("Timed out trying to connect to the voice channel")
 
                     await self.ctx.send("Sorry <@{}>, I can't connect to that channel right now.".format(active_play_request.member.id))
                     continue
 
                 except UnableToConnectToVoiceChannelException as e:
-                    logger.error("Unable to connect to voice channel")
+                    LOGGER.error("Unable to connect to voice channel")
 
                     required_permission_phrases = []
                     if (not e.can_connect):
@@ -253,7 +255,7 @@ class ServerStateManager:
 
                     return after_play
 
-                logger.debug('Playing file at: {}, in channel: {}, in server: {}, for user: {}'.format(
+                LOGGER.debug('Playing file at: {}, in channel: {}, in server: {}, for user: {}'.format(
                     self.active_play_request.file_path,
                     self.active_play_request.channel.name,
                     self.active_play_request.channel.guild.name,
@@ -263,7 +265,7 @@ class ServerStateManager:
                 await self.next.wait()
 
             except Exception as e:
-                logger.exception('Exception inside audio player event loop', exc_info=e)
+                LOGGER.exception('Exception inside audio player event loop', exc_info=e)
 
 
 class AudioPlayer(Cog):
@@ -400,7 +402,7 @@ class AudioPlayer(Cog):
 
         ## Make sure file_path points to an actual file
         if (not file_path.is_file()):
-            logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
+            LOGGER.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             await ctx.send("Sorry, <@{}>, that couldn't be played.".format(ctx.message.author.id))
             return False
 
@@ -419,7 +421,7 @@ class AudioPlayer(Cog):
 
         ## Make sure file_path points to an actual file
         if (not file_path.is_file()):
-            logger.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
+            LOGGER.error("Unable to play file at: {}, file doesn't exist or isn't a file.".format(file_path))
             return False
 
         ## Create a player for the audio file

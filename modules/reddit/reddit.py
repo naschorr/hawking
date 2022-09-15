@@ -1,18 +1,17 @@
 import logging
 from pathlib import Path
 
-from common import utilities
+from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableModule
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 from praw import Reddit as PrawReddit
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Reddit(DiscoverableModule):

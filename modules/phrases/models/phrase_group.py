@@ -4,12 +4,12 @@ import logging
 from pathlib import Path
 from typing import List
 
-from common import utilities
+from common.logging import Logging
 from models.phrase import Phrase
 from to_dict import ToDict
 
 ## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseGroup(ToDict):

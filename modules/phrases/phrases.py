@@ -7,8 +7,9 @@ import asyncio
 from pathlib import Path
 from typing import Dict, List
 
-from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
@@ -20,11 +21,9 @@ from discord import errors
 from discord.ext import commands
 from discord.ext.commands.errors import MissingRequiredArgument
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Phrases(DiscoverableCog):
@@ -95,7 +94,7 @@ class Phrases(DiscoverableCog):
                     self.command_names.append(phrase.name)
                     self.phrase_command_names.append(phrase.name)
                 except Exception as e:
-                    logger.warning("Skipping...", e)
+                    LOGGER.warning("Skipping...", e)
                 else:
                     counter += 1
 
@@ -110,7 +109,7 @@ class Phrases(DiscoverableCog):
                 self.bot.add_command(help_command)
                 self.command_names.append(phrase_group.key) # Keep track of the 'parent' commands for later use
 
-        logger.info("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
+        LOGGER.info("Loaded {} phrase{}.".format(counter, "s" if counter != 1 else ""))
         return counter
 
 
@@ -169,7 +168,7 @@ class Phrases(DiscoverableCog):
             ## Looks like discord.py v2.0 changed how context is passed, thus this slightly clunky way of getting it.
             ctx = args[0] or None
             if (ctx is None or not isinstance(ctx, commands.context.Context)):
-                logger.error("No context provided to phrase callback")
+                LOGGER.error("No context provided to phrase callback")
                 return
 
             ## Attempt to get a target channel

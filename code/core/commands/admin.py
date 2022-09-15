@@ -2,18 +2,17 @@ import inspect
 import logging
 
 from hawking import Hawking
-from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Admin(Cog):
@@ -78,7 +77,7 @@ class Admin(Cog):
             return False
 
         if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
+            LOGGER.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
             self.dynamo_db.put_message_context(ctx, False)
 
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
@@ -100,7 +99,7 @@ class Admin(Cog):
         """Reloads the bot's cogs."""
 
         if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
+            LOGGER.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put_message_context(ctx, False)
 
@@ -122,7 +121,7 @@ class Admin(Cog):
         """Skips the current audio."""
 
         if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
+            LOGGER.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put_message_context(ctx, False)
             return False
@@ -137,7 +136,7 @@ class Admin(Cog):
         """ Disconnect from the current voice channel."""
 
         if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
+            LOGGER.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put_message_context(ctx, False)
 

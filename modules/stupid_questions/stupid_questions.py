@@ -5,8 +5,9 @@ import time
 import asyncio
 from pathlib import Path
 
-from common import utilities
+from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 from question import Question
@@ -14,11 +15,9 @@ from question import Question
 import discord
 from discord.ext import commands
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class StupidQuestions(DiscoverableCog):
     THOUGHT_PROVOKING_STRINGS = [
@@ -71,11 +70,11 @@ class StupidQuestions(DiscoverableCog):
     async def load_questions(self) -> None:
         ## Don't try to pull more data from Reddit if it's already happening
         if (self.is_mid_question_refresh):
-            logger.debug("Skipping load_questions as they're already being refreshed.")
+            LOGGER.debug("Skipping load_questions as they're already being refreshed.")
             return
         self.is_mid_question_refresh = True
 
-        logger.info("Loading questions from reddit: top({}), {} submissions".format(
+        LOGGER.info("Loading questions from reddit: top({}), {} submissions".format(
             self.submission_top_time,
             self.submission_count
         ))
@@ -84,7 +83,7 @@ class StupidQuestions(DiscoverableCog):
         try:
             submission_generator = self.subreddit.top(self.submission_top_time, limit=self.submission_count)
         except Exception:
-            logger.exception("Unable to load submission from Reddit.")
+            LOGGER.exception("Unable to load submission from Reddit.")
             return
 
         for submission in submission_generator:
@@ -94,7 +93,7 @@ class StupidQuestions(DiscoverableCog):
         self.questions = questions
         self.is_mid_question_refresh = False
 
-        logger.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
+        LOGGER.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
 
 
     def get_question(self) -> str:

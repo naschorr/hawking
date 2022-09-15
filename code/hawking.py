@@ -15,18 +15,17 @@ from core.commands import admin
 from core.commands import help_command
 from core.commands import social_invite_command
 from core.commands import speech_config_help_command
-from common import utilities
 from common import audio_player
 from common import privacy_manager
+from common.configuration import Configuration
+from common.logging import Logging
 from common.string_similarity import StringSimilarity
 from common.database import dynamo_manager
 from common.module.module_manager import ModuleManager
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Hawking:
@@ -114,7 +113,7 @@ class Hawking:
             bot_status = discord.Game(type=0, name="Use {}help".format(self.activation_str))
             await self.bot.change_presence(activity=bot_status)
 
-            logger.info("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.version, self.bot.user.id))
+            LOGGER.info("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.version, self.bot.user.id))
 
 
         ## Give some feedback to users when their command doesn't execute.
@@ -128,7 +127,7 @@ class Hawking:
             most_similar_command = self.find_most_similar_command(ctx.message.content)
 
             if (most_similar_command[0] == ctx.invoked_with):
-                logger.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
+                LOGGER.exception("Unable to complete command, with content: {}, for author: {}, in channel {}, in server: {}".format(
                     ctx.message.content,
                     ctx.message.author.name,
                     ctx.message.channel.name,
@@ -137,7 +136,7 @@ class Hawking:
                 ## Handle issues where the command is valid, but couldn't be completed for whatever reason.
                 await ctx.send("I'm sorry <@{}>, I'm afraid I can't do that.\nSomething went wrong, and I couldn't complete the command.".format(ctx.message.author.id))
             else:
-                logger.exception("Received invalid command: '{0}{1}', suggested: '{0}{2}', for author: {3}, in server: {4}".format(
+                LOGGER.exception("Received invalid command: '{0}{1}', suggested: '{0}{2}', for author: {3}, in server: {4}".format(
                     self.activation_str,
                     ctx.invoked_with,
                     most_similar_command[0],
@@ -230,7 +229,7 @@ class Hawking:
         ## but it's still unpleasant. A temporary fix is to bump up the RestartSec= property in the service config to be
         ## long enough to allow for the bot to be forcefully disconnected
 
-        logger.info('Starting up the bot.')
+        LOGGER.info('Starting up the bot.')
         self.bot.run(self.token)
 
 
