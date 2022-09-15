@@ -13,7 +13,7 @@ from pathlib import Path
 
 from common import utilities
 from common.database import dynamo_manager
-from common.exceptions import AlreadyInVoiceChannelException, UnableToConnectToVoiceChannelException
+from common.exceptions import UnableToConnectToVoiceChannelException
 from common.module.module import Cog
 
 import discord
@@ -130,16 +130,6 @@ class ServerStateManager:
                 await self.ctx.voice_client.move_to(channel)
 
             return self.ctx.voice_client
-        else:
-            ## NOTE: There's an issue where if you reset the app, while the bot is connected to a voice channel, upon the 
-            ## bot reconnecting and joining the same voice channel, playing audio won't work.
-            ## See: https://github.com/Rapptz/discord.py/issues/2284
-            already_in_channel = next(filter(lambda member: member.id == self.bot.user.id, channel.members), None)
-            if (already_in_channel):
-                raise AlreadyInVoiceChannelException(
-                    "Old instance of bot already exists in the channel",
-                    channel
-                )
 
         return await channel.connect()
 
@@ -238,15 +228,6 @@ class ServerStateManager:
                         self.ctx.message.author.id,
                         " or ".join(required_permission_phrases)
                     ))
-                    continue
-
-                except AlreadyInVoiceChannelException as e:
-                    logger.error("Unable to connect to voice channel, old instance of the bot already exists")
-
-                    await self.ctx.send(
-                        "Uh oh <@{}>, looks like I'm still in the channel! Wait until I disconnect before trying again."
-                        .format(self.ctx.message.author.id)
-                    )
                     continue
 
                 if (voice_client.is_playing()):

@@ -29,23 +29,6 @@ class UnableToConnectToVoiceChannelException(ClientException):
         return self._can_speak
 
 
-class AlreadyInVoiceChannelException(ClientException):
-    '''
-    Exception that's thrown when the client is already in the destination voice channel. Usually happens due to
-    disconnecting the bot while connected, and reconnecting before the bot can time out.
-    '''
-
-    def __init__(self, message, channel):
-        super(AlreadyInVoiceChannelException, self).__init__(message)
-
-        self._channel = channel
-
-
-    @property
-    def channel(self):
-        return self._channel
-
-
 class ModuleLoadException(RuntimeError):
     '''
     Exception that's thrown when a module fails to load (implicitly at runtime).
