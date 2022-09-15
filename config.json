@@ -1,5 +1,6 @@
 {
-    "version"                               : "1.16.2",
+    "name"                                  : "hawking",
+    "version"                               : "1.17.0",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
     "description"                           : [

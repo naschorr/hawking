@@ -54,6 +54,7 @@ class Phrases(DiscoverableCog):
 
     @property
     def speech_cog(self):
+        ## todo: use injected dependency
         return self.hawking.get_speech_cog()
 
     @property
@@ -164,7 +165,13 @@ class Phrases(DiscoverableCog):
         '''Build a dynamic callback to invoke the bot's say method'''
 
         ## Create a callback for speech._say
-        async def _phrase_callback(self, ctx):
+        async def _phrase_callback(self, *args):
+            ## Looks like discord.py v2.0 changed how context is passed, thus this slightly clunky way of getting it.
+            ctx = args[0] or None
+            if (ctx is None or not isinstance(ctx, commands.context.Context)):
+                logger.error("No context provided to phrase callback")
+                return
+
             ## Attempt to get a target channel
             try:
                 target = ctx.message.mentions[0]
@@ -249,13 +256,13 @@ class Phrases(DiscoverableCog):
         else:
             await ctx.send("I couldn't find anything close to that, sorry <@{}>.".format(ctx.message.author.id))
 
-    
+
     @find.error
     async def find_error(self, ctx, error):
         '''
         Find command error handler. Addresses some common error scenarios that on_command_error doesn't really help with
         '''
-        
+
         if (isinstance(error, MissingRequiredArgument)):
             output_raw = "Sorry <@{}>, but I need something to search for! Why not try: **{}find {}**?"
             await ctx.send(output_raw.format(

@@ -27,14 +27,14 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
         except AttributeError as e:
             size = 15
 
-        return size + len(CONFIG_OPTIONS.get('activation_str', ''))
+        return size + len(self.context.clean_prefix)
 
 
     def dump_header_boilerplate(self):
         """
         Adds the header boilerplate text (Description, Version, How to activate) to the paginator
         """
-        
+
         ## Add the description into the help screen
         description = CONFIG_OPTIONS.get("description", [])
         for line in description:
@@ -48,7 +48,7 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
             self.paginator.add_line("Hawking version: {}".format(version), empty=True)
 
         ## Append (additional) activation note
-        activation_note = "Activate with the '{0}' character (ex. '{0}help')".format(self.clean_prefix)
+        activation_note = "Activate with the '{0}' character (ex. '{0}help')".format(self.context.clean_prefix)
         self.paginator.add_line(activation_note, empty=True)
 
 
@@ -59,7 +59,7 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
         # Ending note logic from HelpFormatter.format
         command_name = self.context.invoked_with
         ending_note = "Check out the other phrase categories! Why not try '{0}{1} {2}'?".format(
-            self.clean_prefix,
+            self.context.clean_prefix,
             command_name,
             random.choice(categories)
         )
@@ -139,7 +139,7 @@ class HawkingHelpCommand(commands.DefaultHelpCommand):
         self.dump_phrase_group(phrase_groups[command.name], max_width)
         self.dump_phrase_categories(phrase_groups, max_width)
         self.dump_footer_boilerplate(list(phrase_groups.keys()))
-        
+
         self.paginator.close_page()
         await self.send_pages()
 
