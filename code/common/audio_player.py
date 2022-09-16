@@ -279,6 +279,7 @@ class AudioPlayer(Cog):
         super().__init__(*args, **kwargs)
 
         self.bot = bot
+
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
         self.dynamo_db = dynamo_manager.DynamoManager()

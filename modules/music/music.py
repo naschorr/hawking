@@ -306,6 +306,7 @@ class Music(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
 
         self.bpm = int(kwargs.get(self.BPM_KEY, self.BPM))
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))
@@ -316,12 +317,6 @@ class Music(DiscoverableCog):
         self.pitches = []
         for octave in range(self.OCTAVES):
             self.pitches.append(self._build_pitch_dict(octave))
-
-    ## Properties
-
-    @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
 
     ## Methods
 
@@ -449,7 +444,7 @@ class Music(DiscoverableCog):
             'b/b' - Two 'b' eighth notes.
             '2c#/d#/a3/f' - A 'c#' sixteenth note held for two beats, a 'd#' sixteenth note,
                 an 'a' sixteenth note in the third octave, and a 'f' sixteenth note.
-        
+
         Formatting:
             Notes (at the moment) have four distinct parts (Duration?)(Note)(Sharp?)(Octave?).
             Only the base note is necessary, everything else can be omitted if necessary
@@ -514,5 +509,5 @@ class Music(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    ## return ModuleInitializationContainer(Music)
+    ## return ModuleInitializationContainer(Music, dependencies=["Speech"])
     return False

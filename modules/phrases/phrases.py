@@ -27,15 +27,18 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Phrases(DiscoverableCog):
-    def __init__(self, hawking, bot, *args, **command_kwargs):
-        super().__init__(*args, **command_kwargs)
+    def __init__(self, hawking, bot, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.hawking = hawking
+        self.bot = bot
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
+        self.admin_cog = kwargs.get('dependencies', {}).get('Admin', {})
 
         self.phrase_file_manager = PhraseFileManager()
         self.dynamo_db = dynamo_manager.DynamoManager()
 
-        self.hawking = hawking
-        self.bot = bot
-        self.command_kwargs = command_kwargs
+        self.command_kwargs = kwargs
         self.command_names: List[str] = []  # All command names
         self.phrase_command_names: List[str] = []
         self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
@@ -49,16 +52,25 @@ class Phrases(DiscoverableCog):
         self.init_phrases()
         self.successful = True
 
-    ## Properties
+        ## This decorator needs to reference the injected dependency, thus we're declaring the command here.
+        @self.admin_cog.admin.command(no_pm=True)
+        async def reload_phrases(ctx):
+            """Reloads the bot's list of phrases"""
 
-    @property
-    def speech_cog(self):
-        ## todo: use injected dependency
-        return self.hawking.get_speech_cog()
+            if(not self.admin_cog.is_admin(ctx.message.author)):
+                LOGGER.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
+                self.dynamo_db.put_message_context(ctx, False)
 
-    @property
-    def music_cog(self):
-        return self.hawking.get_music_cog()
+                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
+                return False
+
+            count = self.reload_phrases()
+
+            loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
+            await ctx.send(loaded_clips_string)
+            self.dynamo_db.put_message_context(ctx)
+
+            return (count >= 0)
 
     ## Methods
 
@@ -163,7 +175,7 @@ class Phrases(DiscoverableCog):
     def _create_phrase_callback(self, message, is_music=False):
         '''Build a dynamic callback to invoke the bot's say method'''
 
-        ## Create a callback for speech._say
+        ## Create a callback for speech_cog._say
         async def _phrase_callback(self, *args):
             ## Looks like discord.py v2.0 changed how context is passed, thus this slightly clunky way of getting it.
             ctx = args[0] or None
@@ -179,15 +191,6 @@ class Phrases(DiscoverableCog):
 
             await self.speech_cog._say(ctx, message, target_member = target, ignore_char_limit = True)
 
-        ## Create a callback for music.music
-        # async def _music_callback(self, ctx):
-        #     music_cog = self.music_cog
-        #     await music_cog.music(ctx, message, ignore_char_limit=True)
-
-        ## Return the appropriate callback
-        # if(is_music):
-        #     return _music_callback
-        # else:
         return _phrase_callback
 
 
@@ -272,4 +275,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases)
+    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech"])

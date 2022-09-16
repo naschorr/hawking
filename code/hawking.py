@@ -86,19 +86,17 @@ class Hawking:
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, self.bot)
         # self.module_manager.register_module(social_invite_command.SocialInviteCommand, self, self.bot)    ## See https://github.com/naschorr/hawking/issues/175
         self.module_manager.register_module(message_parser.MessageParser)
-        self.module_manager.register_module(admin.Admin, self, self.bot)
-        self.module_manager.register_module(
-            speech.Speech,
-            self,
-            dependencies = [message_parser.MessageParser]
-        )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
             self.bot,
-            None,
-            dependencies = [speech.Speech],
-            after_successful_init = lambda: self.get_audio_player_cog().set_channel_timeout_handler(self.get_speech_cog().play_random_channel_timeout_message)
+            None
         )
+        self.module_manager.register_module(
+            speech.Speech,
+            self,
+            dependencies = [message_parser.MessageParser, audio_player.AudioPlayer]
+        )
+        self.module_manager.register_module(admin.Admin, self, self.bot, dependencies = [audio_player.AudioPlayer])
 
         ## Find any dynamic modules, and prep them for loading
         self.module_manager.discover_modules()
@@ -164,36 +162,6 @@ class Hawking:
         return self._module_manager
 
     ## Methods
-
-    ## Add an arbitary cog to the bot
-    def add_cog(self, cls):
-        self.bot.add_cog(cls)
-
-
-    ## Returns a cog with a given name
-    def get_cog(self, cls_name):
-        return self.bot.get_cog(cls_name)
-
-
-    ## Returns the bot's audio player cog
-    def get_audio_player_cog(self):
-        return self.bot.get_cog("AudioPlayer")
-
-
-    ## Returns the bot's audio player cog
-    def get_speech_cog(self):
-        return self.bot.get_cog("Speech")
-
-
-    ## Returns the bot's phrases cog
-    def get_phrases_cog(self):
-        return self.bot.get_cog("Phrases")
-
-
-    ## Returns the bot's music cog
-    def get_music_cog(self):
-        return self.bot.get_cog("Music")
-
 
     ## Finds the most similar command to the supplied one
     def find_most_similar_command(self, command):

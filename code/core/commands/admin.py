@@ -25,20 +25,12 @@ class Admin(Cog):
 
         self.hawking = hawking
         self.bot = bot
+        self.audio_player_cog = kwargs.get('dependencies', {}).get('AudioPlayer', {})
+
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
         self.dynamo_db = dynamo_manager.DynamoManager()
-
-    ## Properties
-
-    @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
-
-    @property
-    def phrases_cog(self):
-        return self.hawking.get_phrases_cog()
 
     ## Methods
 
@@ -62,35 +54,6 @@ class Admin(Cog):
                 return False
 
         return False
-
-
-    ## Tries to reload the preset phrases (admin only)
-    @admin.command(no_pm=True)
-    async def reload_phrases(self, ctx):
-        """Reloads the list of preset clips."""
-
-        ## I don't really like having core modules intertwined with dynamic ones, maybe move the appropriate admin
-        ## modules out into their dynamic module and exposing some admin auth function that they check in with before
-        ## running the command?
-        if(not self.phrases_cog):
-            await ctx.send("Sorry <@{}>, but the phrases cog isn't available.".format(ctx.message.author.id))
-            return False
-
-        if(not self.is_admin(ctx.message.author)):
-            LOGGER.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
-            self.dynamo_db.put_message_context(ctx, False)
-
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-
-            return False
-
-        count = self.phrases_cog.reload_phrases()
-
-        loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
-        await ctx.send(loaded_clips_string)
-        self.dynamo_db.put_message_context(ctx)
-
-        return (count >= 0)
 
 
     ## Tries to reload the addon cogs (admin only)

@@ -212,16 +212,12 @@ class Speech(Cog):
         super().__init__(*args, **kwargs)
 
         self.hawking = hawking
+        self.audio_player_cog = kwargs.get('dependencies', {}).get('AudioPlayer', {})
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
+        self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
         self.tts_controller = TTSController()
         self.message_parser = message_parser.MessageParser()
-
-    ## Properties
-
-    @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
 
     ## Methods
 
