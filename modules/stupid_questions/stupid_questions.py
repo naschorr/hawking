@@ -37,6 +37,7 @@ class StupidQuestions(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
 
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit', {})
@@ -109,7 +110,7 @@ class StupidQuestions(DiscoverableCog):
         question = self.get_question()
 
         if (question):
-            say_result = await self.hawking.get_speech_cog()._say(ctx, question.text, ignore_char_limit = True)
+            say_result = await self.speech_cog._say(ctx, question.text, ignore_char_limit = True)
             if (say_result):
                 embedded_question = discord.Embed(description="{}\n\nvia [/r/{}]({})".format(question.text, question.subreddit, question.url))
 
@@ -124,4 +125,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit"])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech"])

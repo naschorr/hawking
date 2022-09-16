@@ -46,14 +46,13 @@ class Fortune(DiscoverableCog):
         super().__init__(*args, **kwargs)
 
         self.hawking = hawking
-        self.phrases = self.FORTUNES
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
 
 
     @commands.command(no_pm=True, brief="Tells you your magic 8 ball fortune!")
     async def fortune(self, ctx):
-        speech_cog = self.hawking.get_speech_cog()
-        await speech_cog._say(ctx, choice(self.phrases), ignore_char_limit=True)
+        await self.speech_cog._say(ctx, choice(self.FORTUNES), ignore_char_limit=True)
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Fortune)
+    return ModuleInitializationContainer(Fortune, dependencies=["Speech"])
