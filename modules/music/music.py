@@ -306,8 +306,7 @@ class Music(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
-        assert (self.speech_cog is not None)
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
 
         self.bpm = int(kwargs.get(self.BPM_KEY, self.BPM))
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))

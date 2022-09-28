@@ -35,7 +35,7 @@ class Reddit(DiscoverableModule):
                 CONFIG_OPTIONS.get('reddit_user_agent_contact_name')
             )
         except RuntimeError as e:
-            raise ModuleLoadException("Unable to build user_agent string for Reddit", e)
+            raise ModuleLoadException("Unable to build user_agent string for Reddit", e) from e
 
         try:
             self._reddit = PrawReddit(
@@ -46,7 +46,7 @@ class Reddit(DiscoverableModule):
             )
             self.successful = True
         except Exception as e:
-            raise ModuleLoadException('Unable to register with Reddit', e)
+            raise ModuleLoadException('Unable to register with Reddit', e) from e
 
     ## Properties
 
