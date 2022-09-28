@@ -1,4 +1,3 @@
-import inspect
 import logging
 
 from common.configuration import Configuration
@@ -6,8 +5,7 @@ from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Cog
 
-from discord.ext import commands
-from discord.ext.commands import Paginator
+import discord
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -16,38 +14,58 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class SocialInviteCommand(Cog):
 
-    def __init__(self, hawking, bot, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.hawking = hawking
         self.bot = bot
+
+        name: str = CONFIG_OPTIONS.get("name")
+        self.bot_invite_blurb: str = CONFIG_OPTIONS.get("bot_invite_blurb", CONFIG_OPTIONS.get("description")[0])
+        self.bot_invite_url: str = CONFIG_OPTIONS.get("bot_invite_url")
+        self.support_discord_invite_url: str = CONFIG_OPTIONS.get("support_discord_invite_url")
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 
-    ## Methods
+        ## Make sure the minimum config options are populated, so a proper embed can be generated later
+        if (name is not None and self.bot_invite_blurb is not None and self.bot_invite_url is not None):
+            self.capitalized_name = name.capitalize()
 
-    async def send_pages(self, ctx, paginator):
-        destination = ctx.channel
-
-        for page in paginator.pages:
-            await destination.send(page)
+            command = discord.app_commands.Command(
+                name="social_invite",
+                description=f"Posts invite links for {self.capitalized_name}, and it's official support server.",
+                callback=self.social_invite_command
+            )
+            self.bot.tree.add_command(command)
 
     ## Commands
 
-    @commands.command(no_pm=True)
-    async def invite(self, ctx):
-        '''Posts invite links for Hawking, and its Discord server.'''
+    async def social_invite_command(self, interaction: discord.Interaction):
+        """Posts invite links for the bot, and its official support server."""
 
-        self.dynamo_db.put_message_context(ctx)
+        # self.dynamo_db.put_message_context(ctx)
 
-        paginator = Paginator()
-        paginator.add_line('Add Hawking to your server with this link: https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072')
-        paginator.close_page()
-        paginator.add_line('Also, join my Discord server via: https://discord.gg/JJqx8C4')
-        paginator.add_line('- Help me test unstable versions of Hawking and my other bots')
-        paginator.add_line('- Let me know if something\'s broken')
-        paginator.add_line('- Post suggestions for improving Hawking and my other bots')
-        paginator.add_line('- Got a funny phrase you want added? Suggest it in there!')
-        paginator.close_page()
+        embed = discord.Embed(
+            title=self.capitalized_name,
+            description=self.bot_invite_blurb,
+            url=self.bot_invite_url
+        )
+        embed.set_thumbnail(url=self.bot.user.avatar.url)
 
-        await self.send_pages(ctx, paginator)
+        view = discord.ui.View()
+
+        bot_invite_button = discord.ui.Button(
+            style=discord.ButtonStyle.link,
+            label=f"Invite {self.capitalized_name}",
+            url=self.bot_invite_url
+        )
+        view.add_item(bot_invite_button)
+
+        if (self.support_discord_invite_url is not None):
+            support_discord_invite_button = discord.ui.Button(
+                style=discord.ButtonStyle.link,
+                label="Join the Support Discord",
+                url=self.support_discord_invite_url
+            )
+            view.add_item(support_discord_invite_button)
+
+        await interaction.response.send_message(embed=embed, view=view)
