@@ -53,19 +53,17 @@ class SocialInviteCommand(Cog):
 
         view = discord.ui.View()
 
-        bot_invite_button = discord.ui.Button(
+        view.add_item(discord.ui.Button(
             style=discord.ButtonStyle.link,
             label=f"Invite {self.capitalized_name}",
             url=self.bot_invite_url
-        )
-        view.add_item(bot_invite_button)
+        ))
 
         if (self.support_discord_invite_url is not None):
-            support_discord_invite_button = discord.ui.Button(
+            view.add_item(discord.ui.Button(
                 style=discord.ButtonStyle.link,
                 label="Join the Support Discord",
                 url=self.support_discord_invite_url
-            )
-            view.add_item(support_discord_invite_button)
+            ))
 
         await interaction.response.send_message(embed=embed, view=view)
