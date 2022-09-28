@@ -37,10 +37,14 @@ class StupidQuestions(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        assert (self.speech_cog is not None)
 
         ## Handle Reddit dependency
-        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit', {})
+        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
+        if (not reddit_dependency):
+            self.successful = False
+            return
         self.reddit = reddit_dependency.reddit
         if (not reddit_dependency.successful):
             self.successful = False
