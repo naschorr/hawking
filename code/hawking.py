@@ -6,6 +6,7 @@ from concurrent.futures import TimeoutError
 from collections import OrderedDict
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.errors import CommandInvokeError
 
@@ -19,6 +20,7 @@ from common import audio_player
 from common import privacy_manager
 from common.configuration import Configuration
 from common.logging import Logging
+from common.command_management import invoked_command_handler
 from common.string_similarity import StringSimilarity
 from common.database import dynamo_manager
 from common.module.module_manager import ModuleManager
@@ -76,27 +78,26 @@ class Hawking:
             command_prefix=commands.when_mentioned_or(self.activation_str),
             description='\n'.join(self.description)
         )
-        self._module_manager = ModuleManager(self, self.bot)
 
         ## Apply customized HelpCommand
         self.bot.help_command = help_command.HawkingHelpCommand()
 
-        ## Register the modules
+        ## Prepare to register modules
+        self._module_manager = ModuleManager(self, self.bot)
+
+        ## Register the modules (no circular dependencies!)
+        self.module_manager.register_module(admin.Admin, self, self.bot)
         self.module_manager.register_module(privacy_manager.PrivacyManager, self.bot, name='Hawking')
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, self.bot)
         # self.module_manager.register_module(social_invite_command.SocialInviteCommand, self, self.bot)    ## See https://github.com/naschorr/hawking/issues/175
+        self.module_manager.register_module(invoked_command_handler.InvokedCommandHandler)
         self.module_manager.register_module(message_parser.MessageParser)
-        self.module_manager.register_module(
-            audio_player.AudioPlayer,
-            self.bot,
-            None
-        )
+        self.module_manager.register_module(audio_player.AudioPlayer, self.bot, dependencies=[admin.Admin])
         self.module_manager.register_module(
             speech.Speech,
-            self,
-            dependencies = [message_parser.MessageParser, audio_player.AudioPlayer]
+            self.bot,
+            dependencies=[invoked_command_handler.InvokedCommandHandler, message_parser.MessageParser, audio_player.AudioPlayer]
         )
-        self.module_manager.register_module(admin.Admin, self, self.bot, dependencies = [audio_player.AudioPlayer])
 
         ## Find any dynamic modules, and prep them for loading
         self.module_manager.discover_modules()
@@ -118,6 +119,9 @@ class Hawking:
         @self.bot.event
         async def on_command_error(ctx, exception):
             '''Handles command errors. Attempts to find a similar command and suggests it, otherwise directs the user to the help prompt.'''
+
+            ## todo: reevaluate the necessity of this as the bot migrates to slash commands. Cogs can likely handle
+            ##       errors on their own with the `cog_command_error` overridden method as well.
 
             self.dynamo_db.put_message_context(ctx, False)
 
