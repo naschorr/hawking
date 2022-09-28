@@ -12,6 +12,7 @@
     "channel_timeout_seconds"               : 300,
     "channel_timeout_phrases"               : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "ight i'm a head out"],
     "skip_percentage"                       : 0.5,
+    "bot_repo_url"                          : "https://github.com/naschorr/hawking",
     "bot_invite_url"                        : "https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072",
     "bot_invite_blurb"                      : "The retro TTS bot for Discord, inspired by Moonbase Alpha!\nAdd Hawking to your server and start speaking now! _/say aeiou_",
     "support_discord_invite_url"            : "https://discord.gg/JJqx8C4",
