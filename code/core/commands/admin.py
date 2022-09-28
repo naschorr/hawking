@@ -9,6 +9,7 @@ from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
+from discord.ext.commands import Context, errors
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -25,7 +26,6 @@ class Admin(Cog):
 
         self.hawking = hawking
         self.bot = bot
-        self.audio_player_cog = kwargs.get('dependencies', {}).get('AudioPlayer', {})
 
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
@@ -40,26 +40,50 @@ class Admin(Cog):
 
     ## Commands
 
-    ## Root command for other admin-only commands
-    @commands.group(no_pm=True, hidden=True)
-    async def admin(self, ctx):
+    @commands.group(hidden=True)
+    @commands.is_owner()
+    async def admin(self, ctx: Context):
         """Root command for the admin-only commands"""
 
         if(ctx.invoked_subcommand is None):
-            if(self.is_admin(ctx.message.author)):
-                await ctx.send("Missing subcommand.")
-                return True
-            else:
-                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-                return False
-
-        return False
+            await ctx.message.reply("Missing subcommand")
 
 
-    ## Tries to reload the addon cogs (admin only)
+    @admin.command()
+    async def sync_local(self, ctx: Context):
+        """Syncs bot command tree to the current guild"""
+
+        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
+        self.bot.tree.copy_global_to(guild=ctx.guild)
+        synced = await self.bot.tree.sync(guild=ctx.guild)
+
+        await ctx.message.reply(f"Synced {len(synced)} commands locally.")
+
+
+    @admin.command()
+    async def sync_global(self, ctx: Context):
+        """Syncs bot command tree to the all guilds"""
+
+        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
+        synced = await self.bot.tree.sync()
+
+        await ctx.message.reply(f"Synced {len(synced)} commands globally.")
+
+
+    @admin.command()
+    async def clear_global(self, ctx: Context):
+        """Removed all bot commands from all guilds"""
+
+        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
+        self.bot.tree.clear_commands()
+        await self.bot.tree.sync()
+
+        await ctx.message.reply("Removed all commands globally.")
+
+
     @admin.command(no_pm=True)
-    async def reload_modules(self, ctx):
-        """Reloads the bot's cogs."""
+    async def reload_modules(self, ctx: Context):
+        """Reloads the bot's modules"""
 
         if(not self.is_admin(ctx.message.author)):
             LOGGER.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
@@ -71,42 +95,17 @@ class Admin(Cog):
         count = self.hawking.module_manager.reload_registered_modules()
         total = len(self.hawking.module_manager.modules)
 
-        loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
-        await ctx.send(loaded_cogs_string)
+        loaded_modules_string = "Loaded {} of {} modules/cogs.".format(count, total)
+        await ctx.send(loaded_modules_string)
         self.dynamo_db.put_message_context(ctx)
 
         return (count >= 0)
 
 
-    ## Skips the currently playing audio (admin only)
-    @admin.command(no_pm=True)
-    async def skip(self, ctx):
-        """Skips the current audio."""
+    async def cog_command_error(self, ctx: Context, error: Exception) -> None:
+        if (isinstance(error, errors.NotOwner)):
+            await ctx.message.reply("Sorry, this command is only available to the bot's owner (and not the server owner).")
+            return
 
-        if(not self.is_admin(ctx.message.author)):
-            LOGGER.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put_message_context(ctx, False)
-            return False
+        return await super().cog_command_error(ctx, error)
 
-        await self.audio_player_cog.skip(ctx, force = True)
-        return True
-
-
-    ## Disconnects the bot from their current voice channel
-    @admin.command(no_pm=True)
-    async def disconnect(self, ctx):
-        """ Disconnect from the current voice channel."""
-
-        if(not self.is_admin(ctx.message.author)):
-            LOGGER.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put_message_context(ctx, False)
-
-            return False
-
-        state = self.audio_player_cog.get_server_state(ctx)
-        await state.ctx.voice_client.disconnect()
-        self.dynamo_db.put_message_context(ctx)
-
-        return True

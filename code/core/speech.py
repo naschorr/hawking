@@ -7,16 +7,21 @@ import logging
 import random
 from math import ceil
 from pathlib import Path
+from typing import Callable
 
 from core import message_parser
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from common import utilities
+from common.audio_player import AudioPlayer
 from common.configuration import Configuration
+from common.command_management.invoked_command import InvokedCommand
+from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.exceptions import WillNotConnectToVoiceChannelException
 from common.logging import Logging
 from common.module.module import Cog
 
 import async_timeout
-from discord.ext import commands
+from discord import app_commands, Interaction, Member
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -208,16 +213,19 @@ class TTSController:
 
 class Speech(Cog):
 
-    def __init__(self, hawking, *args, **kwargs):
+    def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.hawking = hawking
-        self.audio_player_cog = kwargs.get('dependencies', {}).get('AudioPlayer', {})
+        self.bot = bot
+        self.audio_player_cog: AudioPlayer = kwargs.get('dependencies', {}).get('AudioPlayer')
+        assert(self.audio_player_cog is not None)
+        self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
+        assert(self.invoked_command_handler is not None)
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
         self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
         self.tts_controller = TTSController()
-        self.message_parser = message_parser.MessageParser()
+        self.message_parser = message_parser.MessageParser()    ## todo: dependency
 
     ## Methods
 
@@ -227,7 +235,7 @@ class Speech(Cog):
         try:
             if (len(self.channel_timeout_phrases) > 0):
                 message = random.choice(self.channel_timeout_phrases)
-                file_path = await self.build_audio_file(None, message, True)
+                file_path = await self.build_audio_file(message, True)
 
                 await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
         except Exception as e:
@@ -235,57 +243,76 @@ class Speech(Cog):
             await callback()
 
 
-    async def build_audio_file(self, ctx, message, ignore_char_limit = False) -> str:
+    async def build_audio_file(self, text: str, ignore_char_limit = False, interaction: Interaction = None) -> Path:
         '''Turns a string of text into a wav file for later playing. Returns a filepath pointing to that file.'''
 
         ## Make sure the message isn't too long
-        if(not self.tts_controller.check_length(message) and not ignore_char_limit):
-            raise MessageTooLongException(
-                "Message is {} characters long when it should be less than {}".format(
-                    len(message),
-                    self.tts_controller.char_limit
-                )
-            )
+        if(not self.tts_controller.check_length(text) and not ignore_char_limit):
+            raise MessageTooLongException(f"Message is {len(text)} characters long when it should be less than {self.tts_controller.char_limit}")
 
         ## Parse down the message before sending it to the TTS service
-        if (ctx):
-            message = self.message_parser.parse_message(message, ctx.message)
+        if (interaction is not None):
+            text = self.message_parser.parse_message(text, interaction.data)
 
         ## Build the audio file for speaking
-        return await self.tts_controller.save(message, ignore_char_limit)
+        return await self.tts_controller.save(text, ignore_char_limit)
 
 
-    async def _say(self, ctx, message, target_member = None, ignore_char_limit = False):
+    async def say(
+            self,
+            text: str,
+            author: Member,
+            target_member: Member = None,
+            ignore_char_limit = False,
+            interaction: Interaction = None,
+            callback: Callable = None
+    ) -> InvokedCommand:
         '''Internal say method, for use with presets and anything else that generates phrases on the fly'''
 
-        try:
-            wav_path = await self.build_audio_file(ctx, message, ignore_char_limit)
-        except BuildingAudioFileTimedOutExeption as e:
-            LOGGER.exception("Timed out building audio for message: '{}'".format(message))
-            await ctx.send("Sorry, <@{}>, it took too long to generate speech for that.".format(ctx.message.author.id))
-            return
-        except MessageTooLongException as e:
-            LOGGER.warn("Unable to build too long message. Message was {} characters long (out of {})".format(
-                len(message),
-                self.tts_controller.char_limit
-            ))
-            await ctx.send("Wow <@{}>, that's waaay too much. You've gotta keep messages shorter than {} characters.".format(
-                ctx.message.author.id,
-                self.tts_controller.char_limit
-            ))
-            return False
-        except UnableToBuildAudioFileException as e:
-            LOGGER.exception("Unable to build .wav file for message: '{}'".format(message))
-            await ctx.send("Sorry, <@{}>, I can't say that right now.".format(ctx.message.author.id))
-            return False
+        async def audio_player_callback():
+            self.tts_controller.delete(wav_path)
+            if (callback is None):
+                return
 
-        await self.audio_player_cog.play_audio(ctx, wav_path, target_member, lambda: self.tts_controller.delete(wav_path))
-        return True
+            await callback()
+
+
+        try:
+            wav_path = await self.build_audio_file(text, ignore_char_limit, interaction)
+
+        except BuildingAudioFileTimedOutExeption as e:
+            LOGGER.exception(f"Timed out building audio for message: '{text}'")
+            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, it took too long to generate speech for that.")
+
+        except MessageTooLongException as e:
+            LOGGER.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.tts_controller.char_limit})")
+            ## todo: Specify how many characters need to be removed?
+            return InvokedCommand(False, e, f"Wow <@{author.id}>, that's waaay too much. You've gotta keep messages shorter than {self.tts_controller.char_limit} characters.")
+
+        except UnableToBuildAudioFileException as e:
+            LOGGER.exception(f"Unable to build .wav file for message: '{text}'")
+            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I can't say that right now.")
+
+        try:
+            await self.audio_player_cog.play_audio(wav_path, author, target_member or author, interaction, audio_player_callback)
+
+        except FileNotFoundError as e:
+            LOGGER.exception("FileNotFound when invoking `play_audio`", e)
+            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I can't say that right now.")
+
+        except WillNotConnectToVoiceChannelException as e:
+            LOGGER.exception("Cannot connect to voice channel", e)
+            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I'm not able to connect to that voice channel.")
+
+        return InvokedCommand(True)
 
     ## Commands
 
-    @commands.command(no_pm=True)
-    async def say(self, ctx, *, message, target_member = None, ignore_char_limit = False):
+    @app_commands.command(name="say")
+    async def say_command(self, interaction: Interaction, text: str):
         '''Speaks your text aloud to your current voice channel.'''
 
-        await self._say(ctx, message, target_member, ignore_char_limit)
+        mention = self.invoked_command_handler.get_first_mention(interaction)
+        invoked_command = lambda: self.say(text, interaction.user, mention or interaction.user, False, interaction)
+
+        await self.invoked_command_handler.handle_deferred_command(interaction, invoked_command)
