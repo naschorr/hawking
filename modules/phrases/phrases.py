@@ -32,8 +32,10 @@ class Phrases(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
-        self.admin_cog = kwargs.get('dependencies', {}).get('Admin', {})
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        assert (self.speech_cog is not None)
+        self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
+        assert (self.admin_cog is not None)
 
         self.phrase_file_manager = PhraseFileManager()
         self.dynamo_db = dynamo_manager.DynamoManager()
