@@ -45,7 +45,10 @@ class StupidQuestions(DiscoverableCog):
         assert(self.invoked_command_handler is not None)
 
         ## Handle Reddit dependency
-        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit', {})
+        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
+        if (not reddit_dependency):
+            self.successful = False
+            return
         self.reddit = reddit_dependency.reddit
         if (not reddit_dependency.successful):
             self.successful = False
