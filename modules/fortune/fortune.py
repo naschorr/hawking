@@ -1,12 +1,13 @@
 import logging
 from random import choice
 
+from common.command_management.invoked_command import InvokedCommand
+from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 import discord
-from discord.ext import commands
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
@@ -19,7 +20,7 @@ class Fortune(DiscoverableCog):
         "It is certain",
         "It is decidely so",
         "Without a doubt",
-        "Yes definitely",
+        "Yes, definitely",
         "Without a doubt",
         "You may rely on it",
         "As I see it, yes",
@@ -42,17 +43,32 @@ class Fortune(DiscoverableCog):
     ]
 
 
-    def __init__(self, hawking, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.hawking = hawking
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        assert (self.speech_cog is not None)
+        self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
+        assert(self.invoked_command_handler is not None)
 
 
-    @commands.command(no_pm=True, brief="Tells you your magic 8 ball fortune!")
-    async def fortune(self, ctx):
-        await self.speech_cog._say(ctx, choice(self.FORTUNES), ignore_char_limit=True)
+    @discord.app_commands.command(name="fortune")
+    async def fortune_command(self, interaction: discord.Interaction):
+        """Tells you your magic 8 ball fortune!"""
+
+        fortune = choice(self.FORTUNES)
+
+
+        async def callback(invoked_command: InvokedCommand):
+            if (invoked_command.successful):
+                await interaction.followup.send(f"{fortune}.")
+            else:
+                await interaction.followup.send(invoked_command.human_readable_error_message)
+
+
+        action = lambda: self.speech_cog.say(fortune, author=interaction.user, ignore_char_limit=True, interaction=interaction)
+        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Fortune, dependencies=["Speech"])
+    return ModuleInitializationContainer(Fortune, dependencies=["Speech", "InvokedCommandHandler"])
