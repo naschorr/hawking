@@ -14,6 +14,7 @@ from common.module.module_initialization_container import ModuleInitializationCo
 from question import Question
 
 import discord
+from discord import app_commands, Interaction
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -110,8 +111,8 @@ class StupidQuestions(DiscoverableCog):
         return None
 
 
-    @discord.app_commands.command(name="stupid_question")
-    async def fortune_command(self, interaction: discord.Interaction):
+    @app_commands.command(name="stupid_question")
+    async def stupid_question_command(self, interaction: Interaction):
         """Ask a stupid question, via Reddit."""
 
         question = self.get_question()
