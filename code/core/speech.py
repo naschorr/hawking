@@ -9,7 +9,7 @@ from math import ceil
 from pathlib import Path
 from typing import Callable
 
-from core import message_parser
+from core.message_parser import MessageParser
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from common import utilities
 from common.audio_player import AudioPlayer
@@ -22,6 +22,7 @@ from common.module.module import Cog
 
 import async_timeout
 from discord import app_commands, Interaction, Member
+from discord.app_commands import describe
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -221,11 +222,12 @@ class Speech(Cog):
         assert(self.audio_player_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
+        assert(self.message_parser is not None)
 
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
         self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
         self.tts_controller = TTSController()
-        self.message_parser = message_parser.MessageParser()    ## todo: dependency
 
     ## Methods
 
@@ -309,10 +311,12 @@ class Speech(Cog):
     ## Commands
 
     @app_commands.command(name="say")
-    async def say_command(self, interaction: Interaction, text: str):
-        '''Speaks your text aloud to your current voice channel.'''
+    @describe(text="The text that Hawking will speak")
+    @describe(user="The user that will be spoken to")
+    async def say_command(self, interaction: Interaction, text: str, user: Member = None):
+        """Speaks your text aloud to your current voice channel."""
 
         mention = self.invoked_command_handler.get_first_mention(interaction)
-        invoked_command = lambda: self.say(text, interaction.user, mention or interaction.user, False, interaction)
+        invoked_command = lambda: self.say(text, interaction.user, user or mention or None, False, interaction)
 
-        await self.invoked_command_handler.handle_deferred_command(interaction, invoked_command)
+        await self.invoked_command_handler.handle_deferred_command(interaction, invoked_command, ephemeral=False)

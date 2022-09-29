@@ -1,3 +1,4 @@
+from dataclasses import replace
 import re
 import emoji
 
@@ -82,6 +83,7 @@ class MessageParser(Module):
 
         id_mapping = {}
 
+        ## Build the discord entity id to name mapping
         for user in interaction_data.get("resolved", {}).get("users", {}).values():
             id_mapping[user["id"]] = user["username"]
 
@@ -94,7 +96,13 @@ class MessageParser(Module):
         for role in interaction_data.get("resolved", {}).get("roles", {}).values():
             id_mapping[role["id"]] = role["name"]
 
+        ## Perform the replacement!
         for discord_id, replacement in id_mapping.items():
+            ## Replace any inline mentions (ex: <@1234567890>)
             message = replace_id_with_string(message, discord_id, replacement)
+
+            ## Hide any option mentions (ex: 1234567890), as it's almost certainly a 'meta' command.
+            ## Todo: improve this, it's kind of janky right now
+            message = message.replace(discord_id, "")
 
         return message
