@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Callable
 
+from core.message_parser import MessageParser
 from common.configuration import Configuration
 from common.command_management.invoked_command import InvokedCommand
 from common.logging import Logging
@@ -17,6 +18,9 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 class InvokedCommandHandler(Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
+        assert(self.message_parser is not None)
 
     ## Methods
 
@@ -46,7 +50,10 @@ class InvokedCommandHandler(Module):
             options = f" {options}" ## Prepend a spacer if necessary so everything has some room to breathe (see return below)
 
         ## These should always be slash commands, so the explicit '/' character is fine
-        return f"/{command_name}{options}"
+        command_string = f"/{command_name}{options}"
+
+        ## Make sure the command string has it's mentions replaced for maximum human readability
+        return self.message_parser.parse_message(command_string, interaction.data)
 
 
     async def handle_deferred_command(

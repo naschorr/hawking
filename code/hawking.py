@@ -86,12 +86,15 @@ class Hawking:
         self._module_manager = ModuleManager(self, self.bot)
 
         ## Register the modules (no circular dependencies!)
+        self.module_manager.register_module(message_parser.MessageParser)
         self.module_manager.register_module(admin.Admin, self, self.bot)
         self.module_manager.register_module(privacy_manager.PrivacyManager, self.bot, name='Hawking')
         self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, self.bot)
         self.module_manager.register_module(social_invite_command.SocialInviteCommand, self.bot)
-        self.module_manager.register_module(invoked_command_handler.InvokedCommandHandler)
-        self.module_manager.register_module(message_parser.MessageParser)
+        self.module_manager.register_module(
+            invoked_command_handler.InvokedCommandHandler,
+            dependencies=[message_parser.MessageParser]
+        )
         self.module_manager.register_module(audio_player.AudioPlayer, self.bot, dependencies=[admin.Admin])
         self.module_manager.register_module(
             speech.Speech,
