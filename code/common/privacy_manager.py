@@ -1,3 +1,4 @@
+from calendar import day_name
 import os
 import stat
 import logging
@@ -5,6 +6,7 @@ import asyncio
 import dateutil
 import datetime
 import json
+import time
 from pathlib import Path
 
 from common import utilities
@@ -12,10 +14,10 @@ from common.configuration import Configuration
 from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Cog
+from common.ui.embed_factory import EmbedFactory
 
 import discord
-from discord.user import User
-from discord.ext import commands
+from discord import app_commands, Interaction
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -29,15 +31,15 @@ class PrivacyManager(Cog):
 
         self.bot = bot
 
-        # Make sure the bot's name is capitalized, since it's used exclusively when interacting with users textually.
-        name = kwargs.get('name', 'bot')
-        self.name = name[0].upper() + name[1:]
+        self.embed_factory: EmbedFactory = kwargs.get('dependencies', {}).get('EmbedFactory')
+        assert(self.embed_factory is not None)
 
+        self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
+        self.repo_url = CONFIG_OPTIONS.get("bot_repo_url")
         self.privacy_policy_url = CONFIG_OPTIONS.get('privacy_policy_url')
-        if (self.privacy_policy_url):
-            ## Don't add a privacy policy link if there isn't a URL to link to
-            command = self.build_privacy_policy_command()
-            self.bot.add_command(command)
+        self.delete_request_scheduled_weekday = int(CONFIG_OPTIONS.get('delete_request_weekday_to_process', 0))
+        self._delete_request_scheduled_weekday_name = utilities.get_weekday_name_from_day_of_week(self.delete_request_scheduled_weekday)
+        self.delete_request_scheduled_time = dateutil.parser.parse(CONFIG_OPTIONS.get('delete_request_time_to_process', "T00:00:00Z"))
 
         ## Build the filepaths for the various tracking files
         delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
@@ -69,10 +71,6 @@ class PrivacyManager(Cog):
         ## Make sure there's a dynamo manager available for database operations
         self.dynamo_db = dynamo_manager.DynamoManager()
 
-        ## Delete request scheduling
-        self.delete_request_scheduled_weekday = int(CONFIG_OPTIONS.get('delete_request_weekday_to_process', 0))
-        self.delete_request_scheduled_time = dateutil.parser.parse(CONFIG_OPTIONS.get('delete_request_time_to_process', "T00:00:00Z"))
-
         ## Keep a copy of all user ids that should be deleted in memory, so the actual file can't get spammed by repeats.
         self.queued_user_ids = self.get_all_queued_delete_request_ids()
 
@@ -89,10 +87,25 @@ class PrivacyManager(Cog):
         else:
             asyncio.run(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
+        ## Add the commands
+        self.bot.tree.add_command(discord.app_commands.Command(
+            name="delete_my_data",
+            description=self.delete_my_data_command.__doc__,
+            callback=self.delete_my_data_command
+        ))
+
+        # Don't add a privacy policy link if there isn't a URL to link to
+        if (self.privacy_policy_url):
+            self.bot.tree.add_command(discord.app_commands.Command(
+                name="privacy_policy",
+                description=self.privacy_policy_command.__doc__,
+                callback=self.privacy_policy_command
+            ))
+
     ## Methods
 
     def is_file_accessible(self, file_path: Path) -> bool:
-        '''Ensures that the file that holds the delete requests is accessible'''
+        """Ensures that the file that holds the delete requests is accessible"""
 
         if (file_path.is_file()):
             if (    os.access(file_path, os.R_OK) and
@@ -114,7 +127,7 @@ class PrivacyManager(Cog):
 
 
     def get_all_queued_delete_request_ids(self) -> set:
-        '''Retrieves all delete request ids from the file, and returns them all in a set'''
+        """Retrieves all delete request ids from the file, and returns them all in a set"""
 
         queued_user_ids = None
 
@@ -130,9 +143,9 @@ class PrivacyManager(Cog):
 
     ## Stores's a user's id in a file, which while be used in a batched request to delete their data from the remote DB
     async def store_user_id_for_batch_delete(self, user_id):
-        '''
+        """
         Stores's a user's id in a file, which while be used in a batched request to delete their data from the remote DB
-        '''
+        """
 
         self.queued_user_ids.add(user_id)
 
@@ -143,7 +156,7 @@ class PrivacyManager(Cog):
                     fd.write(str(user_id) + '\n')
                 user_id_written = True
             except IOError as e:
-                LOGGER.exception('Unable to write id {} to file at {}.'.format(user_id, self.delete_request_queue_file_path), e)
+                LOGGER.exception(f"Unable to write id {user_id} to file at {self.delete_request_queue_file_path}.", e)
                 ## Give the file some time to close
                 await asyncio.sleep(1);
 
@@ -159,25 +172,25 @@ class PrivacyManager(Cog):
         ## Perform the operations on a list, since they're slightly easier to wrangle than sets.
         user_ids = list(self.get_all_queued_delete_request_ids())
 
-        if (len(user_ids) == 0):
-            LOGGER.info('Skipping delete request processing, as queue is empty.')
+        if (not user_ids):
+            LOGGER.info("Skipping delete request processing, as queue is empty.")
             return
 
-        LOGGER.info('Starting to process {} delete requests'.format(len(user_ids)))
+        LOGGER.info(f"Starting to process {len(user_ids)} delete requests")
         primary_keys_to_delete = list(map(
             lambda item: item[self.dynamo_db.primary_key],
             await self.dynamo_db.get_keys_from_users(self.dynamo_db.detailed_table, user_ids)
         ))
 
-        LOGGER.info('Starting to batch delete {} documents.'.format(len(primary_keys_to_delete)))
+        LOGGER.info(f"Starting to batch delete {len(primary_keys_to_delete)} documents.")
         await self.dynamo_db.batch_delete(self.dynamo_db.detailed_table, primary_keys_to_delete)
 
-        LOGGER.info('Successfully performed batch delete')
+        LOGGER.info("Successfully performed batch delete")
         self.queued_user_ids = set()
         self.empty_queued_delete_request_file()
 
-        LOGGER.info('Updating metadata file with time of completion.')
-        self.update_last_process_delete_request_queue_time(datetime.datetime.utcnow())
+        LOGGER.info("Updating metadata file with time of completion.")
+        self.update_last_process_delete_request_queue_time(datetime.datetime.now(datetime.timezone.utc))
 
 
     def get_seconds_until_process_delete_request_queue_is_due(self):
@@ -190,7 +203,7 @@ class PrivacyManager(Cog):
             ## If there is no last_process_time property, then it likely hasn't been done. So process the queue immediately
             return 0
 
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         previous_possible_process_time = now - datetime.timedelta(days=(self.delete_request_scheduled_weekday - now.weekday()) % 7)
         copy_time_data_into_datetime(self.delete_request_scheduled_time, previous_possible_process_time)
@@ -209,63 +222,53 @@ class PrivacyManager(Cog):
         await asyncio.sleep(seconds_to_wait)
         await self.process_delete_request_queue()
 
-
-    def build_privacy_policy_command(self) -> commands.Command:
-        async def privacy_policy_wrapper(ctx):
-            await self.privacy_policy(ctx)
-
-        ## Manually build command to be added
-        return commands.Command(
-            privacy_policy_wrapper,
-            name = "privacy_policy",
-            help = f"Gives the user a link to {self.name}'s privacy policy.",
-            hidden = True
-        )
-
     ## Commands
 
-    @commands.command(hidden=True)
-    async def delete_my_data(self, ctx):
-        '''
-        Initiates a request to delete all of your user data from the bot's logs.
-        All delete requests are queued up and performed in a batch every Monday.
-        '''
+    async def privacy_policy_command(self, interaction: Interaction):
+        """Gives a link to the privacy policy"""
 
-        self.dynamo_db.put_message_context(ctx)
+        # self.dynamo_db.put_message_context(ctx)
 
-        user = ctx.message.author
-        if (user.id in self.queued_user_ids):
-            await user.send("Hey <@{}>, it looks like you've already requested that your data be deleted. That'll automagically happen next Monday, so sit tight and it'll happen before you know it!".format(user.id))
-            return
-
-        await self.store_user_id_for_batch_delete(user.id)
-        try:
-            await ctx.message.add_reaction("👍")
-        except discord.errors.Forbidden:
-            ## If the bot doesn't have the permission to add reactions, then don't bother
-            pass
-
-        ## Todo: don't hard code the day the delete request happens
-        confirmation_text = f"Hey <@{ctx.message.author.id}>, your delete request has been received, and it'll happen automagically next Monday. Thanks for using {self.name}!"
-
-        await user.send(confirmation_text)
-
-
-    async def privacy_policy(self, ctx):
-        '''
-        Generates an embed with a link to the privacy policy.
-        '''
-
-        self.dynamo_db.put_message_context(ctx)
-
-        user = ctx.message.author
-        embedded_privacy_policy = discord.Embed(
-            description=f"Take a look at {self.name}'s [privacy policy]({self.privacy_policy_url})."
+        embed = self.embed_factory.create(
+            title="Privacy Policy",
+            description=f"{self.name} takes your data seriously.\nTake a look at {self.name}'s [privacy policy]({self.privacy_policy_url}) to learn more.",
+            url=self.privacy_policy_url
         )
 
-        await user.send(f"Hey <@{ctx.message.author.id}>,", embed=embedded_privacy_policy)
-        try:
-            await ctx.message.add_reaction("👍")
-        except discord.errors.Forbidden as e:
-            ## If the bot doesn't have the permission to add reactions, then don't bother
-            LOGGER.debug(f"Unable to add reaction to invoking message: {e.text}")
+        view = discord.ui.View()
+
+        view.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.link,
+            label="View the Privacy Policy",
+            url=self.privacy_policy_url
+        ))
+
+        if (self.repo_url is not None):
+            view.add_item(discord.ui.Button(
+                style=discord.ButtonStyle.link,
+                label="Visit Hawking on GitHub",
+                url=self.repo_url
+            ))
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+
+    async def delete_my_data_command(self, interaction: Interaction):
+        """Initiates a request to delete all of your user data from the bot's logs."""
+
+        # self.dynamo_db.put_message_context(ctx)
+
+        user_id = interaction.user.id
+        if (user_id in self.queued_user_ids):
+            await interaction.response.send_message(
+                f"Hey <@{user_id}>, it looks like you've already requested that your data be deleted. That'll automagically happen next {self._delete_request_scheduled_weekday_name}, so sit tight and it'll happen before you know it!",
+                ephemeral=True
+            )
+            return
+
+        await self.store_user_id_for_batch_delete(user_id)
+
+        await interaction.response.send_message(
+            f"Hey <@{user_id}>, your delete request has been received, and it'll happen automagically next {self._delete_request_scheduled_weekday_name}.",
+            ephemeral=True
+        )

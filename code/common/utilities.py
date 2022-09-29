@@ -35,4 +35,20 @@ def is_windows():
     return ("win" in PLATFORM)
 
 
+def get_weekday_name_from_day_of_week(day_of_week: int) -> str:
+    ## Basically the inverse of: https://docs.python.org/3/library/datetime.html#datetime.date.weekday
+
+    day_names = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+    ]
+
+    return day_names[day_of_week]
+
+
 os.environ = {}
