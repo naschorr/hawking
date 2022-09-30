@@ -4,6 +4,7 @@ from common.configuration import Configuration
 from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Cog
+from common.ui.component_factory import ComponentFactory
 
 import discord
 
@@ -19,6 +20,9 @@ class SocialInviteCommand(Cog):
 
         self.bot = bot
 
+        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
+        assert(self.component_factory is not None)
+
         name: str = CONFIG_OPTIONS.get("name")
         self.bot_invite_blurb: str = CONFIG_OPTIONS.get("bot_invite_blurb", CONFIG_OPTIONS.get("description")[0])
         self.bot_invite_url: str = CONFIG_OPTIONS.get("bot_invite_url")
@@ -32,7 +36,7 @@ class SocialInviteCommand(Cog):
 
             command = discord.app_commands.Command(
                 name="social_invite",
-                description=f"Posts invite links for {self.capitalized_name}, and it's official support server.",
+                description=f"Posts invite links for {self.capitalized_name}, and its official support server",
                 callback=self.social_invite_command
             )
             self.bot.tree.add_command(command)
@@ -40,16 +44,14 @@ class SocialInviteCommand(Cog):
     ## Commands
 
     async def social_invite_command(self, interaction: discord.Interaction):
-        """Posts invite links for the bot, and its official support server."""
 
         # self.dynamo_db.put_message_context(ctx)
 
-        embed = discord.Embed(
+        embed = self.component_factory.create_embed(
             title=self.capitalized_name,
             description=self.bot_invite_blurb,
             url=self.bot_invite_url
         )
-        embed.set_thumbnail(url=self.bot.user.avatar.url)
 
         view = discord.ui.View()
 
@@ -65,5 +67,8 @@ class SocialInviteCommand(Cog):
                 label="Join the Support Discord",
                 url=self.support_discord_invite_url
             ))
+
+        if (repo_button := self.component_factory.create_repo_link_button()):
+            view.add_item(repo_button)
 
         await interaction.response.send_message(embed=embed, view=view)

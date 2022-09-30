@@ -4,6 +4,7 @@ from common.configuration import Configuration
 from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Cog
+from common.ui.component_factory import ComponentFactory
 
 import discord
 
@@ -21,7 +22,9 @@ class SpeechConfigHelpCommand(Cog):
 
         self.bot = bot
 
-        self.repo_url = CONFIG_OPTIONS.get("bot_repo_url")
+        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
+        assert(self.component_factory is not None)
+
         self.dynamo_db = dynamo_manager.DynamoManager()
 
     ## Methods
@@ -37,12 +40,11 @@ class SpeechConfigHelpCommand(Cog):
             "got everything you need to get started with tweaking Hawking to do pretty much anything you'd like!"
         )
 
-        embed = discord.Embed(
-            title="Hawking Speech Configuration",
+        embed = self.component_factory.create_embed(
+            title="Speech Configuration",
             description=description,
             url=self.HAWKING_SPEECH_CONFIG_URL
         )
-        embed.set_thumbnail(url=self.bot.user.avatar.url)
 
         view = discord.ui.View()
 
@@ -52,11 +54,7 @@ class SpeechConfigHelpCommand(Cog):
             url=self.HAWKING_SPEECH_CONFIG_URL
         ))
 
-        if (self.repo_url is not None):
-            view.add_item(discord.ui.Button(
-                style=discord.ButtonStyle.link,
-                label="Visit Hawking on GitHub",
-                url=self.repo_url
-            ))
+        if (repo_button := self.component_factory.create_repo_link_button()):
+            view.add_item(repo_button)
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)

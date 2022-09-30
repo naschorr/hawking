@@ -24,7 +24,7 @@ from common.command_management import invoked_command_handler
 from common.string_similarity import StringSimilarity
 from common.database import dynamo_manager
 from common.module.module_manager import ModuleManager
-from common.ui import embed_factory
+from common.ui import component_factory
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -88,15 +88,23 @@ class Hawking:
 
         ## Register the modules (no circular dependencies!)
         self.module_manager.register_module(message_parser.MessageParser)
-        self.module_manager.register_module(embed_factory.EmbedFactory, self.bot)
+        self.module_manager.register_module(component_factory.ComponentFactory, self.bot)
         self.module_manager.register_module(admin.Admin, self, self.bot)
         self.module_manager.register_module(
             privacy_manager.PrivacyManager,
             self.bot,
-            dependencies=[embed_factory.EmbedFactory]
+            dependencies=[component_factory.ComponentFactory]
         )
-        self.module_manager.register_module(speech_config_help_command.SpeechConfigHelpCommand, self.bot)
-        self.module_manager.register_module(social_invite_command.SocialInviteCommand, self.bot)
+        self.module_manager.register_module(
+            speech_config_help_command.SpeechConfigHelpCommand,
+            self.bot,
+            dependencies=[component_factory.ComponentFactory]
+        )
+        self.module_manager.register_module(
+            social_invite_command.SocialInviteCommand,
+            self.bot,
+            dependencies=[component_factory.ComponentFactory]
+        )
         self.module_manager.register_module(
             invoked_command_handler.InvokedCommandHandler,
             dependencies=[message_parser.MessageParser]
