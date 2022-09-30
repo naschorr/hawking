@@ -14,7 +14,7 @@ from common.configuration import Configuration
 from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Cog
-from common.ui.embed_factory import EmbedFactory
+from common.ui.component_factory import ComponentFactory
 
 import discord
 from discord import app_commands, Interaction
@@ -31,11 +31,10 @@ class PrivacyManager(Cog):
 
         self.bot = bot
 
-        self.embed_factory: EmbedFactory = kwargs.get('dependencies', {}).get('EmbedFactory')
-        assert(self.embed_factory is not None)
+        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
+        assert(self.component_factory is not None)
 
         self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
-        self.repo_url = CONFIG_OPTIONS.get("bot_repo_url")
         self.privacy_policy_url = CONFIG_OPTIONS.get('privacy_policy_url')
         self.delete_request_scheduled_weekday = int(CONFIG_OPTIONS.get('delete_request_weekday_to_process', 0))
         self._delete_request_scheduled_weekday_name = utilities.get_weekday_name_from_day_of_week(self.delete_request_scheduled_weekday)
@@ -229,7 +228,7 @@ class PrivacyManager(Cog):
 
         # self.dynamo_db.put_message_context(ctx)
 
-        embed = self.embed_factory.create(
+        embed = self.component_factory.create_embed(
             title="Privacy Policy",
             description=f"{self.name} takes your data seriously.\nTake a look at {self.name}'s [privacy policy]({self.privacy_policy_url}) to learn more.",
             url=self.privacy_policy_url
@@ -243,12 +242,8 @@ class PrivacyManager(Cog):
             url=self.privacy_policy_url
         ))
 
-        if (self.repo_url is not None):
-            view.add_item(discord.ui.Button(
-                style=discord.ButtonStyle.link,
-                label="Visit Hawking on GitHub",
-                url=self.repo_url
-            ))
+        if (repo_button := self.component_factory.create_repo_link_button()):
+            view.add_item(repo_button)
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
