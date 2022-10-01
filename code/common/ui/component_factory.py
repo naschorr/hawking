@@ -30,7 +30,7 @@ class ComponentFactory(Module):
         """Creates a basic embed with consistent coloring"""
 
         return discord.Embed(
-            title=title or self.name,
+            title=title,
             description=description,
             url=url,
             color=self.color

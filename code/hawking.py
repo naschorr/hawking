@@ -101,7 +101,7 @@ class Hawking:
             dependencies=[component_factory.ComponentFactory]
         )
         self.module_manager.register_module(
-            social_invite_command.SocialInviteCommand,
+            invite_command.InviteCommand,
             self.bot,
             dependencies=[component_factory.ComponentFactory]
         )
