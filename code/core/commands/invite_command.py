@@ -13,7 +13,7 @@ CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class SocialInviteCommand(Cog):
+class InviteCommand(Cog):
 
     def __init__(self, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,15 +35,15 @@ class SocialInviteCommand(Cog):
             self.capitalized_name = name.capitalize()
 
             command = discord.app_commands.Command(
-                name="social_invite",
-                description=f"Posts invite links for {self.capitalized_name}, and its official support server",
-                callback=self.social_invite_command
+                name="invite",
+                description=f"Posts invite links for {self.capitalized_name}",
+                callback=self.invite_command
             )
             self.bot.tree.add_command(command)
 
     ## Commands
 
-    async def social_invite_command(self, interaction: discord.Interaction):
+    async def invite_command(self, interaction: discord.Interaction):
 
         # self.dynamo_db.put_message_context(ctx)
 
