@@ -32,12 +32,6 @@ class Admin(Cog):
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 
-    ## Methods
-
-    ## Checks if a user is a valid admin
-    def is_admin(self, name):
-        return (str(name) in self.admins)
-
     ## Commands
 
     @commands.group(hidden=True)
@@ -64,21 +58,20 @@ class Admin(Cog):
     async def sync_global(self, ctx: Context):
         """Syncs bot command tree to the all guilds"""
 
-        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
         synced = await self.bot.tree.sync()
 
         await ctx.message.reply(f"Synced {len(synced)} commands globally.")
 
 
     @admin.command()
-    async def clear_global(self, ctx: Context):
-        """Removed all bot commands from all guilds"""
+    async def clear_local(self, ctx: Context):
+        """Removed all bot commands from the current guild"""
 
-        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
-        self.bot.tree.clear_commands()
+        ## todo: No global clear method? Is that as designed and normal syncing is fine?
+        self.bot.tree.clear_commands(guild=ctx.guild)
         await self.bot.tree.sync()
 
-        await ctx.message.reply("Removed all commands globally.")
+        await ctx.message.reply("Removed all commands locally.")
 
 
     @admin.command(no_pm=True)

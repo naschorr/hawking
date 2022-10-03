@@ -66,13 +66,6 @@ class Phrases(DiscoverableCog):
         async def reload_phrases(ctx):
             """Reloads the bot's list of phrases"""
 
-            if(not self.admin_cog.is_admin(ctx.message.author)):
-                LOGGER.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
-                self.dynamo_db.put_message_context(ctx, False)
-
-                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-                return False
-
             count = self.reload_phrases()
 
             loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
