@@ -35,7 +35,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 ## Hosting, Configuring, Commanding, and Extending Hawking (and more)!
 - Take a look at the [Hawking installation guide](https://github.com/naschorr/hawking/blob/master/docs/installing_hawking.md)
 - After you've got Hawking intalled, check out the [Hawking configuration guide](https://github.com/naschorr/hawking/blob/master/docs/configuring_hawking.md)
-- Once Hawking has been configured, flex those admin muscles with the [admin command guide](https://github.com/naschorr/hawking/blob/master/docs/admin_commands.md) (_Hint:_ type in `\help admin`)
+- Once Hawking has been configured, flex those admin muscles with the [admin command guide](https://github.com/naschorr/hawking/blob/master/docs/admin_commands.md)
 - Want to add features to your Hawking installation? Take a look at the [module building guide](https://github.com/naschorr/hawking/blob/master/docs/building_modules.md)!
 - Check out the [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md) too
 
