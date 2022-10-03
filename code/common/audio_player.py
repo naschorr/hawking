@@ -318,30 +318,19 @@ class AudioPlayer(Cog):
         async def skip(ctx):
             """Skips the current audio"""
 
-            if(not self.admin_cog.is_admin(ctx.message.author)):
-                LOGGER.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
-                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-                self.dynamo_db.put_message_context(ctx, False)
-                return False
+            self.dynamo_db.put_message_context(ctx)
 
             await self.skip(ctx, force = True)
-            return True
+
 
         @self.admin_cog.admin.command()
         async def disconnect(ctx):
             """Disconnect from the current voice channel"""
 
-            if(not self.admin_cog.is_admin(ctx.message.author)):
-                LOGGER.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
-                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-                self.dynamo_db.put_message_context(ctx, False)
-
-                return False
+            self.dynamo_db.put_message_context(ctx)
 
             state = self.get_server_state(ctx)
             await state.disconnect()
-            self.dynamo_db.put_message_context(ctx)
-            return True
 
     ## Properties
 
