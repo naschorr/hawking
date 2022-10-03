@@ -197,7 +197,7 @@ class ModuleManager:
             ## Note that the entrypoint for the module should share the same name as it's parent folder. For example:
             ## phrases.py is the entrypoint for the phrases/ directory
             module_entrypoint = Path.joinpath(module_path, module_path.name + '.py')
-            
+
             if (module_entrypoint.exists):
                 ## Expose the module's root directory to the interpreter, so it can be imported
                 sys.path.append(str(module_path))
