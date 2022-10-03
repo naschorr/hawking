@@ -39,7 +39,7 @@ Detailed data is also stored briefly on the cloud server that runs Hawking in th
 Users are able to have their own detailed data be deleted upon request, or it will happen automatically a year after their data was inserted into the database.
 
 ### User Controlled Data Deletion
-Users can invoke the `\delete_my_data` command at any time. This will queue up the user's detailed data for deletion, which happens in a batch process once a week. Users will not be notified that their data has been deleted, however the bot will tell them when to expect that their detailed data will be deleted.
+Users can invoke the `@Hawking delete_my_data` command at any time. This will queue up the user's detailed data for deletion, which happens in a batch process once a week. Users will not be notified that their data has been deleted, however the bot will tell them when to expect that their detailed data will be deleted.
 
 ### Automatic Data Deletion
 Detailed data will automatically be deleted one year after entry into the database.
