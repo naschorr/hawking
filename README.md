@@ -5,6 +5,11 @@ A retro text-to-speech bot for Discord, designed to work with all of the stuff y
 
 Note that new Hawking activations are currently disabled. They'll be available again once I finish up the slash command upgrade (and potentially message content intent application).
 
+## Activate Hawking on your server!
+- Go to [this page](https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072) on Discord's site.
+- Select the server that you want Hawking to be added to.
+- Hit the "Authorize" button.
+- Start speaking! (_Hint:_ join a voice channel and type in `/help`. You should check out the [**Commands**](https://github.com/naschorr/hawking#commands) section of this readme, too!)
 
 ## Join my Discord server!
 Click [here](https://discord.gg/JJqx8C4) to join!
@@ -14,17 +19,18 @@ Click [here](https://discord.gg/JJqx8C4) to join!
 - Got a funny phrase you want added? Suggest it in there!
 
 ## Commands
-These commands allow for the basic operation of the bot, by anyone. Just type them into a public text channel while connected to a public voice channel. (Hawking can also read/join channels that you've given the permissions to)
-- `\say [text]` - Tells the bot to speak [text] in the voice channel that you're currently in.
-- `\skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
-- `\find [text]` - The bot will search its preloaded phrases for the one whose contents most closely matches [text], and will display that command's name. Note: requires the Phrases module.
-- `\random` - Plays a random phrase from the list of preloaded phrases. Note: requires the Phrases module.
-- `\fortune` - Tells you your magic 8 ball fortune!
-- `\stupidquestion` - Asks you a random, (potentially) stupid question from Reddit.
-- `\invite` - Gets you an invite link for the bot, as well as gets you an invite link for my Discord server.
-- `\delete_my_data` - Sets up a request to remove all of your stored user data (TTS data, User Id, Channel Id, and Server Id) from the Hawking database. Note that anonymized usage statistics are still kept, however. All requests are processed once a week, currently that happens every Monday at midnight. Furthermore, the previously mentioned identifying information will automatically be removed after a year.
-- `\help` - Show the help screen.
-- `\speech_config` - Shows the help screen for configuring Hawking's speech.
+These commands allow for the basic operation of the bot, by anyone. Just type them into a public text channel while connected to a public voice channel! Note that Hawking now uses slash commands, so just typing the command into Discord won't work as expected. You must select the command, and it's extra options (if desired) individually.
+- `/say <text>` - Tells the bot to speak [text] in the voice channel that you're currently in.
+- `/skip` - Skip a phrase that you've requested, or start a vote to skip on someone else's phrase.
+- `/phrase <name>` - Speaks the specific preset phrase. Note that the name will autocomplete, so phrases are easy to find.
+- `/find <text>` - The bot will search its loaded phrases for the one whose contents most closely matches the provided text, and will play it.
+- `/random` - Plays a random phrase from the list of preloaded phrases.
+- `/fortune` - Tells you your magic 8 ball fortune!
+- `/invite` - Gets you an invite link for the Hawking, as well as gets you an invite link for Hawking's Discord server.
+- `/privacy_policy` - Gives you a link to Hawking's [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md).
+- `/speech_config` - Gives you a link to the [speech configuration documentation](https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md) for Hawking.
+- `/stupid_question` - Asks you a random, (potentially) stupid question from Reddit.
+- `/help` - Show the help screen.
 
 ## Hosting, Configuring, Commanding, and Extending Hawking (and more)!
 - Take a look at the [Hawking installation guide](https://github.com/naschorr/hawking/blob/master/docs/installing_hawking.md)
@@ -34,7 +40,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - Check out the [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md) too
 
 ## Lastly...
-Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `\help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
+Also included are some built-in phrases from [this masterpiece](https://www.youtube.com/watch?v=1B488z1MmaA). Check out the `Phrases` section in the `/help` screen. You should also take a look at my dedicated [hawking-phrases repository](https://github.com/naschorr/hawking-phrases). It's got a bunch of phrase files that can easily be put into your phrases folder for even more customization.
 
 Lastly, be sure to check out the [Moonbase Alpha](https://steamcommunity.com/sharedfiles/filedetails/?id=482628855) moon tunes guide on Steam, there's a bunch of great stuff in there!
 
