@@ -4,7 +4,6 @@ See `config.json` in the Hawking installation's root.
 ### Discord Configuration
 - **name** - String - The bot's name.
 - **version** - String - The bot's current semantic version.
-- **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
 - **activation_str** - String - The string that'll activate the Discord bot from chat messages.
 - **description** - Array - An array of strings making up the bot's description. Each element in the array goes on a new line in the help interface.
 - **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
