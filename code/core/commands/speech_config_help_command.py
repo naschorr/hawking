@@ -31,7 +31,7 @@ class SpeechConfigHelpCommand(Cog):
 
     @discord.app_commands.command(name="speech_config")
     async def speech_config_command(self, interaction: discord.Interaction):
-        """Posts a link to the speech configuration documentation."""
+        """Posts a link to the speech config docs"""
 
         # self.dynamo_db.put_message_context(ctx)
 

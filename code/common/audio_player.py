@@ -436,9 +436,9 @@ class AudioPlayer(Cog):
 
     ## Commands
 
-    @app_commands.command()
-    async def skip(self, interaction: Interaction):
-        '''Vote to skip the current audio.'''
+    @app_commands.command(name="skip")
+    async def skip_command(self, interaction: Interaction):
+        '''Vote to skip what's currently playing'''
 
         state = self.get_server_state(interaction.guild)
 

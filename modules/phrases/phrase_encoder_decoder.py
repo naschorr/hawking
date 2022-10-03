@@ -4,8 +4,8 @@ from pathlib import Path
 
 from common.configuration import Configuration
 from common.logging import Logging
-from phrase_cipher_enum import PhraseCipher
-from models.phrase import Phrase
+from modules.phrases.phrase_cipher_enum import PhraseCipher
+from modules.phrases.models.phrase import Phrase
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)

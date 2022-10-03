@@ -16,9 +16,9 @@ from common.logging import Logging
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
-from phrase_file_manager import PhraseFileManager
-from models.phrase_group import PhraseGroup
-from models.phrase import Phrase
+from modules.phrases.phrase_file_manager import PhraseFileManager
+from modules.phrases.models.phrase_group import PhraseGroup
+from modules.phrases.models.phrase import Phrase
 
 import discord
 from discord import Interaction
@@ -30,7 +30,10 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Phrases(DiscoverableCog):
-    ROOT_GROUP_NAME = "phrase"
+    PHRASES_NAME = "phrases"
+    PHRASE_COMMAND_NAME = "phrase"
+    RANDOM_COMMAND_NAME = "random"
+    FIND_COMMAND_NAME = "find"
 
     def __init__(self, hawking, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -110,42 +113,40 @@ class Phrases(DiscoverableCog):
         ## Don't register phrase commands if no phrases have been loaded!
         if (self.phrases):
             ## Add the random command
-            random_command = discord.app_commands.Command(
-                name="random",
+            self.bot.tree.add_command(discord.app_commands.Command(
+                name=Phrases.RANDOM_COMMAND_NAME,
                 description=self.random_command.__doc__,
                 callback=self.random_command
-            )
-            self.bot.tree.add_command(random_command)
+            ))
 
             # Add the find command
-            find_command = discord.app_commands.Command(
-                name="find",
+            self.bot.tree.add_command(discord.app_commands.Command(
+                name=Phrases.FIND_COMMAND_NAME,
                 description=self.find_command.__doc__,
                 callback=self.find_command
-            )
-            self.bot.tree.add_command(find_command)
+            ))
 
             ## Add the phrase command
             ## Wrap the phrase command to have access to self in the autocomplete decorator. Unfortunately the parameter
             ## description decorators must also be moved up here.
             ## todo: Investigate a workaround that's less ugly?
-            @autocomplete(phrase=self._phrase_command_autocomplete)
-            @describe(phrase="The name of the phrase to speak")
+            @autocomplete(name=self._phrase_name_command_autocomplete)
+            @describe(name="The name of the phrase to speak")
             @describe(user="The user to speak the phrase to")
-            async def phrase_command_wrapper(interaction: Interaction, phrase: str, user: discord.Member = None):
-                await self.phrase_command(interaction, phrase, user)
+            async def phrase_command_wrapper(interaction: Interaction, name: str, user: discord.Member = None):
+                await self.phrase_command(interaction, name, user)
 
-            phrase_command = discord.app_commands.Command(
-                name=Phrases.ROOT_GROUP_NAME,
+            self.bot.tree.add_command(discord.app_commands.Command(
+                name=Phrases.PHRASE_COMMAND_NAME,
                 description=self.phrase_command.__doc__,
                 callback=phrase_command_wrapper,
-            )
-            self.bot.tree.add_command(phrase_command)
+                extras={"cog": self}
+            ))
 
 
     def remove_phrase_commands(self):
         self.bot.tree.remove_command("random")
-        self.bot.tree.remove_command("phrase")
+        self.bot.tree.remove_command(Phrases.PHRASE_COMMAND_NAME)
         self.bot.tree.remove_command("find")
 
 
@@ -175,18 +176,23 @@ class Phrases(DiscoverableCog):
         LOGGER.info(f'Loaded {counter} phrase{"s" if counter != 1 else ""}.')
         return counter
 
+
+    def build_phrase_command_string(self, phrase: Phrase, activation_str: str = None) -> str:
+        return f"{activation_str or '/'}{Phrases.PHRASE_COMMAND_NAME} {phrase.name}"
+
     ## Commands
 
     @describe(user="The user to speak the phrase to")
     async def random_command(self, interaction: Interaction, user: discord.Member = None):
-        """Speaks a random phrase."""
+        """Speaks a random phrase"""
 
+        # self.dynamo_db.put_message_context(ctx, False)
         phrase: Phrase = random.choice(list(self.phrases.values()))
 
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **/{Phrases.ROOT_GROUP_NAME} {phrase.name}**")
+                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **/{self.build_phrase_command_string(phrase)}**")
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
@@ -201,7 +207,7 @@ class Phrases(DiscoverableCog):
         await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
 
 
-    async def _phrase_command_autocomplete(self, interaction: Interaction, current: str) -> list[Choice]:
+    async def _phrase_name_command_autocomplete(self, interaction: Interaction, current: str) -> list[Choice]:
         def generate_choice(phrase: Phrase) -> Choice:
             return Choice(name=f"{phrase.name} - {phrase.help or phrase.brief}", value=phrase.name)
 
@@ -213,14 +219,16 @@ class Phrases(DiscoverableCog):
             return [generate_choice(phrase) for phrase in self.phrases.values() if phrase.name.startswith(current)]
 
 
-    async def phrase_command(self, interaction: Interaction, phrase: str, user: discord.Member = None):
-        """Speaks the chosen phrase"""
+    async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member = None):
+        """Speaks the specific phrase"""
+
+        # self.dynamo_db.put_message_context(ctx, False)
 
         ## Get the actual phrase from the phrase name provided by autocomplete
-        actual_phrase: Phrase = self.phrases.get(phrase)
-        command_string = f"/{Phrases.ROOT_GROUP_NAME} {actual_phrase.name if actual_phrase is not None else phrase}"
+        phrase: Phrase = self.phrases.get(name)
+        command_string = self.build_phrase_command_string(phrase) if phrase else name
 
-        if (actual_phrase is None):
+        if (phrase is None):
             await interaction.response.send_message(
                 f"Sorry <@{interaction.user.id}>, **{command_string}** isn't a valid phrase.",
                 ephemeral=True
@@ -235,7 +243,7 @@ class Phrases(DiscoverableCog):
 
 
         action = lambda: self.speech_cog.say(
-            actual_phrase.message,
+            phrase.message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,
@@ -247,8 +255,7 @@ class Phrases(DiscoverableCog):
     @describe(search="The text to search the phrases for")
     @describe(user="The user to speak the phrase to, if a match is found")
     async def find_command(self, interaction: Interaction, search: str, user: discord.Member = None):
-        """Attempts to find the most similar phrase to the provided search text"""
-
+        """Speaks the most similar phrase"""
 
         def calc_substring_score(message: str, description: str) -> float:
             """Scores a given string (message) based on how many of it's words exist in another string (description)"""
@@ -261,6 +268,8 @@ class Phrases(DiscoverableCog):
 
             return word_frequency / len(message_split)
 
+
+        # self.dynamo_db.put_message_context(ctx, False)
 
         raw_search = search
         ## Strip all non alphanumeric and non whitespace characters out of the message
@@ -296,7 +305,7 @@ class Phrases(DiscoverableCog):
             if (invoked_command.successful):
                 await interaction.followup.send(
                     ## todo: this is really lazy
-                    f"<@{interaction.user.id}> searched with **/find {raw_search}**, and found **/{Phrases.ROOT_GROUP_NAME} {phrase.name}**"),
+                    f"<@{interaction.user.id}> searched with **/find {raw_search}**, and found **{self.build_phrase_command_string(phrase)}**"),
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 

@@ -3,10 +3,7 @@
     "version"                               : "1.17.0",
     "admins"                                : ["Username#1234"],
     "activation_str"                        : "\\",
-    "description"                           : [
-        "The retro TTS bot for Discord",
-        "Learn more, contribute, or star me at https://github.com/naschorr/hawking"
-    ],
+    "description"                           : "The retro TTS bot for Discord, inspired by Moonbase Alpha!",
     "announce_updates"                      : true,
     "delete_commands"                       : false,
     "channel_timeout_seconds"               : 300,

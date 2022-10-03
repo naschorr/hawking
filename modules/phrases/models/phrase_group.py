@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import List
 
 from common.logging import Logging
-from models.phrase import Phrase
-from to_dict import ToDict
+from modules.phrases.models.phrase import Phrase
+from modules.phrases.to_dict import ToDict
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))

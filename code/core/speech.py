@@ -314,7 +314,7 @@ class Speech(Cog):
     @describe(text="The text that Hawking will speak")
     @describe(user="The user that will be spoken to")
     async def say_command(self, interaction: Interaction, text: str, user: Member = None):
-        """Speaks your text aloud to your current voice channel."""
+        """Speaks your text aloud"""
 
         mention = self.invoked_command_handler.get_first_mention(interaction)
         invoked_command = lambda: self.say(text, interaction.user, user or mention or None, False, interaction)
