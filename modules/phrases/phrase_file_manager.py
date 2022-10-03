@@ -5,17 +5,16 @@ import re
 from pathlib import Path
 from typing import List
 
-from common import utilities
-from models.phrase import Phrase
-from models.phrase_group import PhraseGroup
-from models.phrase_encoding import PhraseEncoding
-from phrase_encoder_decoder import PhraseEncoderDecoder
+from common.configuration import Configuration
+from common.logging import Logging
+from modules.phrases.models.phrase import Phrase
+from modules.phrases.models.phrase_group import PhraseGroup
+from modules.phrases.models.phrase_encoding import PhraseEncoding
+from modules.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseFileManager:
@@ -105,7 +104,7 @@ class PhraseFileManager:
 
                 phrases.append(phrase)
             except Exception as e:
-                logger.warn(f"Error loading phrase '{phrase_raw['name']}'. Skipping...", e)
+                LOGGER.warn(f"Error loading phrase '{phrase_raw['name']}'. Skipping...", e)
                 continue
 
         return sorted(phrases, key=lambda phrase: phrase.name)
@@ -145,7 +144,7 @@ class PhraseFileManager:
 
                 ## With the loose pieces processed, make sure the required pieces exist.
                 if (phrase_group_name == None or phrase_group_key == None or phrase_group_description == None or len(phrases) == 0):
-                    logger.warning(f"Error loading phrase group '{phrase_group_name}', from '{path}'. Missing 'name', 'key', 'description', or non-zero length 'phrases' list. Skipping...")
+                    LOGGER.warning(f"Error loading phrase group '{phrase_group_name}', from '{path}'. Missing 'name', 'key', 'description', or non-zero length 'phrases' list. Skipping...")
                     return None
 
                 ## Construct the PhraseGroup, and add the Phrases to it.
@@ -154,7 +153,7 @@ class PhraseFileManager:
 
                 return phrase_group
             except Exception as e:
-                logger.warning(f"Error loading phrase group '{phrase_group_name}' from '{path}''. Skipping...", e)
+                LOGGER.warning(f"Error loading phrase group '{phrase_group_name}' from '{path}''. Skipping...", e)
                 return None
 
 

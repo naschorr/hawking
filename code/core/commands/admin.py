@@ -2,18 +2,18 @@ import inspect
 import logging
 
 from hawking import Hawking
-from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
+from discord.ext.commands import Context, errors
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Admin(Cog):
@@ -26,81 +26,60 @@ class Admin(Cog):
 
         self.hawking = hawking
         self.bot = bot
+
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 
-    ## Properties
-
-    @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
-
-    @property
-    def phrases_cog(self):
-        return self.hawking.get_phrases_cog()
-
-    ## Methods
-
-    ## Checks if a user is a valid admin
-    def is_admin(self, name):
-        return (str(name) in self.admins)
-
     ## Commands
 
-    ## Root command for other admin-only commands
-    @commands.group(no_pm=True, hidden=True)
-    async def admin(self, ctx):
+    @commands.group(hidden=True)
+    @commands.is_owner()
+    async def admin(self, ctx: Context):
         """Root command for the admin-only commands"""
 
         if(ctx.invoked_subcommand is None):
-            if(self.is_admin(ctx.message.author)):
-                await ctx.send("Missing subcommand.")
-                return True
-            else:
-                await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-                return False
-
-        return False
+            await ctx.message.reply("Missing subcommand")
 
 
-    ## Tries to reload the preset phrases (admin only)
+    @admin.command()
+    async def sync_local(self, ctx: Context):
+        """Syncs bot command tree to the current guild"""
+
+        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
+        self.bot.tree.copy_global_to(guild=ctx.guild)
+        synced = await self.bot.tree.sync(guild=ctx.guild)
+
+        await ctx.message.reply(f"Synced {len(synced)} commands locally.")
+
+
+    @admin.command()
+    async def sync_global(self, ctx: Context):
+        """Syncs bot command tree to the all guilds"""
+
+        synced = await self.bot.tree.sync()
+
+        await ctx.message.reply(f"Synced {len(synced)} commands globally.")
+
+
+    @admin.command()
+    async def clear_local(self, ctx: Context):
+        """Removed all bot commands from the current guild"""
+
+        ## todo: No global clear method? Is that as designed and normal syncing is fine?
+        self.bot.tree.clear_commands(guild=ctx.guild)
+        await self.bot.tree.sync()
+
+        await ctx.message.reply("Removed all commands locally.")
+
+
     @admin.command(no_pm=True)
-    async def reload_phrases(self, ctx):
-        """Reloads the list of preset clips."""
-
-        ## I don't really like having core modules intertwined with dynamic ones, maybe move the appropriate admin
-        ## modules out into their dynamic module and exposing some admin auth function that they check in with before
-        ## running the command?
-        if(not self.phrases_cog):
-            await ctx.send("Sorry <@{}>, but the phrases cog isn't available.".format(ctx.message.author.id))
-            return False
+    async def reload_modules(self, ctx: Context):
+        """Reloads the bot's modules"""
 
         if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin reload phrases, user: {} is not an admin".format(ctx.message.author.name))
-            self.dynamo_db.put_message_context(ctx, False)
-
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-
-            return False
-
-        count = self.phrases_cog.reload_phrases()
-
-        loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
-        await ctx.send(loaded_clips_string)
-        self.dynamo_db.put_message_context(ctx)
-
-        return (count >= 0)
-
-
-    ## Tries to reload the addon cogs (admin only)
-    @admin.command(no_pm=True)
-    async def reload_modules(self, ctx):
-        """Reloads the bot's cogs."""
-
-        if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
+            LOGGER.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
             await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
             self.dynamo_db.put_message_context(ctx, False)
 
@@ -109,42 +88,17 @@ class Admin(Cog):
         count = self.hawking.module_manager.reload_registered_modules()
         total = len(self.hawking.module_manager.modules)
 
-        loaded_cogs_string = "Loaded {} of {} cogs.".format(count, total)
-        await ctx.send(loaded_cogs_string)
+        loaded_modules_string = "Loaded {} of {} modules/cogs.".format(count, total)
+        await ctx.send(loaded_modules_string)
         self.dynamo_db.put_message_context(ctx)
 
         return (count >= 0)
 
 
-    ## Skips the currently playing audio (admin only)
-    @admin.command(no_pm=True)
-    async def skip(self, ctx):
-        """Skips the current audio."""
+    async def cog_command_error(self, ctx: Context, error: Exception) -> None:
+        if (isinstance(error, errors.NotOwner)):
+            await ctx.message.reply("Sorry, this command is only available to the bot's owner (and not the server owner).")
+            return
 
-        if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin skip audio, user: {} is not an admin".format(ctx.message.author.name))
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put_message_context(ctx, False)
-            return False
+        return await super().cog_command_error(ctx, error)
 
-        await self.audio_player_cog.skip(ctx, force = True)
-        return True
-
-
-    ## Disconnects the bot from their current voice channel
-    @admin.command(no_pm=True)
-    async def disconnect(self, ctx):
-        """ Disconnect from the current voice channel."""
-
-        if(not self.is_admin(ctx.message.author)):
-            logger.debug("Unable to admin disconnect bot, user: {} is not an admin".format(ctx.message.author.name))
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put_message_context(ctx, False)
-
-            return False
-
-        state = self.audio_player_cog.get_server_state(ctx)
-        await state.ctx.voice_client.disconnect()
-        self.dynamo_db.put_message_context(ctx)
-
-        return True

@@ -1,9 +1,9 @@
 from difflib import SequenceMatcher
 
-from common import utilities
+from common.configuration import Configuration
 
 ## Config
-CONFIG_OPTIONS = utilities.load_config()
+CONFIG_OPTIONS = Configuration.load_config()
 
 
 class StringSimilarity:

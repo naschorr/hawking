@@ -1,16 +1,15 @@
 import base64
 import logging
 from typing import Dict
+
 from .anonymous_item import AnonymousItem
 from .command_item import CommandItem
+from common.configuration import Configuration
+from common.logging import Logging
 
-from common import utilities
-
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class DetailedItem(CommandItem):

@@ -6,16 +6,15 @@ from collections import OrderedDict
 
 from discord.ext import commands
 
-from common import utilities
+from common.configuration import Configuration
 from common.database import dynamo_manager
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Note:
@@ -84,7 +83,7 @@ class MusicParser:
         def exit(self, char, string, **kwargs):
             for regex_string, handler in self.exit_dict.items():
                 match = re.match(regex_string, char)
-                ## logger.debug("MATCHING {}, {}, {}".format(regex_string, char, handler.__self__.__class__.__name__))
+                ## LOGGER.debug("MATCHING {}, {}, {}".format(regex_string, char, handler.__self__.__class__.__name__))
                 if(match):
                     return handler(string, **kwargs)
 
@@ -97,7 +96,7 @@ class MusicParser:
     class StartState(BaseState):
         def enter(self, string, **kwargs):
             char = self.emit_char(string)
-            ## logger.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
+            ## LOGGER.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
 
             return self.exit(char, string, **kwargs)
 
@@ -106,7 +105,7 @@ class MusicParser:
     class DurationState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, duration=int(char), **kwargs)
 
@@ -115,7 +114,7 @@ class MusicParser:
     class NoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, note=char, **kwargs)
 
@@ -124,7 +123,7 @@ class MusicParser:
     class SharpState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, sharp=char, **kwargs)
 
@@ -133,7 +132,7 @@ class MusicParser:
     class OctaveState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             return self.exit(self.emit_char(consumed_str), consumed_str, octave=int(char), **kwargs)
 
@@ -142,7 +141,7 @@ class MusicParser:
     class NoteObjState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             beat_length = kwargs.get("beat_length", 0.25)
             duration = kwargs.get("duration", 1)
@@ -168,7 +167,7 @@ class MusicParser:
     class SubNoteState(BaseState):
         def enter(self, string, **kwargs):
             char, consumed_str = self.emit_consume_char(string)
-            ## logger.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
+            ## LOGGER.debug("Enter {} '{}' '{}', {}".format(self.__class__.__name__, consumed_str, char, kwargs))
 
             note_obj = kwargs.get("note_obj")
             assert note_obj is not None
@@ -185,7 +184,7 @@ class MusicParser:
     ## Final output state
     class FinalState(BaseState):
         def enter(self, string, **kwargs):
-            ## logger.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
+            ## LOGGER.debug("Enter {} '{}', {}".format(self.__class__.__name__, string, kwargs))
 
             note_obj = kwargs.get("note_obj")
             sub_notes = kwargs.get("sub_notes", [])
@@ -204,7 +203,7 @@ class MusicParser:
     ## Error handling state
     class ErrorState(BaseState):
         def enter(self, char, string):
-            logger.debug("Error in music state machine", char, string)
+            LOGGER.debug("Error in music state machine", char, string)
             return None
 
     ## End State Machine Classes
@@ -307,6 +306,7 @@ class Music(DiscoverableCog):
 
         self.hawking = hawking
         self.bot = bot
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech', {})
 
         self.bpm = int(kwargs.get(self.BPM_KEY, self.BPM))
         self.octave = int(kwargs.get(self.OCTAVE_KEY, self.OCTAVE))
@@ -317,12 +317,6 @@ class Music(DiscoverableCog):
         self.pitches = []
         for octave in range(self.OCTAVES):
             self.pitches.append(self._build_pitch_dict(octave))
-
-    ## Properties
-
-    @property
-    def audio_player_cog(self):
-        return self.hawking.get_audio_player_cog()
 
     ## Methods
 
@@ -450,7 +444,7 @@ class Music(DiscoverableCog):
             'b/b' - Two 'b' eighth notes.
             '2c#/d#/a3/f' - A 'c#' sixteenth note held for two beats, a 'd#' sixteenth note,
                 an 'a' sixteenth note in the third octave, and a 'f' sixteenth note.
-        
+
         Formatting:
             Notes (at the moment) have four distinct parts (Duration?)(Note)(Sharp?)(Octave?).
             Only the base note is necessary, everything else can be omitted if necessary
@@ -515,5 +509,5 @@ class Music(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    ## return ModuleInitializationContainer(Music)
+    ## return ModuleInitializationContainer(Music, dependencies=["Speech"])
     return False

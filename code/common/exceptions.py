@@ -29,17 +29,15 @@ class UnableToConnectToVoiceChannelException(ClientException):
         return self._can_speak
 
 
-class AlreadyInVoiceChannelException(ClientException):
+class WillNotConnectToVoiceChannelException(ClientException):
     '''
-    Exception that's thrown when the client is already in the destination voice channel. Usually happens due to
-    disconnecting the bot while connected, and reconnecting before the bot can time out.
+    Exception that's thrown when the specified voice channel will not be connected to, as it's out of scope or it doesn't exist
     '''
 
-    def __init__(self, message, channel):
-        super(AlreadyInVoiceChannelException, self).__init__(message)
+    def __init__(self, message, channel, **kwargs):
+        super(WillNotConnectToVoiceChannelException, self).__init__(message)
 
         self._channel = channel
-
 
     @property
     def channel(self):

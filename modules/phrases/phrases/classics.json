@@ -1,7 +1,7 @@
 {
-    "name": "Phrases",
-    "key": "phrases",
-    "description": "All the internet classics from Moonbase Alpha and beyond!",
+    "name": "Classics",
+    "key": "classics",
+    "description": "All the classics from Moonbase Alpha!",
     "phrases": [
         {
             "name": "allstar",
@@ -58,12 +58,6 @@
             "description": "star wars imperial march song"
         },
         {
-            "name": "mad",
-            "message": "[:nr] [:dv hs 85] Its only game, why you hef to be mad?",
-            "help": "Is only game.",
-            "description": "its only game why you have to be mad"
-        },
-        {
             "name": "madden",
             "message": "[ey<900,24>iyuw<450,27>ey<900,34>iyuw<450,32>jhah<900,27>nmae<225,25>ae<225,24>deh<1350,22>n]",
             "help": "Lord and saviour",
@@ -103,12 +97,6 @@
             "help": "He needs it!"
         },
         {
-            "name": "roflcopter",
-            "message": "My rawfulcopter, it goes schwah schwah schwah",
-            "help": "Now how will you get the easter egg?",
-            "description": "my roflcopter it goes soi soi soi"
-        },
-        {
             "name": "salt",
             "message": "The ceiling is salt, the floor is salt, the walls are salt, and too an extent, the air is salt. You breathe that in, and you constantly taste the salt.",
             "help": "The zest of life."
@@ -142,11 +130,6 @@
             "message": "[:t 430,500][:t 320,250][:t 350,250][:t 390,500][:t 350,250][:t 330,250][:t 290,500][:t 290,250][:t 350,250][:t 430,500]",
             "help": "I am the man who arranges the blocks.",
             "description": "tetris theme song"
-        },
-        {
-            "name": "wake",
-            "message": "[:np] Wake me up. [:nw] Wake me up inside. [:np] Can't wake up! [:nw] Wake me up inside. [:np] [sey<800>v<200>_<150>miy<1000>eh<10>]!",
-            "help": "I just can't."
         },
         {
             "name": "whalers",

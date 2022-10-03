@@ -3,13 +3,12 @@ import uuid
 from typing import Dict
 from .command_item import CommandItem
 
-from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class AnonymousItem(CommandItem):

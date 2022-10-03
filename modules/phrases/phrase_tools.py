@@ -8,17 +8,16 @@ from typing import Callable
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent/'code'))
 
-from common import utilities
+from common.configuration import Configuration
+from common.logging import Logging
 from models.phrase import Phrase
 from models.phrase_group import PhraseGroup
 from phrase_encoder_decoder import PhraseEncoderDecoder
 from phrase_file_manager import PhraseFileManager
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseTools:
@@ -35,7 +34,7 @@ class PhraseTools:
             try:
                 phrase_group: PhraseGroup = phrase_file_manager.load_phrase_group(path, False)
             except Exception as e:
-                logger.error(f'Error loading phrase group from {path}', e)
+                LOGGER.error(f'Error loading phrase group from {path}', e)
                 continue
 
             ## Manipulate each of the loaded phrases
@@ -44,7 +43,7 @@ class PhraseTools:
                 try:
                     phrase_operation(phrase)
                 except Exception as e:
-                    logger.error(f'Error encoding phrase {phrase}', e)
+                    LOGGER.error(f'Error encoding phrase {phrase}', e)
                     continue
 
             ## Save the phrase group (containing the modified phrases)
@@ -83,6 +82,6 @@ if (__name__ == '__main__'):
     try:
         operation = args.operation
     except Exception as e:
-        logger.error("Missing required '--encode' or '--decode' argument.", e)
+        LOGGER.error("Missing required '--encode' or '--decode' argument.", e)
 
     operation()

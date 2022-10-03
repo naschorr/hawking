@@ -2,23 +2,24 @@ import os
 import sys
 import logging
 import importlib
+import asyncio
 from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
 
 from common import utilities
+from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
+from common.logging import Logging
 from common.module.module import Module
 from .dependency_graph import DependencyGraph
 from .module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class ModuleEntry:
@@ -68,7 +69,7 @@ class ModuleManager:
 
     def _load_module(self, module_entry: ModuleEntry, module_dependencies = []) -> bool:
         if(self.bot.get_cog(module_entry.name)):
-            logger.warn(
+            LOGGER.warn(
                 'Cog with name \'{}\' has already been loaded onto the bot, skipping...'.format(module_entry.name)
             )
             return
@@ -82,7 +83,7 @@ class ModuleManager:
                 **module_entry.kwargs
             )
         except ModuleLoadException as e:
-            logger.error(f"Error: '{e.message}' while loading module: {module_entry.name}.")
+            LOGGER.error(f"Error: '{e.message}' while loading module: {module_entry.name}.")
 
             ## Only set the unsuccessful state if it hasn't already been set. Setting the successful state happens later
             if (
@@ -94,10 +95,10 @@ class ModuleManager:
             return False
 
         if (module_entry.is_cog):
-            self.bot.add_cog(instantiated_module)
-        
+            asyncio.run(self.bot.add_cog(instantiated_module))
+
         self.loaded_modules[module_entry.name] = instantiated_module
-        logger.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
+        LOGGER.info('Instantiated {}: {}'.format("Cog" if module_entry.is_cog else "Module", module_entry.name))
 
         return True
 
@@ -124,7 +125,7 @@ class ModuleManager:
                 loaded_module = self.loaded_modules[module_entry.name]
                 if (loaded_module.successful is None):
                     loaded_module.successful = True
-                
+
                 counter += 1
 
             for child in node.children:
@@ -146,7 +147,7 @@ class ModuleManager:
             try:
                 counter += load_node(node)
             except ModuleLoadException as e:
-                logger.warn(f"{e}. This module and all modules that depend on it will be skipped.")
+                LOGGER.warn(f"{e}. This module and all modules that depend on it will be skipped.")
                 continue
 
         return counter
@@ -163,11 +164,11 @@ class ModuleManager:
             try:
                 importlib.reload(module_entry.module)
             except Exception as e:
-                logger.error("Error: ({}) reloading module: {}. Attempting to continue...".format(e, module_entry.name))
+                LOGGER.error("Error: ({}) reloading module: {}. Attempting to continue...".format(e, module_entry.name))
 
         ## Reload the modules via dependency graph
         loaded_module_count = self.load_registered_modules()
-        logger.info("Loaded {}/{} modules.".format(loaded_module_count, len(self.modules)))
+        LOGGER.info("Loaded {}/{} modules.".format(loaded_module_count, len(self.modules)))
 
         return loaded_module_count
 
@@ -178,14 +179,14 @@ class ModuleManager:
         module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
         self.modules[module_entry.name] = module_entry
 
-        self._dependency_graph.insert(cls, module_entry.dependencies)
+        self._dependency_graph.insert(cls.__name__, module_entry.dependencies)
 
 
     def discover_modules(self):
         '''Discovers the available modules, and assembles the data needed to register them'''
 
         if (not self.modules_dir_path.exists):
-            logger.warn('Modules directory doesn\'t exist, so no modules will be loaded.')
+            LOGGER.warn('Modules directory doesn\'t exist, so no modules will be loaded.')
             return
 
         ## Build a list of potential module paths and iterate through it...
@@ -196,7 +197,7 @@ class ModuleManager:
             ## Note that the entrypoint for the module should share the same name as it's parent folder. For example:
             ## phrases.py is the entrypoint for the phrases/ directory
             module_entrypoint = Path.joinpath(module_path, module_path.name + '.py')
-            
+
             if (module_entrypoint.exists):
                 ## Expose the module's root directory to the interpreter, so it can be imported
                 sys.path.append(str(module_path))
@@ -210,13 +211,13 @@ class ModuleManager:
                     module = importlib.import_module(module_path.name)
                     module_init = module.main()
                 except Exception as e:
-                    logger.exception("Unable to import module {} on bot.".format(module_path.name), e)
+                    LOGGER.exception("Unable to import module {} on bot.".format(module_path.name), e)
                     del sys.path[-1]    ## Prune back the failed module from the path
                     continue
 
                 ## Filter out any malformed modules
                 if (not isinstance(module_init, ModuleInitializationContainer) and type(module_init) != bool):
-                    logger.exception(
+                    LOGGER.exception(
                         "Unable to add module {}, as it's neither an instance of {}, nor a boolean.".format(
                             module_path.name,
                             ModuleInitializationContainer.__name__
@@ -225,7 +226,7 @@ class ModuleManager:
 
                 ## Allow modules to be skipped if they're in a falsy 'disabled' state
                 if (module_init == False):
-                    logger.info("Skipping module {}, as its initialization data was false".format(module_path.name))
+                    LOGGER.info("Skipping module {}, as its initialization data was false".format(module_path.name))
                     continue
 
                 ## Build args to register the module
@@ -248,6 +249,6 @@ class ModuleManager:
                 try:
                     self.register_module(module_init.cls, *register_module_args, **register_module_kwargs)
                 except Exception as e:
-                    logger.exception("Unable to register module {} on bot.".format(module_path.name))
+                    LOGGER.exception("Unable to register module {} on bot.".format(module_path.name))
                     del sys.path[-1]    ## Prune back the failed module from the path
                     del module

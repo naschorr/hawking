@@ -1,25 +1,24 @@
-import os
 import logging
 import random
 import time
+import asyncio
 from pathlib import Path
 
-from common import utilities
+from common.command_management.invoked_command import InvokedCommand
+from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
-from reddit import Reddit
 from question import Question
 
 import discord
-from discord.ext import commands
+from discord import app_commands, Interaction
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
-
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class StupidQuestions(DiscoverableCog):
     THOUGHT_PROVOKING_STRINGS = [
@@ -41,8 +40,16 @@ class StupidQuestions(DiscoverableCog):
         self.hawking = hawking
         self.bot = bot
 
+        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        assert (self.speech_cog is not None)
+        self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
+        assert(self.invoked_command_handler is not None)
+
         ## Handle Reddit dependency
-        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit', {})
+        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
+        if (not reddit_dependency):
+            self.successful = False
+            return
         self.reddit = reddit_dependency.reddit
         if (not reddit_dependency.successful):
             self.successful = False
@@ -64,28 +71,24 @@ class StupidQuestions(DiscoverableCog):
         except Exception as e:
             raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
-        self.bot.loop.create_task(self.load_questions())
-    
+        asyncio.run(self.load_questions())
+
         self.successful = True
 
 
     async def load_questions(self) -> None:
         ## Don't try to pull more data from Reddit if it's already happening
         if (self.is_mid_question_refresh):
-            logger.debug("Skipping load_questions as they're already being refreshed.")
+            LOGGER.debug("Skipping load_questions as they're already being refreshed.")
             return
         self.is_mid_question_refresh = True
 
-        logger.info("Loading questions from reddit: top({}), {} submissions".format(
-            self.submission_top_time,
-            self.submission_count
-        ))
-
+        LOGGER.info(f"Loading questions from reddit: top({self.submission_top_time}), {self.submission_count} submissions")
         questions = []
         try:
             submission_generator = self.subreddit.top(self.submission_top_time, limit=self.submission_count)
-        except Exception:
-            logger.exception("Unable to load submission from Reddit.")
+        except Exception as e:
+            LOGGER.exception("Unable to load submission from Reddit.", e)
             return
 
         for submission in submission_generator:
@@ -95,7 +98,7 @@ class StupidQuestions(DiscoverableCog):
         self.questions = questions
         self.is_mid_question_refresh = False
 
-        logger.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
+        LOGGER.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
 
 
     def get_question(self) -> str:
@@ -104,27 +107,36 @@ class StupidQuestions(DiscoverableCog):
 
         if (len(self.questions) > 0):
             return random.choice(self.questions)
+
         return None
 
 
-    @commands.command(name="stupidquestion", brief="Ask a stupid question, via Reddit.")
-    async def stupid_question(self, ctx):
+    @app_commands.command(name="stupid_question")
+    async def stupid_question_command(self, interaction: Interaction):
+        """Ask a stupid question, via Reddit."""
+
         question = self.get_question()
 
-        if (question):
-            say_result = await self.hawking.get_speech_cog()._say(ctx, question.text, ignore_char_limit = True)
-            if (say_result):
-                embedded_question = discord.Embed(description="{}\n\nvia [/r/{}]({})".format(question.text, question.subreddit, question.url))
+        if (question is None):
+            await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
+            return
 
-                await ctx.send("Hey <@{}>, {}".format(
-                    ctx.message.author.id,
-                    random.choice(self.THOUGHT_PROVOKING_STRINGS),
-                ),
-                    embed=embedded_question
+
+        async def callback(invoked_command: InvokedCommand):
+            if (invoked_command.successful):
+                thought_provoking_string = random.choice(self.THOUGHT_PROVOKING_STRINGS)
+                await interaction.followup.send(
+                    f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
+                    embed=discord.Embed(description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})"),
+                    ephemeral=False
                 )
-        else:
-            await ctx.send("Sorry <@{}>, but I'm having trouble loading questions from Reddit. Try again in a bit.".format(ctx.message.author.id))
+            else:
+                await interaction.followup.send(invoked_command.human_readable_error_message)
+
+
+        action = lambda: self.speech_cog.say(question.text, author=interaction.user, ignore_char_limit=True, interaction=interaction)
+        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=[Reddit])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler"])

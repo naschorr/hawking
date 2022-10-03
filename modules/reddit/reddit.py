@@ -1,18 +1,18 @@
 import logging
 from pathlib import Path
 
-from common import utilities
+from praw import Reddit as PrawReddit
+
+from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
+from common.logging import Logging
 from common.module.discoverable_module import DiscoverableModule
 from common.module.module_initialization_container import ModuleInitializationContainer
 
-from praw import Reddit as PrawReddit
 
-## Config
-CONFIG_OPTIONS = utilities.load_module_config(Path(__file__).parent)
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class Reddit(DiscoverableModule):
@@ -35,13 +35,18 @@ class Reddit(DiscoverableModule):
                 CONFIG_OPTIONS.get('reddit_user_agent_contact_name')
             )
         except RuntimeError as e:
-            raise ModuleLoadException("Unable to build user_agent string for Reddit", e)
+            raise ModuleLoadException("Unable to build user_agent string for Reddit", e) from e
 
         try:
-            self._reddit = PrawReddit(client_id=client_id, client_secret=client_secret, user_agent=user_agent)
+            self._reddit = PrawReddit(
+                client_id=client_id,
+                client_secret=client_secret,
+                user_agent=user_agent,
+                check_for_async=False   ## This infrequently polls Reddit, so moving to asyncpraw isn't necessary
+            )
             self.successful = True
         except Exception as e:
-            raise ModuleLoadException('Unable to register with Reddit', e)
+            raise ModuleLoadException('Unable to register with Reddit', e) from e
 
     ## Properties
 

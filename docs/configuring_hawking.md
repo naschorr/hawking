@@ -2,15 +2,18 @@
 See `config.json` in the Hawking installation's root.
 
 ### Discord Configuration
+- **name** - String - The bot's name.
 - **version** - String - The bot's current semantic version.
-- **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
-- **activation_str** - String - The string that'll activate the Discord bot from chat messages.
 - **description** - Array - An array of strings making up the bot's description. Each element in the array goes on a new line in the help interface.
-- **announce_updates** - Boolean - Choose whether or not the bot will announce status updates to the invoker's voice channel. Things like 'Loaded N phrases.' after invoking `\admin reload_phrases`.
-- **delete_commands** - Boolean - Choose to delete the command that invoked the bot. This lets users operate the bot 'silently'. Requires that the bot role's `Manage Messages` permission is enabled, and that the bot can also 'Manage Messages' in the text chat channel.
-- **channel_timeout** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
+- **channel_timeout_seconds** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
 - **channel_timeout_phrases** - Array - Array of strings that the bot can speak right before it leaves. One phrase is chosen randomly from the array.
 - **skip_percentage** - Float - The minimum percentage of other users who need to request a skip before the currently playing audio will be skipped. Must be a floating point number between 0.0 and 1.0 inclusive.
+- **repo_url** - String - The URL of the repository that hosts the bot
+- **bot_invite_url** - String - The URL used to invite the bot to any Discord servers the user controls.
+- **bot_invite_blurb** - String - A string of text that is applied to bot invites, so users can have more context about the bot.
+- **support_discord_invite_url** - String - The URL of the invite for the bot's support Discord.
+- **privacy_policy_url** - String - The URL of the bot's privacy policy.
+- **accent_color_hex** - String - A hex string containing the color code for the bot's accent color. This is used to customize embeds to ensure they're visually consistent with the bot.
 
 ### Bot Configuration
 - **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.

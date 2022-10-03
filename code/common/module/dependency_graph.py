@@ -1,20 +1,18 @@
 import logging
 from typing import List
 
-from common import utilities
 from common.module.module import Module
+from common.configuration import Configuration
+from common.logging import Logging
 
-## Config
-CONFIG_OPTIONS = utilities.load_config()
-
-## Logging
-logger = utilities.initialize_logging(logging.getLogger(__name__))
+## Config & logging
+CONFIG_OPTIONS = Configuration.load_config()
+LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class DependencyNode:
-    def __init__(self, cls):
-        self.cls = cls
-        self.name: str = cls.__name__
+    def __init__(self, name):
+        self.name = name
         self.children: list = []
         self.parents: list = []
         self.loaded: bool = False
@@ -35,16 +33,14 @@ class DependencyGraph:
 
     ## Methods
 
-    def insert(self, cls, dependencies = List[Module]) -> DependencyNode:
-        class_name = cls.__name__
-
+    def insert(self, class_name: str, dependencies = list) -> DependencyNode:
         ## Don't insert duplicates
         if (class_name in self._node_map):
-            logger.warn('Unable to insert {}, as it\'s already been added.'.format(class_name))
+            LOGGER.warn('Unable to insert {}, as it\'s already been added.'.format(class_name))
             return
 
         ## Build initial node & update mappings
-        node = DependencyNode(cls)
+        node = DependencyNode(class_name)
         self._node_map[class_name] = node
 
         ## Handle any orphaned children that depend on this class
@@ -58,9 +54,12 @@ class DependencyGraph:
             del self._orphaned_node_map[class_name]
 
         ## Process the dependencies by searching for existing nodes, otherwise populate the orphaned child map
-        dependency: Module
         for dependency in dependencies:
-            dependency_name = dependency.__name__
+            ## Support class or string based dependencies
+            if (isinstance(dependency, str)):
+                dependency_name = dependency
+            else:
+                dependency_name = dependency.__name__
 
             if (dependency_name in self._node_map):
                 dependency_node = self._node_map[dependency_name]
