@@ -136,16 +136,16 @@ class ServerStateManager:
     async def get_voice_client(self, channel: discord.VoiceChannel) -> VoiceClient:
         '''Handles voice client management by connecting, and moving between voice channels'''
 
-        ## Make sure the bot can actually connect to the requested VoiceChannel
-        ## todo: permissions checks somewhere. Decorator over commands seems to be the new way?
-        # permissions = channel.guild.me.permissions_in(channel)
-        # if (not permissions.connect or not permissions.speak):
-        #     raise UnableToConnectToVoiceChannelException(
-        #         "Unable to speak and/or connect to the channel",
-        #         channel,
-        #         can_speak=permissions.speak,
-        #         can_connect=permissions.connect
-        #     )
+        me = self.guild.get_member(self.bot.user.id)
+        permissions: discord.Permissions = channel.permissions_for(me)
+
+        if (not permissions.connect or not permissions.speak):
+            raise UnableToConnectToVoiceChannelException(
+                "Unable to speak and/or connect to the channel",
+                channel,
+                can_speak=permissions.speak,
+                can_connect=permissions.connect
+            )
 
         if (self.voice_client is not None):
             ## Check to see if the bot isn't already in the correct channel
@@ -233,8 +233,7 @@ class ServerStateManager:
                     LOGGER.error("Timed out trying to connect to the voice channel")
                     if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
                         await self.active_play_request.interaction.followup.send(
-                            f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now.",
-                            ephemeral=True
+                            f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now."
                         )
                     continue
 
@@ -249,8 +248,7 @@ class ServerStateManager:
 
                     if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
                         await self.active_play_request.interaction.followup.send(
-                            f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}",
-                            ephemeral=True
+                            f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}"
                         )
                     continue
 
