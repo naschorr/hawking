@@ -18,6 +18,7 @@ from common.ui.component_factory import ComponentFactory
 
 import discord
 from discord import app_commands, Interaction
+from discord.ext.commands import command, Context
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -86,16 +87,9 @@ class PrivacyManager(Cog):
         else:
             asyncio.run(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
-        ## Add the commands
-        self.bot.tree.add_command(discord.app_commands.Command(
-            name="delete_my_data",
-            description=self.delete_my_data_command.__doc__,
-            callback=self.delete_my_data_command
-        ))
-
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.bot.tree.add_command(app_commands.Command(
                 name="privacy_policy",
                 description=self.privacy_policy_command.__doc__,
                 callback=self.privacy_policy_command
@@ -248,22 +242,26 @@ class PrivacyManager(Cog):
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
-    async def delete_my_data_command(self, interaction: Interaction):
+    @command(name="delete_my_data")
+    async def delete_my_data_command(self, ctx: Context):
         """Initiates a request to delete all of your user data from the bot's logs."""
 
-        # self.dynamo_db.put_message_context(ctx)
+        self.dynamo_db.put_message_context(ctx)
 
-        user_id = interaction.user.id
-        if (user_id in self.queued_user_ids):
-            await interaction.response.send_message(
-                f"Hey <@{user_id}>, it looks like you've already requested that your data be deleted. That'll automagically happen next {self._delete_request_scheduled_weekday_name}, so sit tight and it'll happen before you know it!",
-                ephemeral=True
-            )
+        user = ctx.author
+        if (user.id in self.queued_user_ids):
+            await user.send(f"Hey <@{user.id}>, it looks like you've already requested that your data be deleted. That'll automagically happen next {self._delete_request_scheduled_weekday_name}, so sit tight and it'll happen before you know it!")
             return
 
-        await self.store_user_id_for_batch_delete(user_id)
+        await self.store_user_id_for_batch_delete(user.id)
 
-        await interaction.response.send_message(
-            f"Hey <@{user_id}>, your delete request has been received, and it'll happen automagically next {self._delete_request_scheduled_weekday_name}.",
-            ephemeral=True
-        )
+        ## Keep things tidy
+        try:
+            await ctx.message.delete()
+        except:
+            try:
+                await ctx.message.add_reaction("👍")
+            except:
+                pass
+
+        await user.send(f"Hey <@{user.id}>, your delete request has been received, and it'll happen automagically next {self._delete_request_scheduled_weekday_name}.")

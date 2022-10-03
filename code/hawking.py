@@ -37,8 +37,9 @@ class Hawking:
         ## from bot init and speech execution potentially being in different working directories.
         speech.TTSController.set_current_working_dir_to_tts_executable()
 
-        self.version = kwargs.get("version")
-        self.description = kwargs.get("description", ["The retro TTS bot for Discord"])
+        self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
+        self.version = CONFIG_OPTIONS.get("version")
+        self.description = CONFIG_OPTIONS.get("description", ["The retro TTS bot for Discord"])
 
         self.dynamo_db = dynamo_manager.DynamoManager()
 
@@ -127,7 +128,7 @@ class Hawking:
     def run(self):
         '''Starts the bot up'''
 
-        LOGGER.info(f"Starting up {self.bot.user.name}")
+        LOGGER.info(f"Starting up {self.name}")
         self.bot.run(self.token)
 
 
