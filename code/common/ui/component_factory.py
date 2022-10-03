@@ -22,7 +22,7 @@ class ComponentFactory(Module):
 
         self.name: str = CONFIG_OPTIONS.get("name", "the bot").capitalize()
         self.color: int = int(CONFIG_OPTIONS.get("accent_color_hex", "000000"), 16)
-        self.repo_url = CONFIG_OPTIONS.get("bot_repo_url")
+        self.repo_url = CONFIG_OPTIONS.get("repo_url")
 
     ## Embeds
 

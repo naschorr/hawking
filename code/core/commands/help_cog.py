@@ -44,7 +44,7 @@ class HelpCog(Cog):
         self.name = CONFIG_OPTIONS.get("name", "help").capitalize()
         self.version = CONFIG_OPTIONS.get("version", "1.0.0")
         self.description = CONFIG_OPTIONS.get("description")
-        self.repo_url = CONFIG_OPTIONS.get("bot_repo_url")
+        self.repo_url = CONFIG_OPTIONS.get("repo_url")
         self.activation_str = "/"   ## Slash commands
 
         ## Simple cog -> commands mapping
