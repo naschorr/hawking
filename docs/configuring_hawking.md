@@ -4,7 +4,6 @@ See `config.json` in the Hawking installation's root.
 ### Discord Configuration
 - **name** - String - The bot's name.
 - **version** - String - The bot's current semantic version.
-- **admins** - Array - Array of Discord usernames who have access to `\admin` commands. Uses `Username#1234` format.
 - **description** - Array - An array of strings making up the bot's description. Each element in the array goes on a new line in the help interface.
 - **channel_timeout_seconds** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
 - **channel_timeout_phrases** - Array - Array of strings that the bot can speak right before it leaves. One phrase is chosen randomly from the array.
