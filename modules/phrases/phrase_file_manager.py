@@ -7,10 +7,10 @@ from typing import List
 
 from common.configuration import Configuration
 from common.logging import Logging
-from models.phrase import Phrase
-from models.phrase_group import PhraseGroup
-from models.phrase_encoding import PhraseEncoding
-from phrase_encoder_decoder import PhraseEncoderDecoder
+from modules.phrases.models.phrase import Phrase
+from modules.phrases.models.phrase_group import PhraseGroup
+from modules.phrases.models.phrase_encoding import PhraseEncoding
+from modules.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)

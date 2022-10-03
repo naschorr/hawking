@@ -3,8 +3,8 @@ import logging
 from pathlib import Path
 
 from common.logging import Logging
-from models.phrase_encoding import PhraseEncoding
-from to_dict import ToDict
+from modules.phrases.models.phrase_encoding import PhraseEncoding
+from modules.phrases.to_dict import ToDict
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
