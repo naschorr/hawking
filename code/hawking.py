@@ -1,4 +1,12 @@
+## Fix inconsistent pathing between my Windows dev environment, and the Ubuntu production server. This needs to happen
+## before the imports so they know where to search.
 import sys
+from common import utilities
+_root_path = str(utilities.get_root_path())
+if (_root_path not in sys.path):
+    sys.path.append(_root_path)
+
+## Importing as usual now
 import logging
 
 import discord
@@ -10,7 +18,6 @@ from core.commands import admin
 from core.commands import help_cog
 from core.commands import invite_command
 from core.commands import speech_config_help_command
-from common import utilities
 from common import audio_player
 from common import privacy_manager
 from common.configuration import Configuration
@@ -35,8 +42,6 @@ class Hawking:
         self.token = CONFIG_OPTIONS.get("discord_token")
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
-
-        sys.path.append(utilities.get_root_path())
 
         ## Set the current working directory to that of the tts executable ASAP, so there's not weird issues arising
         ## from bot init and speech execution potentially being in different working directories.
