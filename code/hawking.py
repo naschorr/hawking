@@ -46,13 +46,9 @@ class Hawking:
         self.version = CONFIG_OPTIONS.get("version")
         self.description = CONFIG_OPTIONS.get("description", ["The retro TTS bot for Discord"])
 
-        ## todo: this will eventually be removed upon the transistion to slash commands
-        self.intents = discord.Intents.default();
-        self.intents.message_content = True;
-
         ## Init the bot and module manager
         self.bot = commands.Bot(
-            intents=self.intents,
+            intents=discord.Intents.default(),
             command_prefix=commands.when_mentioned,
             description='\n'.join(self.description)
         )
