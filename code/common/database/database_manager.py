@@ -42,10 +42,15 @@ class DatabaseManager(Module):
     def _build_detailed_item_from_context(self, context: Context, valid: bool = None) -> DetailedItem:
         """Builds a DetailedItem from the given discord.Context, pulled from the message that invoked the bot"""
 
+        voice_state = context.author.voice
+        voice_channel = None
+        if (voice_state):
+            voice_channel = voice_state.channel
+
         return DetailedItem(
             context.author,
             context.channel,
-            context.author.voice.channel,
+            voice_channel,
             context.guild,
             context.command.qualified_name,
             context.command.name,
@@ -59,10 +64,15 @@ class DatabaseManager(Module):
     def _build_detailed_item_from_interaction(self, interaction: Interaction, valid: bool = None) -> DetailedItem:
         """Builds a DetailedItem from the given discord.Interaction, pulled from the message that invoked the bot"""
 
+        voice_state = interaction.user.voice
+        voice_channel = None
+        if (voice_state):
+            voice_channel = voice_state.channel
+
         return DetailedItem(
             interaction.user,
             interaction.channel,
-            interaction.user.voice.channel,
+            voice_channel,
             interaction.guild,
             interaction.command.qualified_name,
             interaction.command.name,

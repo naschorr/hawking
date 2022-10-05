@@ -1,6 +1,7 @@
 import inspect
 
 from discord.errors import ClientException
+from discord import Member
 
 class UnableToConnectToVoiceChannelException(ClientException):
     '''
@@ -13,6 +14,7 @@ class UnableToConnectToVoiceChannelException(ClientException):
         self._channel = channel
         self._can_connect = kwargs.get('connect', False)
         self._can_speak = kwargs.get('speak', False)
+
 
     @property
     def channel(self):
@@ -29,19 +31,20 @@ class UnableToConnectToVoiceChannelException(ClientException):
         return self._can_speak
 
 
-class WillNotConnectToVoiceChannelException(ClientException):
+class NoVoiceChannelAvailableException(UnableToConnectToVoiceChannelException):
     '''
-    Exception that's thrown when the specified voice channel will not be connected to, as it's out of scope or it doesn't exist
+    Exception that's thrown when there isn't a voice channel available,
     '''
 
-    def __init__(self, message, channel, **kwargs):
-        super(WillNotConnectToVoiceChannelException, self).__init__(message)
+    def __init__(self, message: str, target_member: Member):
+        super(NoVoiceChannelAvailableException, self).__init__(message, None)
 
-        self._channel = channel
+        self._target_member = target_member
+
 
     @property
-    def channel(self):
-        return self._channel
+    def target_member(self) -> bool:
+        return self._target_member
 
 
 class UnableToStoreInDatabaseException(RuntimeError):

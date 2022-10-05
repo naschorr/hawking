@@ -13,7 +13,7 @@ from pathlib import Path
 
 from common import utilities
 from common.configuration import Configuration
-from common.exceptions import UnableToConnectToVoiceChannelException, WillNotConnectToVoiceChannelException
+from common.exceptions import UnableToConnectToVoiceChannelException, NoVoiceChannelAvailableException
 from common.logging import Logging
 from common.database.database_manager import DatabaseManager
 from common.module.module import Cog
@@ -390,7 +390,7 @@ class AudioPlayer(Cog):
         if (target_member.voice is None):
             error_text = f"Target member {target_member.id} isn't in a voice channel"
             LOGGER.warn(error_text)
-            raise WillNotConnectToVoiceChannelException(error_text)
+            raise NoVoiceChannelAvailableException(error_text, target_member)
         voice_channel = target_member.voice.channel
 
         ## Get/Build a state for this audio, build the player, and add it to the state

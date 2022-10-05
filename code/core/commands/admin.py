@@ -45,7 +45,7 @@ class Admin(Cog):
 
 
     @admin.command()
-    async def sync_local(self, ctx: Context, *, message):
+    async def sync_local(self, ctx: Context):
         """Syncs bot command tree to the current guild"""
 
         await self.database_manager.store(ctx)
