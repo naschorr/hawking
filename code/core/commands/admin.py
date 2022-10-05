@@ -3,7 +3,7 @@ import logging
 
 from hawking import Hawking
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
@@ -27,10 +27,11 @@ class Admin(Cog):
         self.hawking = hawking
         self.bot = bot
 
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
+
         self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
         self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
-
-        self.dynamo_db = dynamo_manager.DynamoManager()
 
     ## Commands
 
@@ -47,6 +48,8 @@ class Admin(Cog):
     async def sync_local(self, ctx: Context):
         """Syncs bot command tree to the current guild"""
 
+        await self.database_manager.store(ctx)
+
         ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
         self.bot.tree.copy_global_to(guild=ctx.guild)
         synced = await self.bot.tree.sync(guild=ctx.guild)
@@ -58,6 +61,8 @@ class Admin(Cog):
     async def sync_global(self, ctx: Context):
         """Syncs bot command tree to the all guilds"""
 
+        await self.database_manager.store(ctx)
+
         synced = await self.bot.tree.sync()
 
         await ctx.message.reply(f"Synced {len(synced)} commands globally.")
@@ -66,6 +71,8 @@ class Admin(Cog):
     @admin.command()
     async def clear_local(self, ctx: Context):
         """Removed all bot commands from the current guild"""
+
+        await self.database_manager.store(ctx)
 
         ## todo: No global clear method? Is that as designed and normal syncing is fine?
         self.bot.tree.clear_commands(guild=ctx.guild)
@@ -78,25 +85,20 @@ class Admin(Cog):
     async def reload_modules(self, ctx: Context):
         """Reloads the bot's modules"""
 
-        if(not self.is_admin(ctx.message.author)):
-            LOGGER.debug("Unable to admin reload modules, user: {} is not an admin".format(ctx.message.author.name))
-            await ctx.send("<@{}> isn't allowed to do that.".format(ctx.message.author.id))
-            self.dynamo_db.put_message_context(ctx, False)
-
-            return False
+        await self.database_manager.store(ctx)
 
         count = self.hawking.module_manager.reload_registered_modules()
         total = len(self.hawking.module_manager.modules)
 
         loaded_modules_string = "Loaded {} of {} modules/cogs.".format(count, total)
         await ctx.send(loaded_modules_string)
-        self.dynamo_db.put_message_context(ctx)
 
         return (count >= 0)
 
 
     async def cog_command_error(self, ctx: Context, error: Exception) -> None:
         if (isinstance(error, errors.NotOwner)):
+            await self.database_manager.store(ctx, False)
             await ctx.message.reply("Sorry, this command is only available to the bot's owner (and not the server owner).")
             return
 

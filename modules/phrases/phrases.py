@@ -11,7 +11,7 @@ from typing import Literal, Union
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
@@ -46,9 +46,10 @@ class Phrases(DiscoverableCog):
         assert (self.admin_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         self.phrase_file_manager = PhraseFileManager()
-        self.dynamo_db = dynamo_manager.DynamoManager()
 
         self.phrases: dict[str, Phrase] = {}
         self.phrase_groups: dict[str, PhraseGroup] = {}
@@ -66,11 +67,12 @@ class Phrases(DiscoverableCog):
         async def reload_phrases(ctx):
             """Reloads the bot's list of phrases"""
 
+            await self.database_manager.store(ctx)
+
             count = self.reload_phrases()
 
             loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
             await ctx.send(loaded_clips_string)
-            self.dynamo_db.put_message_context(ctx)
 
             return (count >= 0)
 
@@ -138,9 +140,9 @@ class Phrases(DiscoverableCog):
 
 
     def remove_phrase_commands(self):
-        self.bot.tree.remove_command("random")
+        self.bot.tree.remove_command(Phrases.RANDOM_COMMAND_NAME)
         self.bot.tree.remove_command(Phrases.PHRASE_COMMAND_NAME)
-        self.bot.tree.remove_command("find")
+        self.bot.tree.remove_command(Phrases.FIND_COMMAND_NAME)
 
 
     def init_phrases(self):
@@ -179,13 +181,13 @@ class Phrases(DiscoverableCog):
     async def random_command(self, interaction: Interaction, user: discord.Member = None):
         """Speaks a random phrase"""
 
-        # self.dynamo_db.put_message_context(ctx, False)
+        await self.database_manager.store(interaction)
         phrase: Phrase = random.choice(list(self.phrases.values()))
 
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **/{self.build_phrase_command_string(phrase)}**")
+                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**")
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
@@ -215,7 +217,7 @@ class Phrases(DiscoverableCog):
     async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member = None):
         """Speaks the specific phrase"""
 
-        # self.dynamo_db.put_message_context(ctx, False)
+        await self.database_manager.store(interaction)
 
         ## Get the actual phrase from the phrase name provided by autocomplete
         phrase: Phrase = self.phrases.get(name)
@@ -262,7 +264,7 @@ class Phrases(DiscoverableCog):
             return word_frequency / len(message_split)
 
 
-        # self.dynamo_db.put_message_context(ctx, False)
+        await self.database_manager.store(interaction)
 
         raw_search = search
         ## Strip all non alphanumeric and non whitespace characters out of the message
@@ -314,4 +316,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler", "DatabaseManager"])

@@ -16,7 +16,7 @@ from common.audio_player import AudioPlayer
 from common.configuration import Configuration
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.exceptions import WillNotConnectToVoiceChannelException
+from common.exceptions import NoVoiceChannelAvailableException
 from common.logging import Logging
 from common.module.module import Cog
 
@@ -302,9 +302,12 @@ class Speech(Cog):
             LOGGER.exception("FileNotFound when invoking `play_audio`", e)
             return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I can't say that right now.")
 
-        except WillNotConnectToVoiceChannelException as e:
-            LOGGER.exception("Cannot connect to voice channel", e)
-            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I'm not able to connect to that voice channel.")
+        except NoVoiceChannelAvailableException as e:
+            LOGGER.exception("No voice channel available", e)
+            if (e.target_member.id == author.id):
+                return InvokedCommand(False, e, f"Sorry, <@{author.id}>, you're not in a voice channel.")
+            else:
+                return InvokedCommand(False, e, f"Sorry, <@{author.id}>, that person isn't in a voice channel.")
 
         return InvokedCommand(True)
 

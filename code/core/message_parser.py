@@ -29,7 +29,7 @@ class MessageParser(Module):
     ## Parses a given message, replacing discord mentions with their proper names, and replacing emoji with their
     ## textual names.
     def parse_message(self, message: str, interaction_data: dict):
-        message = self._replace_mentions(message, interaction_data)
+        message = self.replace_mentions(message, interaction_data)
 
         if(self.replace_emoji):
             message = self._replace_emoji(message)
@@ -70,31 +70,45 @@ class MessageParser(Module):
         return ''.join(char_array)
 
 
-    ## Replaces discord id mention strings with their actual names
-    def _replace_mentions(self, message: str, interaction_data: dict):
+    def replace_mentions(
+            self,
+            message: str,
+            interaction_data: dict,
+            hide_mention_formatting = True,
+            hide_meta_mentions = True,
+            anonymize_mentions = False
+    ):
+        """Replaces raw mentions with their human readable version (ex: <@1234567890> -> name OR <@name>)"""
+
         ## In string, replace instances of discord_id with replacement
         def replace_id_with_string(string, discord_id, replacement):
-            match = re.search("<[@|#][!|&]?({})>".format(discord_id), string)
+            match = re.search(f"<[@|#][!|&]?({discord_id})>", string)
             if(match):
-                start, end = match.span(0)
+                if (hide_mention_formatting):
+                    start, end = match.span(0)
+                else:
+                    start, end = match.span(1)
+
                 string = string[:start] + replacement + string[end:]
 
             return string
 
+
         id_mapping = {}
+        unique_mention_counter = 0
 
         ## Build the discord entity id to name mapping
         for user in interaction_data.get("resolved", {}).get("users", {}).values():
-            id_mapping[user["id"]] = user["username"]
+            id_mapping[user["id"]] = f"user{unique_mention_counter}" if anonymize_mentions else user["username"]
 
         for member in interaction_data.get("resolved", {}).get("members", {}).values():
-            id_mapping[member["id"]] = member.get("nick") or member["user"]["username"]
+            id_mapping[member["user"]["id"]] = f"member{unique_mention_counter}" if anonymize_mentions else member.get("nick") or member["user"]["username"]
 
         for channel in interaction_data.get("resolved", {}).get("channels", {}).values():
-            id_mapping[channel["id"]] = channel["name"]
+            id_mapping[channel["id"]] = f"channel{unique_mention_counter}" if anonymize_mentions else channel["name"]
 
         for role in interaction_data.get("resolved", {}).get("roles", {}).values():
-            id_mapping[role["id"]] = role["name"]
+            id_mapping[role["id"]] = f"role{unique_mention_counter}" if anonymize_mentions else role["name"]
 
         ## Perform the replacement!
         for discord_id, replacement in id_mapping.items():
@@ -103,6 +117,9 @@ class MessageParser(Module):
 
             ## Hide any option mentions (ex: 1234567890), as it's almost certainly a 'meta' command.
             ## Todo: improve this, it's kind of janky right now
-            message = message.replace(discord_id, "")
+            if (hide_meta_mentions):
+                message = message.replace(discord_id, "")
+            else:
+                message = message.replace(discord_id, replacement)
 
         return message

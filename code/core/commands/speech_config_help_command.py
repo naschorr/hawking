@@ -1,7 +1,7 @@
 import logging
 
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
@@ -24,8 +24,8 @@ class SpeechConfigHelpCommand(Cog):
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
         assert(self.component_factory is not None)
-
-        self.dynamo_db = dynamo_manager.DynamoManager()
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
     ## Methods
 
@@ -33,7 +33,7 @@ class SpeechConfigHelpCommand(Cog):
     async def speech_config_command(self, interaction: discord.Interaction):
         """Posts a link to the speech config docs"""
 
-        # self.dynamo_db.put_message_context(ctx)
+        await self.database_manager.store(interaction)
 
         description = (
             f"Take a look at Hawking's [speech configuration documentation]({self.HAWKING_SPEECH_CONFIG_URL}). It's "

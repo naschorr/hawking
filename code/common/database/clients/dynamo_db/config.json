@@ -1,0 +1,6 @@
+{
+    "dynamo_db_credentials_file_path"       : "",
+    "dynamo_db_resource"                    : "dynamodb",
+    "dynamo_db_region_name"                 : "us-east-2",
+    "dynamo_db_primary_key"                 : "QueryId"
+}
