@@ -7,7 +7,7 @@ from functools import reduce
 from core.speech import Speech
 from common.audio_player import AudioPlayer
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
@@ -40,6 +40,8 @@ class HelpCog(Cog):
         assert(self.phrases_cog is not None)
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
         assert(self.component_factory is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         self.name = CONFIG_OPTIONS.get("name", "help").capitalize()
         self.version = CONFIG_OPTIONS.get("version", "1.0.0")
@@ -358,7 +360,7 @@ class HelpCog(Cog):
     async def _help_command(self, interaction: Interaction, command: str = None, subcommand: str = None):
         """Shows the help page"""
 
-        # self.dynamo_db.put_message_context(ctx, False)
+        await self.database_manager.store(interaction)
 
         if (command is not None and subcommand is None):
             target_command = self.command_tree[0].get(command)

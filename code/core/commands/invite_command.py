@@ -1,7 +1,7 @@
 import logging
 
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
@@ -22,13 +22,13 @@ class InviteCommand(Cog):
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
         assert(self.component_factory is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         name: str = CONFIG_OPTIONS.get("name")
         self.bot_invite_blurb: str = CONFIG_OPTIONS.get("bot_invite_blurb", CONFIG_OPTIONS.get("description")[0])
         self.bot_invite_url: str = CONFIG_OPTIONS.get("bot_invite_url")
         self.support_discord_invite_url: str = CONFIG_OPTIONS.get("support_discord_invite_url")
-
-        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Make sure the minimum config options are populated, so a proper embed can be generated later
         if (name is not None and self.bot_invite_blurb is not None and self.bot_invite_url is not None):
@@ -45,7 +45,7 @@ class InviteCommand(Cog):
 
     async def invite_command(self, interaction: discord.Interaction):
 
-        # self.dynamo_db.put_message_context(ctx)
+        await self.database_manager.store(interaction)
 
         embed = self.component_factory.create_embed(
             title=self.capitalized_name,

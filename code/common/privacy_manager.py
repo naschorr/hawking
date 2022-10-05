@@ -11,7 +11,7 @@ from pathlib import Path
 
 from common import utilities
 from common.configuration import Configuration
-from common.database import dynamo_manager
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
@@ -34,6 +34,8 @@ class PrivacyManager(Cog):
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
         assert(self.component_factory is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
         self.privacy_policy_url = CONFIG_OPTIONS.get('privacy_policy_url')
@@ -67,9 +69,6 @@ class PrivacyManager(Cog):
 
             LOGGER.error(message)
             raise RuntimeError(message)
-
-        ## Make sure there's a dynamo manager available for database operations
-        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Keep a copy of all user ids that should be deleted in memory, so the actual file can't get spammed by repeats.
         self.queued_user_ids = self.get_all_queued_delete_request_ids()
@@ -169,14 +168,8 @@ class PrivacyManager(Cog):
             LOGGER.info("Skipping delete request processing, as queue is empty.")
             return
 
-        LOGGER.info(f"Starting to process {len(user_ids)} delete requests")
-        primary_keys_to_delete = list(map(
-            lambda item: item[self.dynamo_db.primary_key],
-            await self.dynamo_db.get_keys_from_users(self.dynamo_db.detailed_table, user_ids)
-        ))
-
-        LOGGER.info(f"Starting to batch delete {len(primary_keys_to_delete)} documents.")
-        await self.dynamo_db.batch_delete(self.dynamo_db.detailed_table, primary_keys_to_delete)
+        LOGGER.info(f"Batch deleting {len(user_ids)} users from the database")
+        await self.database_manager.batch_delete_users(user_ids)
 
         LOGGER.info("Successfully performed batch delete")
         self.queued_user_ids = set()
@@ -220,7 +213,7 @@ class PrivacyManager(Cog):
     async def privacy_policy_command(self, interaction: Interaction):
         """Gives a link to the privacy policy"""
 
-        # self.dynamo_db.put_message_context(ctx)
+        await self.database_manager.store(interaction)
 
         embed = self.component_factory.create_embed(
             title="Privacy Policy",
@@ -246,7 +239,7 @@ class PrivacyManager(Cog):
     async def delete_my_data_command(self, ctx: Context):
         """Initiates a request to delete all of your user data from the bot's logs."""
 
-        self.dynamo_db.put_message_context(ctx)
+        await self.database_manager.store(ctx)
 
         user = ctx.author
         if (user.id in self.queued_user_ids):
