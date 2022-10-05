@@ -13,9 +13,9 @@ from pathlib import Path
 
 from common import utilities
 from common.configuration import Configuration
-from common.database import dynamo_manager
 from common.exceptions import UnableToConnectToVoiceChannelException, WillNotConnectToVoiceChannelException
 from common.logging import Logging
+from common.database.database_manager import DatabaseManager
 from common.module.module import Cog
 
 import discord
@@ -301,10 +301,11 @@ class AudioPlayer(Cog):
         self.bot = bot
         self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
         assert (self.admin_cog is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
-        self.dynamo_db = dynamo_manager.DynamoManager()
 
         ## Clamp between 0.0 and 1.0
         self.skip_percentage = max(min(float(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
@@ -316,7 +317,7 @@ class AudioPlayer(Cog):
         async def skip(ctx):
             """Skips the current audio"""
 
-            self.dynamo_db.put_message_context(ctx)
+            await self.database_manager.store(ctx)
 
             await self.skip(ctx, force = True)
 
@@ -325,7 +326,7 @@ class AudioPlayer(Cog):
         async def disconnect(ctx):
             """Disconnect from the current voice channel"""
 
-            self.dynamo_db.put_message_context(ctx)
+            await self.database_manager.store(ctx)
 
             state = self.get_server_state(ctx)
             await state.disconnect()
@@ -393,14 +394,11 @@ class AudioPlayer(Cog):
         voice_channel = target_member.voice.channel
 
         ## Get/Build a state for this audio, build the player, and add it to the state
+        await self.database_manager.store(interaction)
         state = self.get_server_state(target_member.guild)
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
 
-        ## todo: fix
-        ## self.dynamo_db.put_message_context(ctx)
-
-        return True
 
 
     async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: Path, callback: Callable = None):
@@ -419,8 +417,6 @@ class AudioPlayer(Cog):
         play_request = AudioPlayRequest(None, None, server_state.voice_client.channel, player, file_path, None, callback)
         await server_state.add_play_request(play_request)
 
-        return True
-
     ## Commands
 
     @app_commands.command(name="skip")
@@ -431,8 +427,11 @@ class AudioPlayer(Cog):
 
         ## Is the bot speaking?
         if(not state.is_playing):
+            await self.database_manager.store(interaction, False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
             return False
+        else:
+            await self.database_manager.store(interaction)
 
         ## Add a skip vote and tally it up!
         voter = interaction.user

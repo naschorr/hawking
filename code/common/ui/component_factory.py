@@ -1,7 +1,6 @@
 import logging
 
 from common.configuration import Configuration
-from common.database import dynamo_manager
 from common.logging import Logging
 from common.module.module import Module
 

@@ -44,6 +44,15 @@ class WillNotConnectToVoiceChannelException(ClientException):
         return self._channel
 
 
+class UnableToStoreInDatabaseException(RuntimeError):
+    '''
+    Exception that's thrown when the database store operation failed for some reason.
+    '''
+
+    def __init__(self, message: str):
+        super(UnableToStoreInDatabaseException).__init__(message)
+
+
 class ModuleLoadException(RuntimeError):
     '''
     Exception that's thrown when a module fails to load (implicitly at runtime).

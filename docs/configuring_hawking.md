@@ -75,11 +75,15 @@ All of the above `reddit*` properties are required to use the Reddit module, and
 - **stupid_question_refresh_time_seconds** - Int - The number of seconds to wait before loading more questions.
 
 ### Analytics Configuration
-- **database_enable** - Boolean - Indicate that you want the bot to upload analytics to an Amazon AWS resource.
-- **database_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
-- **database_resource** - String - The AWS boto-friendly resource to upload to. (I've only tried DynamoDB, but I'm fairly sure AWS' other storage resources would work if you wanted to tweak the code).
-- **database_region_name** - String - The AWS region of your chosen `database_resource`.
+#### Database Configuration
+These are generic, non-specific database configuration options
+- **database_enable** - Boolean - Indicate that you want the bot to upload analytics to the remote database.
 - **database_detailed_table_name** - String - The name of the table to insert detailed, temporary data into.
 - **database_anonymous_table_name** - String - The name of the table to insert anonymized, long term data into.
-- **database_primary_key** - String - The primary key of the above tables.
-- **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed via the DynamoDB TTL service.
+- **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed.
+
+#### DynamoDB Configuration
+- **dynamo_db_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
+- **dynamo_db_resource** - String - The AWS boto-friendly resource to upload to.
+- **dynamo_db_region_name** - String - The AWS region of your chosen `dynamo_db_resource`.
+- **dynamo_db_primary_key** - String - The primary key of the above tables.

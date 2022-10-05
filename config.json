@@ -45,11 +45,7 @@
     "replace_emoji"                         : true,
 
     "database_enable"                       : false,
-    "database_credentials_file_path"        : "",
-    "database_resource"                     : "dynamodb",
-    "database_region_name"                  : "us-east-2",
     "database_detailed_table_name"          : "Hawking",
     "database_anonymous_table_name"         : "HawkingAnonymous",
-    "database_primary_key"                  : "QueryId",
     "database_detailed_table_ttl_seconds"   : 31536000
 }

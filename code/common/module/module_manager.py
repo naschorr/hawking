@@ -252,3 +252,9 @@ class ModuleManager:
                     LOGGER.exception("Unable to register module {} on bot.".format(module_path.name))
                     del sys.path[-1]    ## Prune back the failed module from the path
                     del module
+
+
+    def get_module(self, name: str) -> Module | None:
+        '''Gets the instance of a loaded module'''
+
+        return self.loaded_modules.get(name)
