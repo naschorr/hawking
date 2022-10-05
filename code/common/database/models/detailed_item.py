@@ -18,7 +18,7 @@ class DetailedItem(CommandItem):
             self,
             author: Member,
             text_channel: TextChannel,
-            voice_channel: VoiceChannel,
+            voice_channel: VoiceChannel | None,
             guild: Guild,
             qualified_command_string: str,
             command_name: str,
@@ -31,8 +31,8 @@ class DetailedItem(CommandItem):
         self.author = author
         self.text_channel_id = text_channel.id
         self.text_channel_name = text_channel.name
-        self.voice_channel_id = voice_channel.id
-        self.voice_channel_name = voice_channel.name
+        self.voice_channel_id = voice_channel.id if voice_channel else None
+        self.voice_channel_name = voice_channel.name if voice_channel else None
         self.server_id = guild.id
         self.server_name = guild.name
         self.qualified_command_string = qualified_command_string
