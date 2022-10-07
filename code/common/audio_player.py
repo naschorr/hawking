@@ -162,9 +162,9 @@ class ServerStateManager:
 
         if(self.is_playing):
             LOGGER.debug(
-                f"Skipping file at: {self.active_play_request.file_path}, " +
-                f"in channel: {self.voice_client.channel.name}, " +
-                f"in server: {self.guild.name}, " +
+                f"Skipping file at: {self.active_play_request.file_path}, "
+                f"in channel: {self.voice_client.channel.name}, "
+                f"in server: {self.guild.name}, "
                 f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
             )
             self.voice_client.stop()
@@ -190,8 +190,8 @@ class ServerStateManager:
         ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
         if (inactive and self.channel_timeout_handler):
             LOGGER.debug(
-                f"Attempting to leave channel: {self.voice_client.channel.name}, " +
-                f"in server: {self.guild.name}, " +
+                f"Attempting to leave channel: {self.voice_client.channel.name}, "
+                f"in server: {self.guild.name}, "
                 f"due to inactivity for past {self.channel_timeout_seconds} seconds"
             )
 
@@ -276,9 +276,9 @@ class ServerStateManager:
                     return after_play
 
                 LOGGER.debug(
-                    f"Playing file at: {self.active_play_request.file_path}, " +
-                    f"in channel: {self.active_play_request.channel.name}, " +
-                    f"in server: {self.active_play_request.channel.guild.name}, " +
+                    f"Playing file at: {self.active_play_request.file_path}, "
+                    f"in channel: {self.active_play_request.channel.name}, "
+                    f"in server: {self.active_play_request.channel.guild.name}, "
                     f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
                 )
                 self.voice_client.play(self.active_play_request.audio, after=after_play_callback_builder())
