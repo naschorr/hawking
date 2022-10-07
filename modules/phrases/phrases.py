@@ -6,7 +6,6 @@ import logging
 import asyncio
 import random
 from pathlib import Path
-from typing import Literal, Union
 
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
@@ -23,6 +22,7 @@ from modules.phrases.models.phrase import Phrase
 import discord
 from discord import Interaction
 from discord.app_commands import autocomplete, Choice, describe
+from discord.ext.commands import Context
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -64,7 +64,7 @@ class Phrases(DiscoverableCog):
 
         ## This decorator needs to reference the injected dependency, thus we're declaring the command here.
         @self.admin_cog.admin.command(no_pm=True)
-        async def reload_phrases(ctx):
+        async def reload_phrases(ctx: Context):
             """Reloads the bot's list of phrases"""
 
             await self.database_manager.store(ctx)
@@ -72,7 +72,7 @@ class Phrases(DiscoverableCog):
             count = self.reload_phrases()
 
             loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
-            await ctx.send(loaded_clips_string)
+            await ctx.reply(loaded_clips_string)
 
             return (count >= 0)
 
@@ -91,8 +91,10 @@ class Phrases(DiscoverableCog):
         self.remove_phrases()
         self.remove_phrase_commands()
 
-        self.init_phrases()
+        loaded_phrases = self.init_phrases()
         self.add_phrase_commands()
+
+        return loaded_phrases
 
 
     def remove_phrases(self):
@@ -145,7 +147,7 @@ class Phrases(DiscoverableCog):
         self.bot.tree.remove_command(Phrases.FIND_COMMAND_NAME)
 
 
-    def init_phrases(self):
+    def init_phrases(self) -> int:
         """Initialize the phrases available to the bot"""
 
         phrase_group_file_paths = self.phrase_file_manager.discover_phrase_groups(self.phrases_folder_path)
