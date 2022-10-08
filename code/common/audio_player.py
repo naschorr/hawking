@@ -401,7 +401,6 @@ class AudioPlayer(Cog):
         voice_channel = target_member.voice.channel
 
         ## Get/Build a state for this audio, build the player, and add it to the state
-        await self.database_manager.store(interaction)
         state = self.get_server_state(target_member.guild)
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
@@ -433,18 +432,15 @@ class AudioPlayer(Cog):
 
         ## Is the bot speaking?
         if(not state.is_playing):
-            await self.database_manager.store(interaction, False)
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
-            return False
-        else:
-            await self.database_manager.store(interaction)
 
         ## Add a skip vote and tally it up!
         voter = interaction.user
         if(voter == state.active_play_request.author):
             state.skip_audio()
+            await self.database_manager.store(interaction)
             await interaction.response.send_message(f"<@{voter.id}> skipped their own audio.")
-            return False
 
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -458,16 +454,16 @@ class AudioPlayer(Cog):
             vote_percentage = total_votes / len(active_members)
             if(vote_percentage >= self.skip_percentage):
                 state.skip_audio()
+                await self.database_manager.store(interaction)
                 await interaction.response.send_message("Skip vote passed!")
-                return True
 
             else:
                 ## The total votes needed for a successful skip
                 required_votes = math.ceil(len(active_members) * self.skip_percentage)
 
+                await self.database_manager.store(interaction)
                 await interaction.response.send_message(f"Skip vote added! Currently at {total_votes} of {required_votes} votes.")
-                return False
 
         else:
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"<@{voter.id}> has already voted!", ephemeral=True)
-            return False

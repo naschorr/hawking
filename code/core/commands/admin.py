@@ -98,7 +98,7 @@ class Admin(Cog):
 
     async def cog_command_error(self, ctx: Context, error: Exception) -> None:
         if (isinstance(error, errors.NotOwner)):
-            await self.database_manager.store(ctx, False)
+            await self.database_manager.store(ctx, valid=False)
             await ctx.message.reply("Sorry, this command is only available to the bot's owner (and not the server owner).")
             return
 

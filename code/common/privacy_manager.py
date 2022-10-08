@@ -237,14 +237,14 @@ class PrivacyManager(Cog):
     async def delete_my_data_command(self, ctx: Context):
         """Initiates a request to delete all of your user data from the bot's logs."""
 
-        await self.database_manager.store(ctx)
-
         user = ctx.author
         if (user.id in self.queued_user_ids):
+            await self.database_manager.store(ctx, valid=False)
             await user.send(f"Hey <@{user.id}>, it looks like you've already requested that your data be deleted. That'll automagically happen next {self._delete_request_scheduled_weekday_name}, so sit tight and it'll happen before you know it!")
             return
 
         await self.store_user_id_for_batch_delete(user.id)
+        await self.database_manager.store(ctx)
 
         ## Keep things tidy
         try:

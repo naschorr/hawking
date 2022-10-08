@@ -21,6 +21,8 @@ class InvokedCommandHandler(Module):
 
         self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
         assert(self.message_parser is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
     ## Methods
 
@@ -66,7 +68,7 @@ class InvokedCommandHandler(Module):
         '''Handles user feedback when running a deferred command'''
 
         ## Acknowledge the command, and start the thinking state
-        command_string = self.get_command_string_from_interaction(interaction)
+        command_string = self.get_command_string_from_interaction(interaction)  ## todo: CommandReconstructor
         await interaction.response.defer(ephemeral=ephemeral, thinking=True)
 
         ## Act upon the command, giving human readable feedback if any errors pop up
@@ -80,6 +82,9 @@ class InvokedCommandHandler(Module):
                 else:
                     callback(invoked_command)
                 return
+
+            ## Handle command storage
+            await self.database_manager.store(interaction, valid=invoked_command.successful)
 
             ## Otherwise provide some basic feedback, and (implicitly) clear the thinking state
             if (invoked_command.successful):

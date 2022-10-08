@@ -105,7 +105,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             invoked_command_handler.InvokedCommandHandler,
-            dependencies=[message_parser.MessageParser]
+            dependencies=[message_parser.MessageParser, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
@@ -149,7 +149,7 @@ class Hawking:
         async def on_command_error(ctx, exception):
             ## Something weird happened, log it!
             LOGGER.exception("Unhandled exception in during command execution", exception)
-            await self.database_manager.store(ctx, False)
+            await self.database_manager.store(ctx, valid=False)
 
     ## Properties
 
