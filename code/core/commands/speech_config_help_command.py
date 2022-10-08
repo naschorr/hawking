@@ -7,9 +7,10 @@ from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
 
-from discord import Interaction
+from discord import Interaction, ButtonStyle
 from discord.app_commands import Command
 from discord.ext.commands import Bot
+from discord.ui import View, Button
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -54,10 +55,10 @@ class SpeechConfigHelpCommand(Cog):
             url=self.HAWKING_SPEECH_CONFIG_URL
         )
 
-        view = discord.ui.View()
+        view = View()
 
-        view.add_item(discord.ui.Button(
-            style=discord.ButtonStyle.link,
+        view.add_item(Button(
+            style=ButtonStyle.link,
             label="Read the Speech Config docs",
             url=self.HAWKING_SPEECH_CONFIG_URL
         ))
