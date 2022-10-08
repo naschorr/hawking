@@ -48,7 +48,7 @@ class InviteCommand(Cog):
         await self.database_manager.store(interaction)
 
         embed = self.component_factory.create_embed(
-            title=self.capitalized_name,
+            title=self.name,
             description=self.bot_invite_blurb,
             url=self.bot_invite_url
         )
@@ -57,7 +57,7 @@ class InviteCommand(Cog):
 
         view.add_item(Button(
             style=ButtonStyle.link,
-            label=f"Invite {self.capitalized_name}",
+            label=f"Invite {self.name}",
             url=self.bot_invite_url
         ))
 
