@@ -360,11 +360,10 @@ class HelpCog(Cog):
     async def _help_command(self, interaction: Interaction, command: str = None, subcommand: str = None):
         """Shows the help page"""
 
-        await self.database_manager.store(interaction)
-
         if (command is not None and subcommand is None):
             target_command = self.command_tree[0].get(command)
             if (target_command is None):
+                await self.database_manager.store(interaction, valid=False)
                 potential_subcommand = self.command_tree[1].get(command)
                 if (potential_subcommand is not None):
                     await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, the command '{command}' requires a subcommand.", ephemeral=True)
@@ -372,6 +371,7 @@ class HelpCog(Cog):
                     await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, the command '{command}' isn't valid.", ephemeral=True)
                 return
 
+            await self.database_manager.store(interaction)
             embeds = [self.build_command_help_embed(target_command)]
             await interaction.response.send_message(embeds=embeds, ephemeral=True)
             return
@@ -379,11 +379,13 @@ class HelpCog(Cog):
         elif (command is not None and subcommand is not None):
             target_command = self.command_tree[1].get(command)
             if (target_command is None):
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, the command '{command}' isn't valid.", ephemeral=True)
                 return
 
             target_subcommand = target_command.get(subcommand)
             if (target_subcommand is None):
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, the subcommand '{subcommand}' isn't valid.", ephemeral=True)
                 return
 
@@ -392,13 +394,17 @@ class HelpCog(Cog):
             else:
                 embeds = [self.build_phrases_help_embed(target_subcommand)]
 
+            await self.database_manager.store(interaction)
             await interaction.response.send_message(embeds=embeds, ephemeral=True)
             return
 
         elif (command is None and subcommand is not None):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, I need a `command` and `subcommand` to provide more specific help.", ephemeral=True)
+            return
 
         else:
+            await self.database_manager.store(interaction)
             embeds = self.build_help_embeds()
             await interaction.response.send_message(embeds=embeds)
             return

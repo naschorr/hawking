@@ -129,6 +129,7 @@ class StupidQuestions(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
                 thought_provoking_string = random.choice(self.THOUGHT_PROVOKING_STRINGS)
                 await interaction.followup.send(
                     f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
@@ -136,6 +137,7 @@ class StupidQuestions(DiscoverableCog):
                     ephemeral=False
                 )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 

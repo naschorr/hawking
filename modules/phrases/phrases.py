@@ -188,16 +188,17 @@ class Phrases(DiscoverableCog):
     async def random_command(self, interaction: Interaction, user: discord.Member = None):
         """Speaks a random phrase"""
 
-        await self.database_manager.store(interaction)
         phrase: Phrase = random.choice(list(self.phrases.values()))
 
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
                 await interaction.followup.send(
                     f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**"
                 )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
@@ -226,11 +227,10 @@ class Phrases(DiscoverableCog):
     async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member = None):
         """Speaks the specific phrase"""
 
-        await self.database_manager.store(interaction)
-
         ## Get the actual phrase from the phrase name provided by autocomplete
         phrase: Phrase = self.phrases.get(name)
         if (phrase is None):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(
                 f"Sorry <@{interaction.user.id}>, **{name}** isn't a valid phrase.",
                 ephemeral=True
@@ -240,9 +240,11 @@ class Phrases(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
                 phrase_command_string = self.build_phrase_command_string(phrase)
                 await interaction.followup.send(f"<@{interaction.user.id}> used **{phrase_command_string}**")
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
@@ -273,8 +275,6 @@ class Phrases(DiscoverableCog):
             return word_frequency / len(message_split)
 
 
-        await self.database_manager.store(interaction)
-
         ## Strip all non alphanumeric and non whitespace characters out of the message
         search = "".join(char for char in search.lower() if (char.isalnum() or char.isspace()))
 
@@ -299,6 +299,7 @@ class Phrases(DiscoverableCog):
                 most_similar_phrase = (phrase, distance)
 
         if (most_similar_phrase[1] < self.find_command_minimum_similarity):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(
                 f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True
             )
@@ -308,12 +309,14 @@ class Phrases(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
                 command_string = self.command_reconstructor.reconstruct_command_string(interaction)
                 phrase_string = self.build_phrase_command_string(most_similar_phrase[0])
                 await interaction.followup.send(
                     f"<@{interaction.user.id}> searched with **{command_string}**, and found **{phrase_string}**"
                 )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
