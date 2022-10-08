@@ -9,6 +9,7 @@ from pathlib import Path
 
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.command_management.command_reconstructor import CommandReconstructor
 from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
@@ -48,6 +49,8 @@ class Phrases(DiscoverableCog):
         assert(self.invoked_command_handler is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
+        self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
+        assert (self.command_reconstructor is not None)
 
         self.phrase_file_manager = PhraseFileManager()
 
@@ -175,6 +178,8 @@ class Phrases(DiscoverableCog):
 
 
     def build_phrase_command_string(self, phrase: Phrase, activation_str: str = None) -> str:
+        """Builds an example string to invoke the specified phrase"""
+
         return f"{activation_str or '/'}{Phrases.PHRASE_COMMAND_NAME} {phrase.name}"
 
     ## Commands
@@ -189,7 +194,9 @@ class Phrases(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**")
+                await interaction.followup.send(
+                    f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**"
+                )
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
@@ -223,11 +230,9 @@ class Phrases(DiscoverableCog):
 
         ## Get the actual phrase from the phrase name provided by autocomplete
         phrase: Phrase = self.phrases.get(name)
-        command_string = self.build_phrase_command_string(phrase) if phrase else name
-
         if (phrase is None):
             await interaction.response.send_message(
-                f"Sorry <@{interaction.user.id}>, **{command_string}** isn't a valid phrase.",
+                f"Sorry <@{interaction.user.id}>, **{name}** isn't a valid phrase.",
                 ephemeral=True
             )
             return
@@ -235,7 +240,8 @@ class Phrases(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> used **{command_string}**")
+                phrase_command_string = self.build_phrase_command_string(phrase)
+                await interaction.followup.send(f"<@{interaction.user.id}> used **{phrase_command_string}**")
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
@@ -269,7 +275,6 @@ class Phrases(DiscoverableCog):
 
         await self.database_manager.store(interaction)
 
-        raw_search = search
         ## Strip all non alphanumeric and non whitespace characters out of the message
         search = "".join(char for char in search.lower() if (char.isalnum() or char.isspace()))
 
@@ -294,16 +299,20 @@ class Phrases(DiscoverableCog):
                 most_similar_phrase = (phrase, distance)
 
         if (most_similar_phrase[1] < self.find_command_minimum_similarity):
-            await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True)
+            await interaction.response.send_message(
+                f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True
+            )
             return
 
         ## With the phrase found, prepare to speak it!
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                command_string = self.command_reconstructor.reconstruct_command_string(interaction)
+                phrase_string = self.build_phrase_command_string(phrase)
                 await interaction.followup.send(
-                    ## todo: this is really lazy
-                    f"<@{interaction.user.id}> searched with **/find {raw_search}**, and found **{self.build_phrase_command_string(phrase)}**"),
+                    f"<@{interaction.user.id}> searched with **{command_string}**, and found **{phrase_string}**"
+                )
             else:
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
@@ -319,4 +328,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler", "DatabaseManager"])
+    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])
