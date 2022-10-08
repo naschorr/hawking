@@ -8,6 +8,7 @@ if (_root_path not in sys.path):
 
 ## Importing as usual now
 import logging
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -126,7 +127,7 @@ class Hawking:
         self.module_manager.discover_modules()
 
         ## Load all of the previously registered modules!
-        self.module_manager.load_registered_modules()
+        asyncio.run(self.module_manager.load_registered_modules())
 
         ## Disable the default help command
         self.bot.help_command = None

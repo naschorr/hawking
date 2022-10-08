@@ -6,7 +6,10 @@ from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
 
-import discord
+from discord import Interaction, ButtonStyle
+from discord.app_commands import Command
+from discord.ext.commands import Bot
+from discord.ui import View, Button
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -15,8 +18,8 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class InviteCommand(Cog):
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -25,25 +28,22 @@ class InviteCommand(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        name: str = CONFIG_OPTIONS.get("name")
+        self.name: str = CONFIG_OPTIONS.get("name", "the bot").capitalize()
         self.bot_invite_blurb: str = CONFIG_OPTIONS.get("bot_invite_blurb", CONFIG_OPTIONS.get("description")[0])
         self.bot_invite_url: str = CONFIG_OPTIONS.get("bot_invite_url")
         self.support_discord_invite_url: str = CONFIG_OPTIONS.get("support_discord_invite_url")
 
         ## Make sure the minimum config options are populated, so a proper embed can be generated later
-        if (name is not None and self.bot_invite_blurb is not None and self.bot_invite_url is not None):
-            self.capitalized_name = name.capitalize()
-
-            command = discord.app_commands.Command(
+        if (self.bot_invite_blurb is not None and self.bot_invite_url is not None):
+            self.add_command(Command(
                 name="invite",
-                description=f"Posts invite links for {self.capitalized_name}",
+                description=f"Posts invite links for {self.name}",
                 callback=self.invite_command
-            )
-            self.bot.tree.add_command(command)
+            ))
 
     ## Commands
 
-    async def invite_command(self, interaction: discord.Interaction):
+    async def invite_command(self, interaction: Interaction):
 
         await self.database_manager.store(interaction)
 
@@ -53,17 +53,17 @@ class InviteCommand(Cog):
             url=self.bot_invite_url
         )
 
-        view = discord.ui.View()
+        view = View()
 
-        view.add_item(discord.ui.Button(
-            style=discord.ButtonStyle.link,
+        view.add_item(Button(
+            style=ButtonStyle.link,
             label=f"Invite {self.capitalized_name}",
             url=self.bot_invite_url
         ))
 
         if (self.support_discord_invite_url is not None):
-            view.add_item(discord.ui.Button(
-                style=discord.ButtonStyle.link,
+            view.add_item(Button(
+                style=ButtonStyle.link,
                 label="Join the Support Discord",
                 url=self.support_discord_invite_url
             ))

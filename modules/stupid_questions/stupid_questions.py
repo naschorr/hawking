@@ -15,6 +15,7 @@ from question import Question
 
 import discord
 from discord import app_commands, Interaction
+from discord.ext.commands import Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -34,10 +35,9 @@ class StupidQuestions(DiscoverableCog):
         "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:"
     ]
 
-    def __init__(self, hawking, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
-        self.hawking = hawking
         self.bot = bot
 
         self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
@@ -71,9 +71,14 @@ class StupidQuestions(DiscoverableCog):
         except Exception as e:
             raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
+        ## Load the questions for polling, async
         asyncio.run(self.load_questions())
 
-        self.successful = True
+        self.add_command(app_commands.Command(
+            name="stupid_question",
+            description=self.stupid_question_command.__doc__,
+            callback=self.stupid_question_command
+        ))
 
 
     async def load_questions(self) -> None:
@@ -110,8 +115,8 @@ class StupidQuestions(DiscoverableCog):
 
         return None
 
+    ## Commands
 
-    @app_commands.command(name="stupid_question")
     async def stupid_question_command(self, interaction: Interaction):
         """Ask a stupid question, via Reddit."""
 

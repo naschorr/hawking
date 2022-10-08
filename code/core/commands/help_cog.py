@@ -32,7 +32,7 @@ class HelpCog(Cog):
     ## terrible, and no doubt needlessly difficult to maintain in the future, it works.
 
     def __init__(self, bot: commands.Bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -76,7 +76,7 @@ class HelpCog(Cog):
             callback=help_command_wrapper,
             extras={"cog": self}
         )
-        self.bot.tree.add_command(self.help_command)
+        self.add_command(self.help_command)
         self.cog_command_tree[HelpCog.__name__] = {self.help_command.name: self.help_command}
         self.command_tree[0][self.help_command.name] = self.help_command
 
