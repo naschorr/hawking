@@ -18,7 +18,7 @@ from common.ui.component_factory import ComponentFactory
 
 import discord
 from discord import app_commands, Interaction
-from discord.ext.commands import command, Context
+from discord.ext.commands import command, Context, Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -27,8 +27,8 @@ LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class PrivacyManager(Cog):
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -88,7 +88,7 @@ class PrivacyManager(Cog):
 
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
-            self.bot.tree.add_command(app_commands.Command(
+            self.add_command(app_commands.Command(
                 name="privacy_policy",
                 description=self.privacy_policy_command.__doc__,
                 callback=self.privacy_policy_command

@@ -23,6 +23,7 @@ from common.module.module import Cog
 import async_timeout
 from discord import app_commands, Interaction, Member
 from discord.app_commands import describe
+from discord.ext.commands import Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -214,8 +215,8 @@ class TTSController:
 
 class Speech(Cog):
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
         self.audio_player_cog: AudioPlayer = kwargs.get('dependencies', {}).get('AudioPlayer')
@@ -228,6 +229,13 @@ class Speech(Cog):
         self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
         self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
         self.tts_controller = TTSController()
+
+        ## Commands
+        self.add_command(app_commands.Command(
+            name="say",
+            description=self.say_command.__doc__,
+            callback=self.say_command
+        ))
 
     ## Methods
 
@@ -313,7 +321,6 @@ class Speech(Cog):
 
     ## Commands
 
-    @app_commands.command(name="say")
     @describe(text="The text that Hawking will speak")
     @describe(user="The user that will be spoken to")
     async def say_command(self, interaction: Interaction, text: str, user: Member = None):

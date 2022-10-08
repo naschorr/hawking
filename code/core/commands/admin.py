@@ -9,7 +9,7 @@ from common.module.module import Cog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
-from discord.ext.commands import Context, errors
+from discord.ext.commands import Bot, Context, errors
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -21,8 +21,8 @@ class Admin(Cog):
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, hawking: Hawking, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, hawking: Hawking, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.hawking = hawking
         self.bot = bot
@@ -87,11 +87,11 @@ class Admin(Cog):
 
         await self.database_manager.store(ctx)
 
-        count = self.hawking.module_manager.reload_registered_modules()
+        count = await self.hawking.module_manager.reload_registered_modules()
         total = len(self.hawking.module_manager.modules)
 
-        loaded_modules_string = "Loaded {} of {} modules/cogs.".format(count, total)
-        await ctx.send(loaded_modules_string)
+        loaded_modules_string = f"Loaded {count} of {total} modules/cogs. Consider syncing commands if anything has changed."
+        await ctx.reply(loaded_modules_string)
 
         return (count >= 0)
 

@@ -296,7 +296,7 @@ class AudioPlayer(Cog):
 
 
     def __init__(self, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
         self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
@@ -312,7 +312,14 @@ class AudioPlayer(Cog):
         self.ffmpeg_parameters = CONFIG_OPTIONS.get(self.FFMPEG_PARAMETERS_KEY, "")
         self.ffmpeg_post_parameters = CONFIG_OPTIONS.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
 
-        ## Admin commands
+        ## Commands
+        self.add_command(app_commands.Command(
+            name="skip",
+            description=self.skip_command.__doc__,
+            callback=self.skip_command
+        ))
+
+        ## Admin Commands
         @self.admin_cog.admin.command()
         async def skip(ctx):
             """Skips the current audio"""
@@ -419,7 +426,6 @@ class AudioPlayer(Cog):
 
     ## Commands
 
-    @app_commands.command(name="skip")
     async def skip_command(self, interaction: Interaction):
         '''Vote to skip what's currently playing'''
 

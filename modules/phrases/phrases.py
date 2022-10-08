@@ -22,7 +22,7 @@ from modules.phrases.models.phrase import Phrase
 import discord
 from discord import Interaction
 from discord.app_commands import autocomplete, Choice, describe
-from discord.ext.commands import Context
+from discord.ext.commands import Context, Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -35,8 +35,8 @@ class Phrases(DiscoverableCog):
     RANDOM_COMMAND_NAME = "random"
     FIND_COMMAND_NAME = "find"
 
-    def __init__(self, hawking, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -110,14 +110,14 @@ class Phrases(DiscoverableCog):
         ## Don't register phrase commands if no phrases have been loaded!
         if (self.phrases):
             ## Add the random command
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.RANDOM_COMMAND_NAME,
                 description=self.random_command.__doc__,
                 callback=self.random_command
             ))
 
             # Add the find command
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.FIND_COMMAND_NAME,
                 description=self.find_command.__doc__,
                 callback=self.find_command
@@ -133,7 +133,7 @@ class Phrases(DiscoverableCog):
             async def phrase_command_wrapper(interaction: Interaction, name: str, user: discord.Member = None):
                 await self.phrase_command(interaction, name, user)
 
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.PHRASE_COMMAND_NAME,
                 description=self.phrase_command.__doc__,
                 callback=phrase_command_wrapper,
