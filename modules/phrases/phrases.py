@@ -230,6 +230,7 @@ class Phrases(DiscoverableCog):
                 f"Sorry <@{interaction.user.id}>, **{command_string}** isn't a valid phrase.",
                 ephemeral=True
             )
+            return
 
 
         async def callback(invoked_command: InvokedCommand):
