@@ -285,12 +285,12 @@ class Phrases(DiscoverableCog):
 
             ## Score the phrase
             scores.append(
-                calc_substring_score(search, phrase.name) + \
+                calc_substring_score(search, phrase.name) +
                 StringSimilarity.similarity(search, phrase.name) / 2
             )
             if (phrase.description is not None):
                 scores.append(
-                    calc_substring_score(search, phrase.description) + \
+                    calc_substring_score(search, phrase.description) +
                     StringSimilarity.similarity(search, phrase.description) / 2
                 )
 
@@ -309,7 +309,7 @@ class Phrases(DiscoverableCog):
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
                 command_string = self.command_reconstructor.reconstruct_command_string(interaction)
-                phrase_string = self.build_phrase_command_string(phrase)
+                phrase_string = self.build_phrase_command_string(most_similar_phrase[0])
                 await interaction.followup.send(
                     f"<@{interaction.user.id}> searched with **{command_string}**, and found **{phrase_string}**"
                 )
@@ -318,7 +318,7 @@ class Phrases(DiscoverableCog):
 
 
         action = lambda: self.speech_cog.say(
-            phrase.message,
+            most_similar_phrase[0].message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,
