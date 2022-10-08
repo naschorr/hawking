@@ -92,7 +92,7 @@ class DynamoDbClient(DatabaseClient):
 
         LOGGER.info(f"Starting to process {len(user_ids)} delete requests")
         primary_keys_to_delete = list(map(
-            lambda item: item[self.dynamo_db.primary_key],
+            lambda item: item[self.primary_key],
             await self.get_keys_from_users(self.detailed_table, user_ids)
         ))
 
