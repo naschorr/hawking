@@ -1,4 +1,3 @@
-from calendar import day_name
 import os
 import stat
 import logging
@@ -6,7 +5,6 @@ import asyncio
 import dateutil
 import datetime
 import json
-import time
 from pathlib import Path
 
 from common import utilities
@@ -82,9 +80,9 @@ class PrivacyManager(Cog):
         ## Perform or prepare the deletion process
         seconds_until_process_delete_request = self.get_seconds_until_process_delete_request_queue_is_due()
         if (seconds_until_process_delete_request <= 0):
-            asyncio.run(self.process_delete_request_queue())
+            asyncio.create_task(self.process_delete_request_queue())
         else:
-            asyncio.run(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
+            asyncio.create_task(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
