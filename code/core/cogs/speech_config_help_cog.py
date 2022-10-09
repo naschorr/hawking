@@ -1,4 +1,5 @@
 import logging
+from subprocess import call
 
 from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
@@ -6,19 +7,22 @@ from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
 
-import discord
+from discord import Interaction, ButtonStyle
+from discord.app_commands import Command
+from discord.ext.commands import Bot
+from discord.ui import View, Button
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class SpeechConfigHelpCommand(Cog):
+class SpeechConfigHelpCog(Cog):
 
     HAWKING_SPEECH_CONFIG_URL = "https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md"
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -27,10 +31,15 @@ class SpeechConfigHelpCommand(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
+        self.add_command(Command(
+            name="speech_config",
+            description=self.speech_config_command.__doc__,
+            callback=self.speech_config_command
+        ))
+
     ## Methods
 
-    @discord.app_commands.command(name="speech_config")
-    async def speech_config_command(self, interaction: discord.Interaction):
+    async def speech_config_command(self, interaction: Interaction):
         """Posts a link to the speech config docs"""
 
         await self.database_manager.store(interaction)
@@ -46,10 +55,10 @@ class SpeechConfigHelpCommand(Cog):
             url=self.HAWKING_SPEECH_CONFIG_URL
         )
 
-        view = discord.ui.View()
+        view = View()
 
-        view.add_item(discord.ui.Button(
-            style=discord.ButtonStyle.link,
+        view.add_item(Button(
+            style=ButtonStyle.link,
             label="Read the Speech Config docs",
             url=self.HAWKING_SPEECH_CONFIG_URL
         ))

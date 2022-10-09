@@ -162,9 +162,9 @@ class ServerStateManager:
 
         if(self.is_playing):
             LOGGER.debug(
-                f"Skipping file at: {self.active_play_request.file_path}, " +
-                f"in channel: {self.voice_client.channel.name}, " +
-                f"in server: {self.guild.name}, " +
+                f"Skipping file at: {self.active_play_request.file_path}, "
+                f"in channel: {self.voice_client.channel.name}, "
+                f"in server: {self.guild.name}, "
                 f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
             )
             self.voice_client.stop()
@@ -190,8 +190,8 @@ class ServerStateManager:
         ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
         if (inactive and self.channel_timeout_handler):
             LOGGER.debug(
-                f"Attempting to leave channel: {self.voice_client.channel.name}, " +
-                f"in server: {self.guild.name}, " +
+                f"Attempting to leave channel: {self.voice_client.channel.name}, "
+                f"in server: {self.guild.name}, "
                 f"due to inactivity for past {self.channel_timeout_seconds} seconds"
             )
 
@@ -276,9 +276,9 @@ class ServerStateManager:
                     return after_play
 
                 LOGGER.debug(
-                    f"Playing file at: {self.active_play_request.file_path}, " +
-                    f"in channel: {self.active_play_request.channel.name}, " +
-                    f"in server: {self.active_play_request.channel.guild.name}, " +
+                    f"Playing file at: {self.active_play_request.file_path}, "
+                    f"in channel: {self.active_play_request.channel.name}, "
+                    f"in server: {self.active_play_request.channel.guild.name}, "
                     f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
                 )
                 self.voice_client.play(self.active_play_request.audio, after=after_play_callback_builder())
@@ -296,10 +296,10 @@ class AudioPlayer(Cog):
 
 
     def __init__(self, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
-        self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
+        self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
@@ -312,7 +312,14 @@ class AudioPlayer(Cog):
         self.ffmpeg_parameters = CONFIG_OPTIONS.get(self.FFMPEG_PARAMETERS_KEY, "")
         self.ffmpeg_post_parameters = CONFIG_OPTIONS.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
 
-        ## Admin commands
+        ## Commands
+        self.add_command(app_commands.Command(
+            name="skip",
+            description=self.skip_command.__doc__,
+            callback=self.skip_command
+        ))
+
+        ## Admin Commands
         @self.admin_cog.admin.command()
         async def skip(ctx):
             """Skips the current audio"""
@@ -394,7 +401,6 @@ class AudioPlayer(Cog):
         voice_channel = target_member.voice.channel
 
         ## Get/Build a state for this audio, build the player, and add it to the state
-        await self.database_manager.store(interaction)
         state = self.get_server_state(target_member.guild)
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
@@ -419,7 +425,6 @@ class AudioPlayer(Cog):
 
     ## Commands
 
-    @app_commands.command(name="skip")
     async def skip_command(self, interaction: Interaction):
         '''Vote to skip what's currently playing'''
 
@@ -427,18 +432,15 @@ class AudioPlayer(Cog):
 
         ## Is the bot speaking?
         if(not state.is_playing):
-            await self.database_manager.store(interaction, False)
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
-            return False
-        else:
-            await self.database_manager.store(interaction)
 
         ## Add a skip vote and tally it up!
         voter = interaction.user
         if(voter == state.active_play_request.author):
             state.skip_audio()
+            await self.database_manager.store(interaction)
             await interaction.response.send_message(f"<@{voter.id}> skipped their own audio.")
-            return False
 
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -452,16 +454,16 @@ class AudioPlayer(Cog):
             vote_percentage = total_votes / len(active_members)
             if(vote_percentage >= self.skip_percentage):
                 state.skip_audio()
+                await self.database_manager.store(interaction)
                 await interaction.response.send_message("Skip vote passed!")
-                return True
 
             else:
                 ## The total votes needed for a successful skip
                 required_votes = math.ceil(len(active_members) * self.skip_percentage)
 
+                await self.database_manager.store(interaction)
                 await interaction.response.send_message(f"Skip vote added! Currently at {total_votes} of {required_votes} votes.")
-                return False
 
         else:
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"<@{voter.id}> has already voted!", ephemeral=True)
-            return False

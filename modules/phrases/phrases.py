@@ -1,15 +1,10 @@
-from dis import disco
-import json
-import os
-import re
 import logging
-import asyncio
 import random
 from pathlib import Path
-from typing import Literal, Union
 
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.command_management.command_reconstructor import CommandReconstructor
 from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
@@ -23,6 +18,7 @@ from modules.phrases.models.phrase import Phrase
 import discord
 from discord import Interaction
 from discord.app_commands import autocomplete, Choice, describe
+from discord.ext.commands import Context, Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -35,19 +31,21 @@ class Phrases(DiscoverableCog):
     RANDOM_COMMAND_NAME = "random"
     FIND_COMMAND_NAME = "find"
 
-    def __init__(self, hawking, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
         self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
         assert (self.speech_cog is not None)
-        self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
+        self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
+        self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
+        assert (self.command_reconstructor is not None)
 
         self.phrase_file_manager = PhraseFileManager()
 
@@ -64,7 +62,7 @@ class Phrases(DiscoverableCog):
 
         ## This decorator needs to reference the injected dependency, thus we're declaring the command here.
         @self.admin_cog.admin.command(no_pm=True)
-        async def reload_phrases(ctx):
+        async def reload_phrases(ctx: Context):
             """Reloads the bot's list of phrases"""
 
             await self.database_manager.store(ctx)
@@ -72,7 +70,7 @@ class Phrases(DiscoverableCog):
             count = self.reload_phrases()
 
             loaded_clips_string = "Loaded {} phrase{}.".format(count, "s" if count != 1 else "")
-            await ctx.send(loaded_clips_string)
+            await ctx.reply(loaded_clips_string)
 
             return (count >= 0)
 
@@ -91,8 +89,10 @@ class Phrases(DiscoverableCog):
         self.remove_phrases()
         self.remove_phrase_commands()
 
-        self.init_phrases()
+        loaded_phrases = self.init_phrases()
         self.add_phrase_commands()
+
+        return loaded_phrases
 
 
     def remove_phrases(self):
@@ -108,14 +108,14 @@ class Phrases(DiscoverableCog):
         ## Don't register phrase commands if no phrases have been loaded!
         if (self.phrases):
             ## Add the random command
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.RANDOM_COMMAND_NAME,
                 description=self.random_command.__doc__,
                 callback=self.random_command
             ))
 
             # Add the find command
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.FIND_COMMAND_NAME,
                 description=self.find_command.__doc__,
                 callback=self.find_command
@@ -131,7 +131,7 @@ class Phrases(DiscoverableCog):
             async def phrase_command_wrapper(interaction: Interaction, name: str, user: discord.Member = None):
                 await self.phrase_command(interaction, name, user)
 
-            self.bot.tree.add_command(discord.app_commands.Command(
+            self.add_command(discord.app_commands.Command(
                 name=Phrases.PHRASE_COMMAND_NAME,
                 description=self.phrase_command.__doc__,
                 callback=phrase_command_wrapper,
@@ -145,7 +145,7 @@ class Phrases(DiscoverableCog):
         self.bot.tree.remove_command(Phrases.FIND_COMMAND_NAME)
 
 
-    def init_phrases(self):
+    def init_phrases(self) -> int:
         """Initialize the phrases available to the bot"""
 
         phrase_group_file_paths = self.phrase_file_manager.discover_phrase_groups(self.phrases_folder_path)
@@ -173,6 +173,8 @@ class Phrases(DiscoverableCog):
 
 
     def build_phrase_command_string(self, phrase: Phrase, activation_str: str = None) -> str:
+        """Builds an example string to invoke the specified phrase"""
+
         return f"{activation_str or '/'}{Phrases.PHRASE_COMMAND_NAME} {phrase.name}"
 
     ## Commands
@@ -181,14 +183,17 @@ class Phrases(DiscoverableCog):
     async def random_command(self, interaction: Interaction, user: discord.Member = None):
         """Speaks a random phrase"""
 
-        await self.database_manager.store(interaction)
         phrase: Phrase = random.choice(list(self.phrases.values()))
 
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**")
+                await self.database_manager.store(interaction)
+                await interaction.followup.send(
+                    f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**"
+                )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
@@ -217,23 +222,24 @@ class Phrases(DiscoverableCog):
     async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member = None):
         """Speaks the specific phrase"""
 
-        await self.database_manager.store(interaction)
-
         ## Get the actual phrase from the phrase name provided by autocomplete
         phrase: Phrase = self.phrases.get(name)
-        command_string = self.build_phrase_command_string(phrase) if phrase else name
-
         if (phrase is None):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(
-                f"Sorry <@{interaction.user.id}>, **{command_string}** isn't a valid phrase.",
+                f"Sorry <@{interaction.user.id}>, **{name}** isn't a valid phrase.",
                 ephemeral=True
             )
+            return
 
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> used **{command_string}**")
+                await self.database_manager.store(interaction)
+                phrase_command_string = self.build_phrase_command_string(phrase)
+                await interaction.followup.send(f"<@{interaction.user.id}> used **{phrase_command_string}**")
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
@@ -264,9 +270,6 @@ class Phrases(DiscoverableCog):
             return word_frequency / len(message_split)
 
 
-        await self.database_manager.store(interaction)
-
-        raw_search = search
         ## Strip all non alphanumeric and non whitespace characters out of the message
         search = "".join(char for char in search.lower() if (char.isalnum() or char.isspace()))
 
@@ -277,12 +280,12 @@ class Phrases(DiscoverableCog):
 
             ## Score the phrase
             scores.append(
-                calc_substring_score(search, phrase.name) + \
+                calc_substring_score(search, phrase.name) +
                 StringSimilarity.similarity(search, phrase.name) / 2
             )
             if (phrase.description is not None):
                 scores.append(
-                    calc_substring_score(search, phrase.description) + \
+                    calc_substring_score(search, phrase.description) +
                     StringSimilarity.similarity(search, phrase.description) / 2
                 )
 
@@ -291,22 +294,29 @@ class Phrases(DiscoverableCog):
                 most_similar_phrase = (phrase, distance)
 
         if (most_similar_phrase[1] < self.find_command_minimum_similarity):
-            await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True)
+            await self.database_manager.store(interaction, valid=False)
+            await interaction.response.send_message(
+                f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True
+            )
             return
 
         ## With the phrase found, prepare to speak it!
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
+                command_string = self.command_reconstructor.reconstruct_command_string(interaction)
+                phrase_string = self.build_phrase_command_string(most_similar_phrase[0])
                 await interaction.followup.send(
-                    ## todo: this is really lazy
-                    f"<@{interaction.user.id}> searched with **/find {raw_search}**, and found **{self.build_phrase_command_string(phrase)}**"),
+                    f"<@{interaction.user.id}> searched with **{command_string}**, and found **{phrase_string}**"
+                )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
         action = lambda: self.speech_cog.say(
-            phrase.message,
+            most_similar_phrase[0].message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,
@@ -316,4 +326,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler", "DatabaseManager"])
+    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])

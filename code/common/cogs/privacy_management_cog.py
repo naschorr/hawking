@@ -1,4 +1,3 @@
-from calendar import day_name
 import os
 import stat
 import logging
@@ -6,7 +5,6 @@ import asyncio
 import dateutil
 import datetime
 import json
-import time
 from pathlib import Path
 
 from common import utilities
@@ -18,17 +16,17 @@ from common.ui.component_factory import ComponentFactory
 
 import discord
 from discord import app_commands, Interaction
-from discord.ext.commands import command, Context
+from discord.ext.commands import command, Context, Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class PrivacyManager(Cog):
+class PrivacyManagementCog(Cog):
 
-    def __init__(self, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
 
@@ -82,13 +80,13 @@ class PrivacyManager(Cog):
         ## Perform or prepare the deletion process
         seconds_until_process_delete_request = self.get_seconds_until_process_delete_request_queue_is_due()
         if (seconds_until_process_delete_request <= 0):
-            asyncio.run(self.process_delete_request_queue())
+            asyncio.create_task(self.process_delete_request_queue())
         else:
-            asyncio.run(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
+            asyncio.create_task(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
-            self.bot.tree.add_command(app_commands.Command(
+            self.add_command(app_commands.Command(
                 name="privacy_policy",
                 description=self.privacy_policy_command.__doc__,
                 callback=self.privacy_policy_command
@@ -239,14 +237,14 @@ class PrivacyManager(Cog):
     async def delete_my_data_command(self, ctx: Context):
         """Initiates a request to delete all of your user data from the bot's logs."""
 
-        await self.database_manager.store(ctx)
-
         user = ctx.author
         if (user.id in self.queued_user_ids):
+            await self.database_manager.store(ctx, valid=False)
             await user.send(f"Hey <@{user.id}>, it looks like you've already requested that your data be deleted. That'll automagically happen next {self._delete_request_scheduled_weekday_name}, so sit tight and it'll happen before you know it!")
             return
 
         await self.store_user_id_for_batch_delete(user.id)
+        await self.database_manager.store(ctx)
 
         ## Keep things tidy
         try:

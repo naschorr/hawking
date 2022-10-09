@@ -7,14 +7,17 @@ from pathlib import Path
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.configuration import Configuration
+from common.database.database_manager import DatabaseManager
 from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
+from common.ui.component_factory import ComponentFactory
 from question import Question
 
 import discord
 from discord import app_commands, Interaction
+from discord.ext.commands import Bot
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
@@ -34,16 +37,19 @@ class StupidQuestions(DiscoverableCog):
         "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:"
     ]
 
-    def __init__(self, hawking, bot, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
 
-        self.hawking = hawking
         self.bot = bot
 
         self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
+        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
+        assert(self.component_factory is not None)
 
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
@@ -71,9 +77,14 @@ class StupidQuestions(DiscoverableCog):
         except Exception as e:
             raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
-        asyncio.run(self.load_questions())
+        ## Load the questions for polling, async
+        asyncio.create_task(self.load_questions())
 
-        self.successful = True
+        self.add_command(app_commands.Command(
+            name="stupid_question",
+            description=self.stupid_question_command.__doc__,
+            callback=self.stupid_question_command
+        ))
 
 
     async def load_questions(self) -> None:
@@ -110,14 +121,15 @@ class StupidQuestions(DiscoverableCog):
 
         return None
 
+    ## Commands
 
-    @app_commands.command(name="stupid_question")
     async def stupid_question_command(self, interaction: Interaction):
         """Ask a stupid question, via Reddit."""
 
         question = self.get_question()
 
         if (question is None):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
             return
 
@@ -125,12 +137,19 @@ class StupidQuestions(DiscoverableCog):
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
                 thought_provoking_string = random.choice(self.THOUGHT_PROVOKING_STRINGS)
+                embed = self.component_factory.create_basic_embed(
+                    description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})",
+                    url=question.url
+                )
+
+                await self.database_manager.store(interaction)
                 await interaction.followup.send(
                     f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
-                    embed=discord.Embed(description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})"),
+                    embed=embed,
                     ephemeral=False
                 )
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 
@@ -139,4 +158,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"])

@@ -61,8 +61,10 @@ class Fortune(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
+                await self.database_manager.store(interaction)
                 await interaction.followup.send(f"{fortune}.")
             else:
+                await self.database_manager.store(interaction, valid=False)
                 await interaction.followup.send(invoked_command.human_readable_error_message)
 
 

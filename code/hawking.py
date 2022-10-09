@@ -8,18 +8,15 @@ if (_root_path not in sys.path):
 
 ## Importing as usual now
 import logging
+import asyncio
 
 import discord
 from discord.ext import commands
 
-from core import speech
-from core import message_parser
-from core.commands import admin
-from core.commands import help_cog
-from core.commands import invite_command
-from core.commands import speech_config_help_command
+from core import speech, message_parser
+from core.cogs import admin_cog, help_cog, speech_config_help_cog
 from common import audio_player
-from common import privacy_manager
+from common.cogs import privacy_management_cog, invite_cog
 from common.configuration import Configuration
 from common.logging import Logging
 from common.command_management import invoked_command_handler, command_reconstructor
@@ -82,34 +79,34 @@ class Hawking:
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
-            admin.Admin,
+            admin_cog.AdminCog,
             self,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
-            privacy_manager.PrivacyManager,
+            privacy_management_cog.PrivacyManagementCog,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
-            speech_config_help_command.SpeechConfigHelpCommand,
+            speech_config_help_cog.SpeechConfigHelpCog,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
-            invite_command.InviteCommand,
+            invite_cog.InviteCog,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             invoked_command_handler.InvokedCommandHandler,
-            dependencies=[message_parser.MessageParser]
+            dependencies=[message_parser.MessageParser, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
             self.bot,
-            dependencies=[admin.Admin, database_manager.DatabaseManager]
+            dependencies=[admin_cog.AdminCog, database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             speech.Speech,
@@ -126,7 +123,7 @@ class Hawking:
         self.module_manager.discover_modules()
 
         ## Load all of the previously registered modules!
-        self.module_manager.load_registered_modules()
+        asyncio.run(self.module_manager.load_registered_modules())
 
         ## Disable the default help command
         self.bot.help_command = None
@@ -148,7 +145,7 @@ class Hawking:
         async def on_command_error(ctx, exception):
             ## Something weird happened, log it!
             LOGGER.exception("Unhandled exception in during command execution", exception)
-            await self.database_manager.store(ctx, False)
+            await self.database_manager.store(ctx, valid=False)
 
     ## Properties
 
