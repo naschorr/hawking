@@ -12,6 +12,7 @@ from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
+from common.ui.component_factory import ComponentFactory
 from question import Question
 
 import discord
@@ -47,6 +48,8 @@ class StupidQuestions(DiscoverableCog):
         assert(self.invoked_command_handler is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
+        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
+        assert(self.component_factory is not None)
 
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
@@ -133,11 +136,16 @@ class StupidQuestions(DiscoverableCog):
 
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
-                await self.database_manager.store(interaction)
                 thought_provoking_string = random.choice(self.THOUGHT_PROVOKING_STRINGS)
+                embed = self.component_factory.create_basic_embed(
+                    description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})",
+                    url=question.url
+                )
+
+                await self.database_manager.store(interaction)
                 await interaction.followup.send(
                     f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
-                    embed=discord.Embed(description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})"),
+                    embed=embed,
                     ephemeral=False
                 )
             else:
@@ -150,4 +158,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler", "DatabaseManager"])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"])
