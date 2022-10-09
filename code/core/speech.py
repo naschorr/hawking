@@ -214,6 +214,7 @@ class TTSController:
 
 
 class Speech(Cog):
+    SAY_COMMAND_NAME = "say"
 
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -232,7 +233,7 @@ class Speech(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name="say",
+            name=Speech.SAY_COMMAND_NAME,
             description=self.say_command.__doc__,
             callback=self.say_command
         ))
