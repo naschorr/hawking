@@ -17,7 +17,7 @@ CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class SpeechConfigHelpCommand(Cog):
+class SpeechConfigHelpCog(Cog):
 
     HAWKING_SPEECH_CONFIG_URL = "https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md"
 
