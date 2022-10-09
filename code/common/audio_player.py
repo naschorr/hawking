@@ -299,7 +299,7 @@ class AudioPlayer(Cog):
         super().__init__(bot, *args, **kwargs)
 
         self.bot = bot
-        self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
+        self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)

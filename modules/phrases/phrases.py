@@ -1,9 +1,4 @@
-from dis import disco
-import json
-import os
-import re
 import logging
-import asyncio
 import random
 from pathlib import Path
 
@@ -43,7 +38,7 @@ class Phrases(DiscoverableCog):
 
         self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
         assert (self.speech_cog is not None)
-        self.admin_cog = kwargs.get('dependencies', {}).get('Admin')
+        self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
@@ -331,4 +326,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["Admin", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])
+    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])

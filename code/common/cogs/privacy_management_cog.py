@@ -23,7 +23,7 @@ CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class PrivacyManager(Cog):
+class PrivacyManagementCog(Cog):
 
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)

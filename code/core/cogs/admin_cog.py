@@ -1,4 +1,3 @@
-import inspect
 import logging
 
 from hawking import Hawking
@@ -16,7 +15,7 @@ CONFIG_OPTIONS = Configuration.load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
-class Admin(Cog):
+class AdminCog(Cog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
