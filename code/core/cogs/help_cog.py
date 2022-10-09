@@ -183,8 +183,8 @@ class HelpCog(Cog):
         ## the top for easy viewing
         command_help = [
             ## Use class and method references to avoid any magic strings
-            build_command_help_line(self.cog_command_tree[Speech.__name__][Speech.say_command.name]),
-            build_command_help_line(self.cog_command_tree[AudioPlayer.__name__][AudioPlayer.skip_command.name]),
+            build_command_help_line(self.cog_command_tree[Speech.__name__][Speech.SAY_COMMAND_NAME]),
+            build_command_help_line(self.cog_command_tree[AudioPlayer.__name__][AudioPlayer.SKIP_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[Phrases.__name__][Phrases.PHRASE_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[Phrases.__name__][Phrases.FIND_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[Phrases.__name__][Phrases.RANDOM_COMMAND_NAME])
