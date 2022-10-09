@@ -75,7 +75,7 @@ class StupidQuestions(DiscoverableCog):
             raise ModuleLoadException("Unable to create reddit/subreddit instance", e)
 
         ## Load the questions for polling, async
-        asyncio.run(self.load_questions())
+        asyncio.create_task(self.load_questions())
 
         self.add_command(app_commands.Command(
             name="stupid_question",
