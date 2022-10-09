@@ -7,6 +7,7 @@ from pathlib import Path
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.configuration import Configuration
+from common.database.database_manager import DatabaseManager
 from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
@@ -44,6 +45,8 @@ class StupidQuestions(DiscoverableCog):
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
@@ -123,6 +126,7 @@ class StupidQuestions(DiscoverableCog):
         question = self.get_question()
 
         if (question is None):
+            await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
             return
 
@@ -146,4 +150,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler", "DatabaseManager"])
