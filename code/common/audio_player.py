@@ -289,6 +289,8 @@ class ServerStateManager:
 
 
 class AudioPlayer(Cog):
+    SKIP_COMMAND_NAME = "skip"
+
     ## Keys
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
@@ -314,7 +316,7 @@ class AudioPlayer(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name="skip",
+            name=AudioPlayer.SKIP_COMMAND_NAME,
             description=self.skip_command.__doc__,
             callback=self.skip_command
         ))
