@@ -341,4 +341,4 @@ class Speech(Cog):
         mention = self.invoked_command_handler.get_first_mention(interaction)
         invoked_command = lambda: self.say(text, interaction.user, user or mention or None, False, interaction)
 
-        await self.invoked_command_handler.handle_deferred_command(interaction, invoked_command, ephemeral=False)
+        await self.invoked_command_handler.invoke_command(interaction, invoked_command, ephemeral=False)
