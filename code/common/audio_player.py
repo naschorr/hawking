@@ -133,18 +133,31 @@ class ServerStateManager:
         await self.audio_play_queue.put(play_request)
 
 
-    async def get_voice_client(self, channel: discord.VoiceChannel) -> VoiceClient:
-        '''Handles voice client management by connecting, and moving between voice channels'''
-
+    def can_bot_connect_to_channel(self, channel: discord.VoiceChannel) -> bool:
         me = self.guild.get_member(self.bot.user.id)
         permissions: discord.Permissions = channel.permissions_for(me)
 
-        if (not permissions.connect or not permissions.speak):
+        return permissions.connect
+
+
+    def can_bot_speak_in_channel(self, channel: discord.VoiceChannel) -> bool:
+        me = self.guild.get_member(self.bot.user.id)
+        permissions: discord.Permissions = channel.permissions_for(me)
+
+        return permissions.speak
+
+
+    async def get_voice_client(self, channel: discord.VoiceChannel) -> VoiceClient:
+        '''Handles voice client management by connecting, and moving between voice channels'''
+
+        can_connect = self.can_bot_connect_to_channel(channel)
+        can_speak = self.can_bot_speak_in_channel(channel)
+        if (not can_connect or not can_speak):
             raise UnableToConnectToVoiceChannelException(
                 "Unable to speak and/or connect to the channel",
                 channel,
-                can_speak=permissions.speak,
-                can_connect=permissions.connect
+                can_connect=can_connect,
+                can_speak=can_speak
             )
 
         if (self.voice_client is not None):
@@ -402,11 +415,29 @@ class AudioPlayer(Cog):
             raise NoVoiceChannelAvailableException(error_text, target_member)
         voice_channel = target_member.voice.channel
 
-        ## Get/Build a state for this audio, build the player, and add it to the state
+        ## Get/build the server state
         state = self.get_server_state(target_member.guild)
+
+        ## Initial permissions check. This is unlikely to be necessary, but if a server's audio_play_queue gets big
+        ## enough and the admin is tweaking permissions, then there's a chance that the permissions now and the
+        ## permissions upon playing won't align.
+        can_connect = state.can_bot_connect_to_channel(voice_channel)
+        can_speak = state.can_bot_speak_in_channel(voice_channel)
+        if (not can_connect or not can_speak):
+            LOGGER.error(
+                f"Unable to connect to voice channel {voice_channel.name} in server {target_member.guild.name}, "
+                f"invalid permissions. Can connect: {can_connect}, can speak: {can_speak}"
+            )
+            raise UnableToConnectToVoiceChannelException(
+                "Unable to speak and/or connect to the channel",
+                voice_channel,
+                can_connect=can_connect,
+                can_speak=can_speak
+            )
+
+        ## Build the player, and add it to the state
         player = self.build_player(file_path)
         await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
-
 
 
     async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: Path, callback: Callable = None):

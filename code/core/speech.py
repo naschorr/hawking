@@ -16,7 +16,7 @@ from common.audio_player import AudioPlayer
 from common.configuration import Configuration
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.exceptions import NoVoiceChannelAvailableException
+from common.exceptions import NoVoiceChannelAvailableException, UnableToConnectToVoiceChannelException
 from common.logging import Logging
 from common.module.module import Cog
 
@@ -293,7 +293,7 @@ class Speech(Cog):
 
         except BuildingAudioFileTimedOutExeption as e:
             LOGGER.exception(f"Timed out building audio for message: '{text}'")
-            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, it took too long to generate speech for that.")
+            return InvokedCommand(False, e, f"Sorry <@{author.id}>, it took too long to generate speech for that.")
 
         except MessageTooLongException as e:
             LOGGER.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.tts_controller.char_limit})")
@@ -302,21 +302,32 @@ class Speech(Cog):
 
         except UnableToBuildAudioFileException as e:
             LOGGER.exception(f"Unable to build .wav file for message: '{text}'")
-            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I can't say that right now.")
+            return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         try:
             await self.audio_player_cog.play_audio(wav_path, author, target_member or author, interaction, audio_player_callback)
 
-        except FileNotFoundError as e:
-            LOGGER.exception("FileNotFound when invoking `play_audio`", e)
-            return InvokedCommand(False, e, f"Sorry, <@{author.id}>, I can't say that right now.")
-
         except NoVoiceChannelAvailableException as e:
-            LOGGER.exception("No voice channel available", e)
+            LOGGER.error("No voice channel available", e)
             if (e.target_member.id == author.id):
-                return InvokedCommand(False, e, f"Sorry, <@{author.id}>, you're not in a voice channel.")
+                return InvokedCommand(False, e, f"Sorry <@{author.id}>, you're not in a voice channel.")
             else:
-                return InvokedCommand(False, e, f"Sorry, <@{author.id}>, that person isn't in a voice channel.")
+                return InvokedCommand(False, e, f"Sorry <@{author.id}>, that person isn't in a voice channel.")
+
+        except UnableToConnectToVoiceChannelException as e:
+            ## Logging handled in AudioPlayer
+
+            error_values = []
+            if (not e.can_connect):
+                error_values.append("connect to")
+            if (not e.can_speak):
+                error_values.append("speak in")
+
+            return InvokedCommand(False, e, f"Sorry <@{author.id}>, I'm not able to {' or '.join(error_values)} that channel. Check the permissions and try again later.")
+
+        except FileNotFoundError as e:
+            LOGGER.error("FileNotFound when invoking `play_audio`", e)
+            return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         return InvokedCommand(True)
 
