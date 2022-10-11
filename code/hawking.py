@@ -101,7 +101,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             invoked_command_handler.InvokedCommandHandler,
-            dependencies=[message_parser.MessageParser, database_manager.DatabaseManager]
+            dependencies=[message_parser.MessageParser, database_manager.DatabaseManager, command_reconstructor.CommandReconstructor]
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
