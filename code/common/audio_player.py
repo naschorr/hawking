@@ -245,8 +245,9 @@ class ServerStateManager:
                 except futures.TimeoutError:
                     LOGGER.error("Timed out trying to connect to the voice channel")
                     if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
-                        await self.active_play_request.interaction.followup.send(
-                            f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now."
+                        await self.active_play_request.interaction.response.send_message(
+                            f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now.",
+                            ephemeral=True
                         )
                     continue
 
@@ -260,8 +261,9 @@ class ServerStateManager:
                         required_permission_phrases.append("speak in that channel")
 
                     if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
-                        await self.active_play_request.interaction.followup.send(
-                            f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}"
+                        await self.active_play_request.interaction.response.send_message(
+                            f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}",
+                            ephemeral=True
                         )
                     continue
 

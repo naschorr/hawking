@@ -62,14 +62,14 @@ class Fortune(DiscoverableCog):
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
                 await self.database_manager.store(interaction)
-                await interaction.followup.send(f"{fortune}.")
+                await interaction.response.send_message(f"{fortune}.")
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(fortune, author=interaction.user, ignore_char_limit=True, interaction=interaction)
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:

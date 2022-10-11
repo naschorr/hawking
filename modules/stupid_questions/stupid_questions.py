@@ -54,6 +54,7 @@ class StupidQuestions(DiscoverableCog):
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
         if (not reddit_dependency):
+            LOGGER.info(f"No Reddit dependency provided, unable to load {self.__class__.__name__}.")
             self.successful = False
             return
         self.reddit = reddit_dependency.reddit
@@ -143,18 +144,17 @@ class StupidQuestions(DiscoverableCog):
                 )
 
                 await self.database_manager.store(interaction)
-                await interaction.followup.send(
+                await interaction.response.send_message(
                     f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
-                    embed=embed,
-                    ephemeral=False
+                    embed=embed
                 )
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(question.text, author=interaction.user, ignore_char_limit=True, interaction=interaction)
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:
