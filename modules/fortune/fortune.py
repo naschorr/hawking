@@ -4,6 +4,7 @@ from random import choice
 from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
@@ -51,6 +52,8 @@ class Fortune(DiscoverableCog):
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
 
     @discord.app_commands.command(name="fortune")
@@ -74,4 +77,4 @@ class Fortune(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Fortune, dependencies=["SpeechCog", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(Fortune, dependencies=["SpeechCog", "InvokedCommandHandler", "DatabaseManager"])
