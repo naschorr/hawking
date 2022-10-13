@@ -36,7 +36,7 @@ class Phrases(DiscoverableCog):
 
         self.bot = bot
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        self.speech_cog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
@@ -326,4 +326,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])
+    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])

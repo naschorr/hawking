@@ -42,7 +42,7 @@ class StupidQuestions(DiscoverableCog):
 
         self.bot = bot
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        self.speech_cog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
@@ -158,4 +158,4 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "Speech", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"])
+    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"])

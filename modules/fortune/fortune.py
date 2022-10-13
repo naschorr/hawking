@@ -46,7 +46,7 @@ class Fortune(DiscoverableCog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        self.speech_cog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
@@ -73,4 +73,4 @@ class Fortune(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Fortune, dependencies=["Speech", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(Fortune, dependencies=["SpeechCog", "InvokedCommandHandler"])

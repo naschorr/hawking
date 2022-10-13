@@ -4,7 +4,7 @@ import os
 import random
 from functools import reduce
 
-from core.speech import Speech
+from core.cogs.speech_cog import SpeechCog
 from common.audio_player import AudioPlayer
 from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
@@ -183,7 +183,7 @@ class HelpCog(Cog):
         ## the top for easy viewing
         command_help = [
             ## Use class and method references to avoid any magic strings
-            build_command_help_line(self.cog_command_tree[Speech.__name__][Speech.SAY_COMMAND_NAME]),
+            build_command_help_line(self.cog_command_tree[SpeechCog.__name__][SpeechCog.SAY_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[AudioPlayer.__name__][AudioPlayer.SKIP_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[Phrases.__name__][Phrases.PHRASE_COMMAND_NAME]),
             build_command_help_line(self.cog_command_tree[Phrases.__name__][Phrases.FIND_COMMAND_NAME]),
