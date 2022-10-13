@@ -7,14 +7,16 @@ if (_root_path not in sys.path):
     sys.path.append(_root_path)
 
 ## Importing as usual now
+import os
 import logging
 import asyncio
 
 import discord
 from discord.ext import commands
 
-from core import speech, message_parser
-from core.cogs import admin_cog, help_cog, speech_config_help_cog
+from core import message_parser
+from core.cogs import admin_cog, help_cog, speech_cog, speech_config_help_cog
+from core.tts import tts_controller
 from common import audio_player
 from common.cogs import privacy_management_cog, invite_cog
 from common.configuration import Configuration
@@ -39,10 +41,6 @@ class Hawking:
         self.token = CONFIG_OPTIONS.get("discord_token")
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
-
-        ## Set the current working directory to that of the tts executable ASAP, so there's not weird issues arising
-        ## from bot init and speech execution potentially being in different working directories.
-        speech.TTSController.set_current_working_dir_to_tts_executable()
 
         self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
         self.version = CONFIG_OPTIONS.get("version")
@@ -108,10 +106,16 @@ class Hawking:
             self.bot,
             dependencies=[admin_cog.AdminCog, database_manager.DatabaseManager]
         )
+        self.module_manager.register_module(tts_controller.TTSController)
         self.module_manager.register_module(
-            speech.Speech,
+            speech_cog.SpeechCog,
             self.bot,
-            dependencies=[invoked_command_handler.InvokedCommandHandler, message_parser.MessageParser, audio_player.AudioPlayer]
+            dependencies=[
+                invoked_command_handler.InvokedCommandHandler,
+                message_parser.MessageParser,
+                audio_player.AudioPlayer,
+                tts_controller.TTSController
+            ]
         )
         self.module_manager.register_module(
             help_cog.HelpCog,
@@ -127,6 +131,12 @@ class Hawking:
 
         ## Disable the default help command
         self.bot.help_command = None
+
+        ## Set the current working directory to that of the TTS executable, otherwise the TTS interface won't
+        ## necessarily work as expected.
+        self.tts_controller: tts_controller.TTSController = self.module_manager.get_module(tts_controller.TTSController.__name__)
+        tts_executable = self.tts_controller.get_tts_executable_path()
+        os.chdir(tts_executable.parent)
 
         ## Get a reference to the database manager for on_command_error storage
         self.database_manager: database_manager.DatabaseManager = self.module_manager.get_module(database_manager.DatabaseManager.__name__)
