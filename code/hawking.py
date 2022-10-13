@@ -14,10 +14,9 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from core import message_parser
 from core.cogs import admin_cog, help_cog, speech_cog, speech_config_help_cog
 from core.tts import tts_controller
-from common import audio_player
+from common import audio_player, message_parser
 from common.cogs import privacy_management_cog, invite_cog
 from common.configuration import Configuration
 from common.logging import Logging

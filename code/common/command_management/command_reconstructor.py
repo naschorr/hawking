@@ -5,8 +5,8 @@ from discord.ext.commands import Context
 
 from common.configuration import Configuration
 from common.logging import Logging
+from common.message_parser import MessageParser
 from common.module.module import Module
-from core.message_parser import MessageParser
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()

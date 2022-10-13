@@ -3,7 +3,6 @@ import random
 from pathlib import Path
 from typing import Callable
 
-from core.message_parser import MessageParser
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from core.tts.tts_controller import TTSController
 from common.audio_player import AudioPlayer
@@ -13,6 +12,7 @@ from common.command_management.invoked_command_handler import InvokedCommandHand
 from common.exceptions import NoVoiceChannelAvailableException, UnableToConnectToVoiceChannelException
 from common.logging import Logging
 from common.module.module import Cog
+from common.message_parser import MessageParser
 
 from discord import app_commands, Interaction, Member
 from discord.app_commands import describe
