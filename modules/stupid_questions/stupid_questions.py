@@ -4,6 +4,7 @@ import time
 import asyncio
 from pathlib import Path
 
+from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.configuration import Configuration
@@ -42,7 +43,7 @@ class StupidQuestions(DiscoverableCog):
 
         self.bot = bot
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('SpeechCog')
+        self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
