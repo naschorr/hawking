@@ -20,6 +20,7 @@ from common.module.module import Cog
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import Context
 from discord import app_commands, Interaction, Guild, Member, VoiceClient, VoiceChannel, FFmpegPCMAudio
 
 ## Config & logging
@@ -338,21 +339,22 @@ class AudioPlayer(Cog):
 
         ## Admin Commands
         @self.admin_cog.admin.command()
-        async def skip(ctx):
+        async def skip(ctx: Context):
             """Skips the current audio"""
 
             await self.database_manager.store(ctx)
 
-            await self.skip(ctx, force = True)
+            state = self.get_server_state(ctx.guild)
+            await state.skip_audio()
 
 
         @self.admin_cog.admin.command()
-        async def disconnect(ctx):
+        async def disconnect(ctx: Context):
             """Disconnect from the current voice channel"""
 
             await self.database_manager.store(ctx)
 
-            state = self.get_server_state(ctx)
+            state = self.get_server_state(ctx.guild)
             await state.disconnect()
 
     ## Properties
