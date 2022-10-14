@@ -2,6 +2,7 @@ import logging
 import random
 from pathlib import Path
 
+from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.command_management.command_reconstructor import CommandReconstructor
@@ -36,7 +37,7 @@ class Phrases(DiscoverableCog):
 
         self.bot = bot
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
@@ -189,12 +190,12 @@ class Phrases(DiscoverableCog):
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
                 await self.database_manager.store(interaction)
-                await interaction.followup.send(
+                await interaction.response.send_message(
                     f"<@{interaction.user.id}> randomly chose **{self.build_phrase_command_string(phrase)}**"
                 )
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(
@@ -204,7 +205,7 @@ class Phrases(DiscoverableCog):
             ignore_char_limit=True,
             interaction=interaction
         )
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
     async def _phrase_name_command_autocomplete(self, interaction: Interaction, current: str) -> list[Choice]:
@@ -237,10 +238,10 @@ class Phrases(DiscoverableCog):
             if (invoked_command.successful):
                 await self.database_manager.store(interaction)
                 phrase_command_string = self.build_phrase_command_string(phrase)
-                await interaction.followup.send(f"<@{interaction.user.id}> used **{phrase_command_string}**")
+                await interaction.response.send_message(f"<@{interaction.user.id}> used **{phrase_command_string}**")
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(
@@ -250,7 +251,7 @@ class Phrases(DiscoverableCog):
             ignore_char_limit=True,
             interaction=interaction
         )
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
     @describe(search="The text to search the phrases for")
@@ -307,12 +308,12 @@ class Phrases(DiscoverableCog):
                 await self.database_manager.store(interaction)
                 command_string = self.command_reconstructor.reconstruct_command_string(interaction)
                 phrase_string = self.build_phrase_command_string(most_similar_phrase[0])
-                await interaction.followup.send(
+                await interaction.response.send_message(
                     f"<@{interaction.user.id}> searched with **{command_string}**, and found **{phrase_string}**"
                 )
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(
@@ -322,8 +323,8 @@ class Phrases(DiscoverableCog):
             ignore_char_limit=True,
             interaction=interaction
         )
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "Speech", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])
+    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])

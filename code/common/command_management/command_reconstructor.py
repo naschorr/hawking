@@ -5,8 +5,8 @@ from discord.ext.commands import Context
 
 from common.configuration import Configuration
 from common.logging import Logging
+from common.message_parser import MessageParser
 from common.module.module import Module
-from core.message_parser import MessageParser
 
 ## Config & logging
 CONFIG_OPTIONS = Configuration.load_config()
@@ -27,7 +27,7 @@ class CommandReconstructor(Module):
         return f"{context.clean_prefix}{context.command.qualified_name}"
 
 
-    def _reconstruct_command_from_interaction(self, interaction: Interaction, add_parameter_keys = False, anonymize_mentions = False) -> str:
+    def _reconstruct_command_from_interaction(self, interaction: Interaction, add_parameter_keys = False, anonymize_mentions = False, replace_mentions = True) -> str:
         ## All interactions refer to slash commands, right?
         prefix = "/"
         name = interaction.command.qualified_name
@@ -51,21 +51,24 @@ class CommandReconstructor(Module):
 
         command_string = f"{prefix}{name}{(' ' if parameters else '') + (' '.join(parameters))}"
 
-        return self.message_parser.replace_mentions(
-            command_string,
-            interaction.data,
-            hide_mention_formatting=False,
-            hide_meta_mentions=False,
-            anonymize_mentions=anonymize_mentions
-        )
+        if (replace_mentions):
+            return self.message_parser.replace_mentions(
+                command_string,
+                interaction.data,
+                hide_mention_formatting=False,
+                hide_meta_mentions=False,
+                anonymize_mentions=anonymize_mentions
+            )
+        else:
+            return command_string
 
 
-    def reconstruct_command_string(self, data: Context | Interaction, add_parameter_keys = False, anonymize_mentions = False) -> str:
+    def reconstruct_command_string(self, data: Context | Interaction, add_parameter_keys = False, anonymize_mentions = False, replace_mentions = True) -> str:
         """Builds an approximation of the string entered by the user to invoke the provided command"""
 
         if (isinstance(data, Context)):
             return self._reconstruct_command_from_context(data)
         elif (isinstance(data, Interaction)):
-            return self._reconstruct_command_from_interaction(data, add_parameter_keys, anonymize_mentions)
+            return self._reconstruct_command_from_interaction(data, add_parameter_keys, anonymize_mentions, replace_mentions)
         else:
             raise RuntimeError("Unable to reconstruct command string, data isn't of type Context or Interaction")

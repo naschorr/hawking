@@ -1,6 +1,6 @@
 {
     "name"                                  : "hawking",
-    "version"                               : "2.2.1",
+    "version"                               : "2.3.0",
     "description"                           : "The retro TTS bot for Discord, inspired by Moonbase Alpha!",
     "channel_timeout_seconds"               : 300,
     "channel_timeout_phrases"               : ["Bye", "Well, I'm done here", "Take it easy", "See ya later", "[:nh] I'll be [baa<250>k<100>]", "ight i'm a head out"],

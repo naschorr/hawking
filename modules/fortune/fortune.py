@@ -1,8 +1,10 @@
 import logging
 from random import choice
 
+from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
@@ -46,10 +48,12 @@ class Fortune(DiscoverableCog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.speech_cog = kwargs.get('dependencies', {}).get('Speech')
+        self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
         self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
         assert(self.invoked_command_handler is not None)
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
 
 
     @discord.app_commands.command(name="fortune")
@@ -62,15 +66,15 @@ class Fortune(DiscoverableCog):
         async def callback(invoked_command: InvokedCommand):
             if (invoked_command.successful):
                 await self.database_manager.store(interaction)
-                await interaction.followup.send(f"{fortune}.")
+                await interaction.response.send_message(f"{fortune}.")
             else:
                 await self.database_manager.store(interaction, valid=False)
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
         action = lambda: self.speech_cog.say(fortune, author=interaction.user, ignore_char_limit=True, interaction=interaction)
-        await self.invoked_command_handler.handle_deferred_command(interaction, action, ephemeral=False, callback=callback)
+        await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Fortune, dependencies=["Speech", "InvokedCommandHandler"])
+    return ModuleInitializationContainer(Fortune, dependencies=["SpeechCog", "InvokedCommandHandler", "DatabaseManager"])

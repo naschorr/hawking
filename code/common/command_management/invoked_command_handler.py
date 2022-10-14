@@ -2,10 +2,12 @@ import asyncio
 import logging
 from typing import Callable
 
-from core.message_parser import MessageParser
 from common.configuration import Configuration
+from common.command_management.command_reconstructor import CommandReconstructor
 from common.command_management.invoked_command import InvokedCommand
+from common.database.database_manager import DatabaseManager
 from common.logging import Logging
+from common.message_parser import MessageParser
 from common.module.module import Module
 
 from discord import Interaction, Member
@@ -23,6 +25,8 @@ class InvokedCommandHandler(Module):
         assert(self.message_parser is not None)
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
+        self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
+        assert (self.command_reconstructor is not None)
 
     ## Methods
 
@@ -44,21 +48,7 @@ class InvokedCommandHandler(Module):
         return mention
 
 
-    def get_command_string_from_interaction(self, interaction: Interaction) -> str:
-        command_name = interaction.command.name ## todo: Is this the name invoked by the user, or the actual name of the method?
-
-        options = " ".join([option.get("value") for option in interaction.data.get("options", [{}]) if option.get("value") is not None])  ## todo: any other flavors of argument?
-        if (options != ""):
-            options = f" {options}" ## Prepend a spacer if necessary so everything has some room to breathe (see return below)
-
-        ## These should always be slash commands, so the explicit '/' character is fine
-        command_string = f"/{command_name}{options}"
-
-        ## Make sure the command string has it's mentions replaced for maximum human readability
-        return self.message_parser.parse_message(command_string, interaction.data)
-
-
-    async def handle_deferred_command(
+    async def invoke_command(
             self,
             interaction: Interaction,
             action: Callable[..., InvokedCommand],
@@ -67,9 +57,7 @@ class InvokedCommandHandler(Module):
     ):
         '''Handles user feedback when running a deferred command'''
 
-        ## Acknowledge the command, and start the thinking state
-        command_string = self.get_command_string_from_interaction(interaction)  ## todo: CommandReconstructor
-        await interaction.response.defer(ephemeral=ephemeral, thinking=True)
+        command_string = self.command_reconstructor.reconstruct_command_string(interaction, replace_mentions=False)
 
         ## Act upon the command, giving human readable feedback if any errors pop up
         try:
@@ -88,9 +76,12 @@ class InvokedCommandHandler(Module):
 
             ## Otherwise provide some basic feedback, and (implicitly) clear the thinking state
             if (invoked_command.successful):
-                await interaction.followup.send(f"<@{interaction.user.id}> used **{command_string}**")
+                await interaction.response.send_message(
+                    f"<@{interaction.user.id}> used **{command_string}**",
+                    ephemeral=ephemeral
+                )
             elif (invoked_command.human_readable_error_message is not None):
-                await interaction.followup.send(invoked_command.human_readable_error_message)
+                await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
             elif (invoked_command.error is not None):
                 raise invoked_command.error
             else:
@@ -98,7 +89,7 @@ class InvokedCommandHandler(Module):
 
         except Exception as e:
             LOGGER.error("Unspecified error during command handling", e)
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 f"I'm sorry <@{interaction.user.id}>, I'm afraid I can't do that.\n" +
                 f"Something went wrong, and I couldn't complete the **{command_string}** command.",
                 ephemeral=True
