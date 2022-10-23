@@ -66,7 +66,7 @@ The configuration file is just a normal JSON file, with a root JSON object conta
 }
 ```
 
-Module specific configuration files can be loaded via the `load_module_config` function in [utilities.py](https://github.com/naschorr/hawking/blob/master/code/common/utilities.py), which just takes a path to a directory containing the `config.json` file. It returns a `dict` corresponding to the key-value pairs inside the module configuration file, and the global Hawking `config.json` file (with the module's configuration file taking precendence, so be careful!). It can be invoked like so:
+Module specific configuration files can be loaded via the `load_config` function in [configuration.py](https://github.com/naschorr/hawking/blob/master/code/common/configuration.py), which just takes a path to a directory containing the `config.json` file. It returns a `dict` corresponding to the key-value pairs inside the module configuration file, and the global Hawking `config.json` file (with the module's configuration file taking precendence, so be careful!). It can be invoked like so:
 
 ```
 from common import utilities
