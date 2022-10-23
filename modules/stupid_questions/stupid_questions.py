@@ -113,26 +113,19 @@ class StupidQuestions(DiscoverableCog):
 
         LOGGER.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
 
-
-    def get_question(self) -> str:
-        if (time.time() > self.last_question_refresh_time + self.refresh_time_seconds):
-            self.bot.loop.create_task(self.load_questions())
-
-        if (len(self.questions) > 0):
-            return random.choice(self.questions)
-
-        return None
-
     ## Commands
 
     async def stupid_question_command(self, interaction: Interaction):
         """Ask a stupid question, via Reddit."""
 
-        question = self.get_question()
-
-        if (question is None):
+        if (len(self.questions) > 0):
+            question = random.choice(self.questions)
+        else:
             await self.database_manager.store(interaction, valid=False)
-            await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
+            if (self.is_mid_question_refresh):
+                await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm currently loading new questions from Reddit. Try again later.", ephemeral=True)
+            else:
+                await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
             return
 
 
@@ -152,6 +145,20 @@ class StupidQuestions(DiscoverableCog):
             else:
                 await self.database_manager.store(interaction, valid=False)
                 await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
+
+            now = time.time()
+            question_refresh_time = 0#self.last_question_refresh_time + self.refresh_time_seconds
+            if (now > question_refresh_time):
+                LOGGER.debug(f"Question refresh task due, {now} > {question_refresh_time}")
+                ## Note that fetching questions before the interaction has been responded to will cause the interaction
+                ## to fail. This might be avoidable by using deferred responses, however that then locks you in to
+                ## either an ephemeral response (or not), which can be frustrating if an error happens and you've locked
+                ## in a non-ephemeral response.
+                ##
+                ## A workaround could be to leverage asyncpraw and do everything async, but getting the initial question
+                ## loading logic to play nice is difficult. `asyncio.create_task` will always cancel out before the
+                ## `async submission for subreddit(...):` will actually yield anything
+                self.bot.loop.create_task(self.load_questions())
 
 
         action = lambda: self.speech_cog.say(question.text, author=interaction.user, ignore_char_limit=True, interaction=interaction)
