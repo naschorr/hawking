@@ -16,8 +16,6 @@ class Module():
             raise TypeError(f"{self.__class__.__name__} should be treated as abstract, and shouldn't be directly instantiated.")
 
         self._successful = None
-        self._after_successful_init = kwargs.get('after_successful_init')
-        self._after_failed_init = kwargs.get('after_failed_init')
 
     ## Properties
 
@@ -25,34 +23,10 @@ class Module():
     def successful(self) -> bool:
         return self._successful
 
+
     @successful.setter
     def successful(self, value: bool):
         self._successful = value
-
-        if (value and self.after_successful_init is not None):
-            self.after_successful_init()
-        elif (not value and self.after_failed_init is not None):
-            self.after_failed_init()
-
-
-    @property
-    def after_successful_init(self) -> Callable[[], None]:
-        return self._after_successful_init
-
-
-    @after_successful_init.setter
-    def after_successful_init(self, value: Callable[[], None]):
-        self._after_successful_init = value
-
-
-    @property
-    def after_failed_init(self) -> Callable[[], None]:
-        return self._after_failed_init
-
-
-    @after_failed_init.setter
-    def after_failed_init(self, value: Callable[[], None]):
-        self._after_failed_init = value
 
 
 class Cog(Module, commands.Cog):

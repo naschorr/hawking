@@ -40,18 +40,6 @@ For example, if you've got a module `Foo`, and a cog `Bar` that depends on `Foo`
 ModuleInitializationContainer(Bar, dependencies=[Foo])
 ```
 
-### After Initialization
-
-`DiscoverableCog` and `DiscoverableModule` offer up some post-initialization methods to explicitly handle both success and failure states during module creation. There's the `after_successful_init` and `after_failed_init`, which both define a function that will be executed either upon success or failure of initialization, respectively.
-
-They've also got an optional boolean `successful` property, which can be set inside the child module to alert subscribers that it was successfully initialized or not. This property being set defines which post-initialization function is called.
-
-For example, these post-initialization actions can be added to a module via it's `ModuleInitializationContainer` like so:
-
-```
-ModuleInitializationContainer(Bar, after_successful_init=lambda: print('Module initialized successfully!'))
-```
-
 ## Configuration
 
 Hawking modules requiring external configuration can easily do so with a simple JSON file, and the module config loader function.
@@ -76,4 +64,4 @@ config = utilities.load_module_config(Path(__file__).parent)
 
 ## Practical Examples
 
-Check out the [Fortune](https://github.com/naschorr/hawking/blob/master/modules/fortune/fortune.py) module for a simple, self contained example that adds a single command. There's also the [Stupid Questions](https://github.com/naschorr/hawking/blob/master/modules/stupid_questions/stupid_questions.py) and [Reddit](https://github.com/naschorr/hawking/blob/master/modules/reddit/reddit.py) modules which illustrate both dependency management, as well as module configuration. There's also a practical example of the `after_successful_init` in use for the [Audio Player](https://github.com/naschorr/hawking/blob/master/code/common/audio_player.py) module inside [`hawking.py`](https://github.com/naschorr/hawking/blob/master/code/hawking.py).
+Check out the [Fortune](https://github.com/naschorr/hawking/blob/master/modules/fortune/fortune.py) module for a simple, self contained example that adds a single command. There's also the [Stupid Questions](https://github.com/naschorr/hawking/blob/master/modules/stupid_questions/stupid_questions.py) and [Reddit](https://github.com/naschorr/hawking/blob/master/modules/reddit/reddit.py) modules which illustrate both dependency management, as well as module configuration.
