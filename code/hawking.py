@@ -147,13 +147,13 @@ class Hawking:
                 status = discord.Activity(name=f"/{loaded_help_cog.help_command.name}", type=discord.ActivityType.watching)
                 await self.bot.change_presence(activity=status)
 
-            LOGGER.info("Logged in as '{}' (version: {}), (id: {})".format(self.bot.user.name, self.version, self.bot.user.id))
+            LOGGER.info(f"Logged in as '{self.bot.user.name}' (version: {self.version}), (id: {self.bot.user.id})")
 
 
         @self.bot.event
         async def on_command_error(ctx, exception):
             ## Something weird happened, log it!
-            LOGGER.exception("Unhandled exception in during command execution", exception)
+            LOGGER.exception("Unhandled exception in during command execution", exc_info=exception)
             await self.database_manager.store(ctx, valid=False)
 
     ## Properties

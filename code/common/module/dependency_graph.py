@@ -36,7 +36,7 @@ class DependencyGraph:
     def insert(self, class_name: str, dependencies = list) -> DependencyNode:
         ## Don't insert duplicates
         if (class_name in self._node_map):
-            LOGGER.warn('Unable to insert {}, as it\'s already been added.'.format(class_name))
+            LOGGER.warn(f'Unable to insert {class_name}, as it\'s already been added.')
             return
 
         ## Build initial node & update mappings

@@ -160,7 +160,7 @@ class Phrases(DiscoverableCog):
                 try:
                     self.phrases[phrase.name] = phrase
                 except Exception as e:
-                    LOGGER.warning("Skipping...", e)
+                    LOGGER.warning("Skipping...", exc_info=e)
                 else:
                     counter += 1
 
