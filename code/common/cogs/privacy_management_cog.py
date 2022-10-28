@@ -146,7 +146,7 @@ class PrivacyManagementCog(Cog):
                     fd.write(str(user_id) + '\n')
                 user_id_written = True
             except IOError as e:
-                LOGGER.exception(f"Unable to write id {user_id} to file at {self.delete_request_queue_file_path}.", e)
+                LOGGER.exception(f"Unable to write id {user_id} to file at {self.delete_request_queue_file_path}.", exc_info=e)
                 ## Give the file some time to close
                 await asyncio.sleep(1);
 

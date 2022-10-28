@@ -34,7 +34,7 @@ class PhraseTools:
             try:
                 phrase_group: PhraseGroup = phrase_file_manager.load_phrase_group(path, False)
             except Exception as e:
-                LOGGER.error(f'Error loading phrase group from {path}', e)
+                LOGGER.error(f'Error loading phrase group from {path}', exc_info=e)
                 continue
 
             ## Manipulate each of the loaded phrases
@@ -43,7 +43,7 @@ class PhraseTools:
                 try:
                     phrase_operation(phrase)
                 except Exception as e:
-                    LOGGER.error(f'Error encoding phrase {phrase}', e)
+                    LOGGER.error(f'Error encoding phrase {phrase}', exc_info=e)
                     continue
 
             ## Save the phrase group (containing the modified phrases)
@@ -82,6 +82,6 @@ if (__name__ == '__main__'):
     try:
         operation = args.operation
     except Exception as e:
-        LOGGER.error("Missing required '--encode' or '--decode' argument.", e)
+        LOGGER.error("Missing required '--encode' or '--decode' argument.", exc_info=e)
 
     operation()

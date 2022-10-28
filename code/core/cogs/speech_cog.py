@@ -119,7 +119,7 @@ class SpeechCog(Cog):
             await self.audio_player_cog.play_audio(wav_path, author, target_member or author, interaction, audio_player_callback)
 
         except NoVoiceChannelAvailableException as e:
-            LOGGER.error("No voice channel available", e)
+            LOGGER.error("No voice channel available", exc_info=e)
             if (e.target_member.id == author.id):
                 return InvokedCommand(False, e, f"Sorry <@{author.id}>, you're not in a voice channel.")
             else:
@@ -137,7 +137,7 @@ class SpeechCog(Cog):
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I'm not able to {' or '.join(error_values)} that channel. Check the permissions and try again later.")
 
         except FileNotFoundError as e:
-            LOGGER.error("FileNotFound when invoking `play_audio`", e)
+            LOGGER.error("FileNotFound when invoking `play_audio`", exc_info=e)
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         return InvokedCommand(True)
