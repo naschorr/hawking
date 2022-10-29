@@ -161,8 +161,8 @@ class HelpCog(Cog):
 
 
     def build_commands_help_embed(self) -> Embed:
-        commands = set(self.bot.tree.get_commands())
-        command_signatures = {command.name: self.build_command_signature(command, True) for command in commands}
+        commands = {command.name : command for command in self.bot.tree.get_commands()}
+        command_signatures = {command.name: self.build_command_signature(command, True) for command in commands.values()}
         longest_command_length = reduce(lambda length, signature: max(length, len(signature)), command_signatures.values(), 0)
 
 
@@ -170,8 +170,8 @@ class HelpCog(Cog):
             if (command is None):
                 return None
 
-            if (command in commands):
-                commands.remove(command)   ## Keep track of the remaining commands
+            if (command.name in commands):
+                commands.pop(command.name)  ## Keep track of the remaining commands
 
             signature = command_signatures[command.name]
             padding = " " * (longest_command_length - len(signature) + 1)
@@ -191,10 +191,10 @@ class HelpCog(Cog):
         ]
 
         ## Remove the help command now...
-        commands.remove(self.help_command)
+        commands.pop(self.help_command.name)
 
         ## Add the rest of the commands in below
-        for command in sorted(list(commands), key=lambda command: command.name):
+        for command in sorted(commands.values(), key=lambda command: command.name):
             command_help.append(build_command_help_line(command))
 
         ## ...so the help command can be added at the end
@@ -236,7 +236,7 @@ class HelpCog(Cog):
 
         return os.linesep.join([
             f"{self.name} also offers more phrase categories to play with.",
-            f"```{os.linesep.join([build_phrase_group_help_line(phrase_group) for phrase_group in phrase_groups])}```"
+            f"```{os.linesep.join([build_phrase_group_help_line(phrase_group) for phrase_group in sorted(phrase_groups, key=lambda phrase_group: phrase_group.name)])}```"
         ])
 
 
@@ -274,7 +274,7 @@ class HelpCog(Cog):
         if (limit is not None):
             description[0] = f"{description[0]} {see_more_phrases}"
 
-        description.append(f"```{os.linesep.join([build_phrase_help_line(phrase) for phrase in phrases])}```")
+        description.append(f"```{os.linesep.join([build_phrase_help_line(phrase) for phrase in sorted(phrases, key=lambda phrase: phrase.name)])}```")
 
         if (phrase_groups_description := self.build_phrase_groups_help_description(list(phrase_groups))):
             description.append(phrase_groups_description)
