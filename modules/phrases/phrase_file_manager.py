@@ -88,8 +88,6 @@ class PhraseFileManager:
                 else:
                     kwargs['description'] = self.non_letter_regex.sub(' ', message).lower()
                     kwargs['derived_description'] = True
-                
-                kwargs['is_music'] = phrase_raw.get('music', False)
 
                 phrase = Phrase(
                     name,
