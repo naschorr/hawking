@@ -46,7 +46,7 @@ class Hawking:
         self.description = CONFIG_OPTIONS.get("description", ["The retro TTS bot for Discord"])
 
         ## Init the bot and module manager
-        self.bot = commands.Bot(
+        self.bot = commands.AutoShardedBot(
             intents=discord.Intents.default(),
             command_prefix=commands.when_mentioned,
             description='\n'.join(self.description)
