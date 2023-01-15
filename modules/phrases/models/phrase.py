@@ -19,7 +19,6 @@ class Phrase(ToDict):
         self.brief = kwargs.get('brief')
         self.description = kwargs.get('description')
         self._derived_description = kwargs.get('derived_description', False)
-        self.is_music = kwargs.get('is_music', False)
         self.kwargs = kwargs
 
 
@@ -39,8 +38,6 @@ class Phrase(ToDict):
             del data['help']
         if (self.brief is None):
             del data['brief']
-        if (not self.is_music):
-            del data['is_music']
 
         if (self.encoding is not None):
             data['encoding'] = self.encoding.to_dict()
@@ -49,7 +46,7 @@ class Phrase(ToDict):
                 del data['description']
         else:
             del data['encoding']
-        
+
         if (self._derived_description and 'description' in data):
             del data['description']
 
