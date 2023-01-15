@@ -88,8 +88,6 @@ class PhraseFileManager:
                 else:
                     kwargs['description'] = self.non_letter_regex.sub(' ', message).lower()
                     kwargs['derived_description'] = True
-                
-                kwargs['is_music'] = phrase_raw.get('music', False)
 
                 phrase = Phrase(
                     name,
@@ -104,7 +102,7 @@ class PhraseFileManager:
 
                 phrases.append(phrase)
             except Exception as e:
-                LOGGER.warn(f"Error loading phrase '{phrase_raw['name']}'. Skipping...", e)
+                LOGGER.warn(f"Error loading phrase '{phrase_raw['name']}'. Skipping...", exc_info=e)
                 continue
 
         return sorted(phrases, key=lambda phrase: phrase.name)
@@ -153,7 +151,7 @@ class PhraseFileManager:
 
                 return phrase_group
             except Exception as e:
-                LOGGER.warning(f"Error loading phrase group '{phrase_group_name}' from '{path}''. Skipping...", e)
+                LOGGER.warning(f"Error loading phrase group '{phrase_group_name}' from '{path}''. Skipping...", exc_info=e)
                 return None
 
 

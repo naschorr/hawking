@@ -88,7 +88,7 @@ class InvokedCommandHandler(Module):
                 raise RuntimeError("Unspecified error during command handling")
 
         except Exception as e:
-            LOGGER.error("Unspecified error during command handling", e)
+            LOGGER.error("Unspecified error during command handling", exc_info=e)
             await interaction.response.send_message(
                 f"I'm sorry <@{interaction.user.id}>, I'm afraid I can't do that.\n" +
                 f"Something went wrong, and I couldn't complete the **{command_string}** command.",

@@ -237,7 +237,7 @@ class ServerStateManager:
                         self.bot.loop.create_task(self.disconnect(inactive=True))
                     continue
                 except asyncio.CancelledError as e:
-                    LOGGER.exception("CancelledError during audio_player_loop, ignoring and continuing loop.", e)
+                    LOGGER.exception("CancelledError during audio_player_loop, ignoring and continuing loop.", exc_info=e)
                     continue
 
                 ## Join the requester's voice channel & play their requested audio (Or Handle the appropriate exception)
@@ -301,7 +301,7 @@ class ServerStateManager:
                 await self.next.wait()
 
             except Exception as e:
-                LOGGER.exception('Exception inside audio player event loop', e)
+                LOGGER.exception('Exception inside audio player event loop', exc_info=e)
 
 
 class AudioPlayer(Cog):

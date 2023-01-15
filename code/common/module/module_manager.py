@@ -161,7 +161,7 @@ class ModuleManager:
             try:
                 importlib.reload(module_entry.module)
             except Exception as e:
-                LOGGER.error(f"Error reloading module: {module_entry.name}. Attempting to continue...", e)
+                LOGGER.error(f"Error reloading module: {module_entry.name}. Attempting to continue...", exc_info=e)
 
         ## Reload the modules via dependency graph
         loaded_module_count = await self.load_registered_modules()
@@ -208,7 +208,7 @@ class ModuleManager:
                     module = importlib.import_module(module_path.name)
                     module_init = module.main()
                 except Exception as e:
-                    LOGGER.exception(f"Unable to import module {module_path.name} on bot.", e)
+                    LOGGER.exception(f"Unable to import module {module_path.name} on bot.", exc_info=e)
                     del sys.path[-1]    ## Prune back the failed module from the path
                     continue
 

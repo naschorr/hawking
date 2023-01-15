@@ -68,7 +68,7 @@ class DynamoDbClient(DatabaseClient):
             LOGGER.debug(f"Storing detailed data in {self.detailed_table_name}, {detailed_item_json}")
             self.detailed_table.put_item(Item=detailed_item_json)
         except Exception as e:
-            LOGGER.exception(f"Exception while storing anonymous data into {self.detailed_table_name}", e)
+            LOGGER.exception(f"Exception while storing anonymous data into {self.detailed_table_name}", exc_info=e)
 
         anonymous_item_json = anonymous_item.to_json()
         anonymous_item_json[self.primary_key] = anonymous_item.build_primary_key()
@@ -76,7 +76,7 @@ class DynamoDbClient(DatabaseClient):
             LOGGER.debug(f"Storing anonymous data in {self.anonymous_table_name}, {anonymous_item_json}")
             self.anonymous_table.put_item(Item=anonymous_item_json)
         except Exception as e:
-            LOGGER.exception(f"Exception while storing anonymous data into {self.anonymous_table_name}", e)
+            LOGGER.exception(f"Exception while storing anonymous data into {self.anonymous_table_name}", exc_info=e)
 
 
     async def batch_delete_users(self, user_ids: list[str]):
