@@ -19,12 +19,11 @@ from discord.app_commands import describe
 from discord.ext.commands import Bot
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
+CONFIG_OPTIONS = Configuration().load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class SpeechCog(Cog):
-    SAY_COMMAND_NAME = "say"
 
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -44,8 +43,8 @@ class SpeechCog(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name=SpeechCog.SAY_COMMAND_NAME,
-            description=self.say_command.__doc__,
+            name="say",
+            description=self.say_command.__doc__ or "Says your text aloud",
             callback=self.say_command
         ))
 
@@ -65,7 +64,12 @@ class SpeechCog(Cog):
             await callback()
 
 
-    async def build_audio_file(self, text: str, ignore_char_limit = False, interaction: Interaction = None) -> Path:
+    async def build_audio_file(
+            self,
+            text: str,
+            ignore_char_limit = False,
+            interaction: Interaction | None = None
+    ) -> Path:
         '''Turns a string of text into a wav file for later playing. Returns a filepath pointing to that file.'''
 
         ## Make sure the message isn't too long
@@ -73,21 +77,27 @@ class SpeechCog(Cog):
             raise MessageTooLongException(f"Message is {len(text)} characters long when it should be less than {self.tts_controller.char_limit}")
 
         ## Parse down the message before sending it to the TTS service
-        if (interaction is not None):
+        if (interaction is not None and interaction.data is not None):
             text = self.message_parser.parse_message(text, interaction.data)
 
         ## Build the audio file for speaking
-        return await self.tts_controller.save(text, ignore_char_limit)
+        file_path = await self.tts_controller.save(text, ignore_char_limit)
+        
+        if (file_path is None):
+            raise UnableToBuildAudioFileException(f"Unable to save audio file for message: '{text}'")
+        else:
+            return file_path
 
 
     async def say(
             self,
+            *,
             text: str,
             author: Member,
-            target_member: Member = None,
-            ignore_char_limit = False,
-            interaction: Interaction = None,
-            callback: Callable = None
+            ignore_char_limit: bool = False,
+            target_member: Member | None = None,
+            interaction: Interaction | None = None,
+            callback: Callable | None = None
     ) -> InvokedCommand:
         '''Internal say method, for use with presets and anything else that generates phrases on the fly'''
 
@@ -116,7 +126,13 @@ class SpeechCog(Cog):
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         try:
-            await self.audio_player_cog.play_audio(wav_path, author, target_member or author, interaction, audio_player_callback)
+            await self.audio_player_cog.play_audio(
+                file_path=wav_path,
+                author=author,
+                target_member=target_member or author,
+                interaction=interaction,
+                callback=audio_player_callback
+            )
 
         except NoVoiceChannelAvailableException as e:
             LOGGER.error("No voice channel available", exc_info=e)
@@ -146,10 +162,25 @@ class SpeechCog(Cog):
 
     @describe(text="The text that Hawking will speak")
     @describe(user="The user that will be spoken to")
-    async def say_command(self, interaction: Interaction, text: str, user: Member = None):
+    async def say_command(self, interaction: Interaction, text: str, user: Member | None = None):
         """Speaks your text aloud"""
 
-        mention = self.invoked_command_handler.get_first_mention(interaction)
-        invoked_command = lambda: self.say(text, interaction.user, user or mention or None, False, interaction)
+        ## Make sure the author is a member, and not just a user (kind of a frustrating disctinction for this use case,
+        ## but keeping the type checker happy is worth it)
+        author = None
+        if (isinstance(interaction.user, Member)):
+            author = interaction.user
+        else:
+            LOGGER.debug(f"Author '{interaction.user.id}' is not of type Member, say_command will be skipped.")
+            return
 
-        await self.invoked_command_handler.invoke_command(interaction, invoked_command, ephemeral=False)
+        ## Build the command and invoke it
+        async def invokable_command() -> InvokedCommand:
+            return await self.say(
+                text=text,
+                author=author,
+                target_member=user or self.invoked_command_handler.get_first_mention(interaction) or None,
+                ignore_char_limit=False,
+                interaction=interaction
+            )
+        await self.invoked_command_handler.invoke_command(interaction, invokable_command, ephemeral=False)

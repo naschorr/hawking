@@ -1,11 +1,6 @@
-import os
-import sys
 import asyncio
 import async_timeout
-import time
-import inspect
 import logging
-import random
 import math
 from typing import Callable
 from concurrent import futures
@@ -18,13 +13,13 @@ from common.logging import Logging
 from common.database.database_manager import DatabaseManager
 from common.module.module import Cog
 
-import discord
+from discord import app_commands, Interaction, Guild, Member, VoiceClient, FFmpegPCMAudio, Permissions
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord import app_commands, Interaction, Guild, Member, VoiceClient, VoiceChannel, FFmpegPCMAudio
+from discord.channel import VocalGuildChannel
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
+CONFIG_OPTIONS = Configuration().load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
@@ -38,11 +33,11 @@ class AudioPlayRequest:
         self,
         author: Member | None,
         target: Member | None,
-        channel: VoiceChannel,
+        channel: VocalGuildChannel,
         audio: FFmpegPCMAudio,
         file_path: Path,
-        interaction: Interaction = None,
-        callback: Callable = None
+        interaction: Interaction | None = None, ## Can be None if the request originates from the bot itself (ex: timeout)
+        callback: Callable | None = None
     ):
         self.author = author
         self.target = target
@@ -68,7 +63,7 @@ class ServerStateManager:
         self.bot = bot
         self.audio_player_cog = audio_player_cog
         self.guild = guild
-        self.active_play_request: AudioPlayRequest = None
+        self.active_play_request: AudioPlayRequest | None = None
         self.next = asyncio.Event() # flag for alerting the audio_player to play the next AudioPlayRequest
         self.skip_votes = set() # set of Members that voted to skip
         self.audio_play_queue = asyncio.Queue() # queue of AudioPlayRequest to play
@@ -81,19 +76,13 @@ class ServerStateManager:
     ## Property(s)
 
     @property
-    def audio(self) -> discord.FFmpegPCMAudio:
+    def audio(self) -> FFmpegPCMAudio:
         return self.active_play_request.audio
 
 
     @property
-    def channel(self) -> discord.VoiceChannel:
+    def channel(self) -> VocalGuildChannel:
         return self.active_play_request.channel
-
-
-    @property
-    def interaction(self) -> Interaction:
-        if (self.active_play_request is None):
-            return None
 
 
     @property
@@ -134,21 +123,39 @@ class ServerStateManager:
         await self.audio_play_queue.put(play_request)
 
 
-    def can_bot_connect_to_channel(self, channel: discord.VoiceChannel) -> bool:
-        me = self.guild.get_member(self.bot.user.id)
-        permissions: discord.Permissions = channel.permissions_for(me)
+    def can_bot_connect_to_channel(self, channel: VocalGuildChannel) -> bool:
+        '''Checks if the bot can connect to the given channel'''
 
+        if (self.bot.user == None):
+            LOGGER.error("Bot user is None, and thus can't connect to a channel.")
+            return False
+
+        me = self.guild.get_member(self.bot.user.id)
+        if (me is None):
+            LOGGER.error("Bot isn't a member of this guild, and thus can't connect to a channel.")
+            return False
+
+        permissions: Permissions = channel.permissions_for(me)
         return permissions.connect
 
 
-    def can_bot_speak_in_channel(self, channel: discord.VoiceChannel) -> bool:
-        me = self.guild.get_member(self.bot.user.id)
-        permissions: discord.Permissions = channel.permissions_for(me)
+    def can_bot_speak_in_channel(self, channel: VocalGuildChannel) -> bool:
+        '''Checks if the bot can speak in the given channel'''
 
+        if (self.bot.user == None):
+            LOGGER.error("Bot user is None, and thus can't speak in a channel.")
+            return False
+
+        me = self.guild.get_member(self.bot.user.id)
+        if (me is None):
+            LOGGER.error("Bot isn't a member of this guild, and thus can't speak in a channel.")
+            return False
+
+        permissions: Permissions = channel.permissions_for(me)
         return permissions.speak
 
 
-    async def get_voice_client(self, channel: discord.VoiceChannel) -> VoiceClient:
+    async def get_voice_client(self, channel: VocalGuildChannel) -> VoiceClient:
         '''Handles voice client management by connecting, and moving between voice channels'''
 
         can_connect = self.can_bot_connect_to_channel(channel)
@@ -174,7 +181,7 @@ class ServerStateManager:
     def skip_audio(self):
         '''Skips the currently playing audio. If more audio is queued up, it will be played immediately.'''
 
-        if(self.is_playing):
+        if(self.is_playing and self.voice_client != None):
             LOGGER.debug(
                 f"Skipping file at: {self.active_play_request.file_path}, "
                 f"in channel: {self.voice_client.channel.name}, "
@@ -192,9 +199,10 @@ class ServerStateManager:
         """Disconnects the current voice client from the current channel"""
 
         async def clean_up_voice_client():
-            await self.voice_client.disconnect()
-            LOGGER.debug(f"Successfully disconnected voice client from channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
-            self.voice_client = None
+            if (self.voice_client != None):
+                await self.voice_client.disconnect()
+                LOGGER.debug(f"Successfully disconnected voice client from channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
+                self.voice_client = None
 
 
         ## No voice client to disconnect!
@@ -245,7 +253,11 @@ class ServerStateManager:
                     self.voice_client = await self.get_voice_client(self.active_play_request.channel)
                 except futures.TimeoutError:
                     LOGGER.error("Timed out trying to connect to the voice channel")
-                    if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
+                    if (
+                            self.active_play_request.interaction is not None and
+                            self.active_play_request.interaction.followup is not None and
+                            self.active_play_request.author is not None
+                        ):
                         await self.active_play_request.interaction.response.send_message(
                             f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now.",
                             ephemeral=True
@@ -261,7 +273,11 @@ class ServerStateManager:
                     if (not e.can_speak):
                         required_permission_phrases.append("speak in that channel")
 
-                    if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
+                    if (
+                            self.active_play_request.interaction is not None and
+                            self.active_play_request.interaction.followup is not None and
+                            self.active_play_request.author is not None
+                        ):
                         await self.active_play_request.interaction.response.send_message(
                             f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}",
                             ephemeral=True
@@ -305,8 +321,6 @@ class ServerStateManager:
 
 
 class AudioPlayer(Cog):
-    SKIP_COMMAND_NAME = "skip"
-
     ## Keys
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
@@ -332,8 +346,8 @@ class AudioPlayer(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name=AudioPlayer.SKIP_COMMAND_NAME,
-            description=self.skip_command.__doc__,
+            name="skip",
+            description=self.skip_command.__doc__ or "Skips the current audio",
             callback=self.skip_command
         ))
 
@@ -342,19 +356,29 @@ class AudioPlayer(Cog):
         async def skip(ctx: Context):
             """Skips the current audio"""
 
+            guild = ctx.guild
+            if (guild is None):
+                await ctx.send("This command must be used in a server.")
+                return
+
             await self.database_manager.store(ctx)
 
-            state = self.get_server_state(ctx.guild)
-            await state.skip_audio()
+            state = self.get_server_state(guild)
+            state.skip_audio()
 
 
         @self.admin_cog.admin.command()
         async def disconnect(ctx: Context):
             """Disconnect from the current voice channel"""
 
+            guild = ctx.guild
+            if (guild is None):
+                await ctx.send("This command must be used in a server.")
+                return
+
             await self.database_manager.store(ctx)
 
-            state = self.get_server_state(ctx.guild)
+            state = self.get_server_state(guild)
             await state.disconnect()
 
     ## Properties
@@ -392,17 +416,25 @@ class AudioPlayer(Cog):
         return server_state
 
 
-    def build_player(self, file_path: Path) -> discord.FFmpegPCMAudio:
+    def build_player(self, file_path: Path) -> FFmpegPCMAudio:
         '''Builds an audio player for playing the file located at 'file_path'.'''
 
-        return discord.FFmpegPCMAudio(
+        return FFmpegPCMAudio(
             str(file_path),
             before_options=self.ffmpeg_parameters,
             options=self.ffmpeg_post_parameters
         )
 
 
-    async def play_audio(self, file_path: Path, author: Member, target_member: Member, interaction: Interaction = None, callback: Callable = None):
+    async def play_audio(
+            self,
+            *,
+            file_path: Path,
+            author: Member,
+            target_member: Member,
+            interaction: Interaction | None = None,
+            callback: Callable | None = None
+    ):
         '''Plays the given audio file aloud to your channel'''
 
         ## Make sure file_path points to an actual file
@@ -412,12 +444,11 @@ class AudioPlayer(Cog):
             raise FileNotFoundError(error_text)
 
         ## Verify that the target/requester is in a channel
-        voice_channel = None
-        if (target_member.voice is None):
+        if (target_member.voice is None or target_member.voice.channel is None):
             error_text = f"Target member {target_member.id} isn't in a voice channel"
             LOGGER.warn(error_text)
             raise NoVoiceChannelAvailableException(error_text, target_member)
-        voice_channel = target_member.voice.channel
+        vocal_guild_channel = target_member.voice.channel
 
         ## Get/build the server state
         state = self.get_server_state(target_member.guild)
@@ -425,27 +456,38 @@ class AudioPlayer(Cog):
         ## Initial permissions check. This is unlikely to be necessary, but if a server's audio_play_queue gets big
         ## enough and the admin is tweaking permissions, then there's a chance that the permissions now and the
         ## permissions upon playing won't align.
-        can_connect = state.can_bot_connect_to_channel(voice_channel)
-        can_speak = state.can_bot_speak_in_channel(voice_channel)
+        can_connect = state.can_bot_connect_to_channel(vocal_guild_channel)
+        can_speak = state.can_bot_speak_in_channel(vocal_guild_channel)
         if (not can_connect or not can_speak):
             LOGGER.error(
-                f"Unable to connect to voice channel {voice_channel.name} in server {target_member.guild.name}, "
+                f"Unable to connect to voice channel {vocal_guild_channel.name} in server {target_member.guild.name}, "
                 f"invalid permissions. Can connect: {can_connect}, can speak: {can_speak}"
             )
             raise UnableToConnectToVoiceChannelException(
                 "Unable to speak and/or connect to the channel",
-                voice_channel,
+                vocal_guild_channel,
                 can_connect=can_connect,
                 can_speak=can_speak
             )
 
         ## Build the player, and add it to the state
         player = self.build_player(file_path)
-        await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
+        await state.add_play_request(
+            AudioPlayRequest(author, target_member, vocal_guild_channel, player, file_path, interaction, callback)
+        )
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: Path, callback: Callable = None):
+    async def _play_audio_via_server_state(
+            self,
+            server_state: ServerStateManager,
+            file_path: Path,
+            callback: Callable | None = None
+    ):
         '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
+
+        ## Make sure the server_state has a voice_client
+        if (server_state.voice_client == None):
+            return
 
         ## Make sure file_path points to an actual file
         if (not file_path.is_file()):
@@ -457,7 +499,15 @@ class AudioPlayer(Cog):
         player = self.build_player(file_path)
 
         ## On successful player creation, build a AudioPlayRequest and push it into the queue
-        play_request = AudioPlayRequest(None, None, server_state.voice_client.channel, player, file_path, None, callback)
+        play_request = AudioPlayRequest(
+            None,
+            None,
+            server_state.voice_client.channel,
+            player,
+            file_path,
+            None,
+            callback
+        )
         await server_state.add_play_request(play_request)
 
     ## Commands
@@ -465,7 +515,12 @@ class AudioPlayer(Cog):
     async def skip_command(self, interaction: Interaction):
         '''Vote to skip what's currently playing'''
 
-        state = self.get_server_state(interaction.guild)
+        guild = interaction.guild
+        if (guild is None):
+            await interaction.response.send_message("This command must be used in a server.", ephemeral=True)
+            return
+
+        state = self.get_server_state(guild)
 
         ## Is the bot speaking?
         if(not state.is_playing):

@@ -23,3 +23,10 @@ class MessageTooLongException(UnableToBuildAudioFileException):
 
     def __init__(self, message):
         super(MessageTooLongException, self).__init__(message)
+
+
+class UnableToReconstructCommandException(ClientException):
+    '''Exception that's thrown when the bot is unable to reconstruct the command string from the provided context/interaction'''
+
+    def __init__(self, message):
+        super(UnableToReconstructCommandException, self).__init__(message)

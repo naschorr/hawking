@@ -1,5 +1,10 @@
 class InvokedCommand:
-    def __init__(self, successful: bool = True, error: Exception = None, human_readable_error_message: str = None):
+    def __init__(
+            self,
+            successful: bool = True,
+            error: Exception | None = None,
+            human_readable_error_message: str | None = None
+    ):
         self._successful: bool = successful
         self._error: Exception | None = error
         self._human_readable_error_message: str | None = human_readable_error_message
@@ -12,10 +17,10 @@ class InvokedCommand:
 
 
     @property
-    def error(self) -> Exception:
+    def error(self) -> Exception | None:
         return self._error
 
 
     @property
-    def human_readable_error_message(self) -> str:
+    def human_readable_error_message(self) -> str | None:
         return self._human_readable_error_message

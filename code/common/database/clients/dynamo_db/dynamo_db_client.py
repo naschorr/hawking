@@ -12,7 +12,7 @@ from common.database.models.anonymous_item import AnonymousItem
 from common.database.models.detailed_item import DetailedItem
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
@@ -108,14 +108,11 @@ class DynamoDbClient(DatabaseClient):
 
     ## Methods
 
-    def build_multi_user_filter_expression(self, user_ids: list[str] = None):
+    def build_multi_user_filter_expression(self, user_ids: list[str]):  ## todo: return type
         """
         Builds a multi user filter expression for querying the database. User ids are OR'd together, so that any
         document matching any part of the filter will be returned.
         """
-
-        if (not user_ids):
-            return None
 
         filter_expression = Key('user_id').eq(user_ids[0])
         for user_id in user_ids[1:]:
@@ -124,11 +121,11 @@ class DynamoDbClient(DatabaseClient):
         return filter_expression
 
 
-    async def get_keys_from_users(self, table, user_ids: list[str] = None) -> list[str]:
+    async def get_keys_from_users(self, table, user_ids: list[str] = []) -> list[str]:
         """Performs a lookup on the supplied table to determine what primary key each user_id corresponds to"""
 
         if (not user_ids):
-            return
+            return []
 
         scan_kwargs = {
             'FilterExpression': self.build_multi_user_filter_expression(user_ids)

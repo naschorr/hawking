@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable
+from typing import Any, Callable, Coroutine
 
 from common.configuration import Configuration
 from common.command_management.command_reconstructor import CommandReconstructor
@@ -13,7 +13,7 @@ from common.module.module import Module
 from discord import Interaction, Member
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
+CONFIG_OPTIONS = Configuration().load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
@@ -33,6 +33,12 @@ class InvokedCommandHandler(Module):
     def get_first_mention(self, interaction: Interaction) -> Member | None:
         mention = None
 
+        if (interaction.guild is None):
+            return None
+
+        if (interaction.data is None):
+            return None
+
         members = interaction.data.get("resolved", {}).get("members", {})
         if (len(members.items()) == 0):
             return None
@@ -42,8 +48,11 @@ class InvokedCommandHandler(Module):
         potential_mention = members.popitem()
         if (potential_mention is not None):
             ## popitem returns a tuple of the mapping, so make sure we're working with the actual value, and not the key-value pair
-            potential_mention = potential_mention[1]
-            mention = Member(data=potential_mention, guild=interaction.guild, state=interaction._state)
+            potential_mention_member = potential_mention[1]
+            if (not isinstance(potential_mention_member, Member)):
+                return None
+
+            return potential_mention_member
 
         return mention
 
@@ -51,9 +60,9 @@ class InvokedCommandHandler(Module):
     async def invoke_command(
             self,
             interaction: Interaction,
-            action: Callable[..., InvokedCommand],
+            action: Callable[[], Coroutine[Any, Any, InvokedCommand]],
             ephemeral: bool = True,
-            callback: Callable[[InvokedCommand], None] = None
+            callback: Callable[[InvokedCommand], None] | None = None
     ):
         '''Handles user feedback when running a deferred command'''
 
@@ -69,7 +78,7 @@ class InvokedCommandHandler(Module):
                     await callback(invoked_command)
                 else:
                     callback(invoked_command)
-                return
+                    return
 
             ## Handle command storage
             await self.database_manager.store(interaction, valid=invoked_command.successful)

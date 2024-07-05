@@ -43,7 +43,7 @@ class NoVoiceChannelAvailableException(UnableToConnectToVoiceChannelException):
 
 
     @property
-    def target_member(self) -> bool:
+    def target_member(self) -> Member:
         return self._target_member
 
 
