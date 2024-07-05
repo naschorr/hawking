@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot, Context, errors
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
+CONFIG_OPTIONS = Configuration().load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 

@@ -22,7 +22,7 @@ from discord.app_commands import autocomplete, Choice, describe
 from discord.ext.commands import Context, Bot
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 

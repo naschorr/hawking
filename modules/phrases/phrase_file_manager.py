@@ -13,7 +13,7 @@ from modules.phrases.models.phrase_encoding import PhraseEncoding
 from modules.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
