@@ -54,3 +54,6 @@ privacy/*
 
 # Ignore linter config
 *.pylintrc
+
+# todo: where is this pickle file coming from?
+update_checker_cache.pkl
