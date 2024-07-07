@@ -19,10 +19,6 @@ from discord import app_commands, Interaction, Embed
 from discord.ext import commands
 from discord.app_commands import autocomplete, choices, describe, Choice
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class HelpCog(Cog):
     """Builds and displays the help interface"""
@@ -31,9 +27,10 @@ class HelpCog(Cog):
     ## need to get the full slash command conversion done before the Discord message content intent goes away. While
     ## terrible, and no doubt needlessly difficult to maintain in the future, it works.
 
-    def __init__(self, bot: commands.Bot, *args, **kwargs):
+    def __init__(self, config: Configuration, bot: commands.Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
         self.phrases_cog: Phrases = kwargs.get('dependencies', {}).get('Phrases')
@@ -43,10 +40,10 @@ class HelpCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name = CONFIG_OPTIONS.get("name", "help").capitalize()
-        self.version = CONFIG_OPTIONS.get("version", "1.0.0")
-        self.description = CONFIG_OPTIONS.get("description")
-        self.repo_url = CONFIG_OPTIONS.get("repo_url")
+        self.name = config.get("name", "help").capitalize()
+        self.version = config.get("version", "1.0.0")
+        self.description = config.get("description")
+        self.repo_url = config.get("repo_url")
         self.activation_str = "/"   ## Slash commands
 
         ## Simple cog -> commands mapping

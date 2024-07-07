@@ -18,7 +18,7 @@ from discord.ext import commands
 
 from core.cogs import admin_cog, help_cog, speech_cog, speech_config_help_cog
 from core.tts import tts_controller
-from common import audio_player, message_parser
+from common import audio_player, message_parser, string_similarity
 from common.cogs import privacy_management_cog, invite_cog
 from common.configuration import Configuration
 from common.logging import Logging
@@ -35,19 +35,18 @@ DEFAULT_DESCRIPTION = "The retro TTS bot for Discord"
 
 class Hawking:
     ## Initialize the bot, and add base cogs
-    def __init__(self, config: Path | None = None):
-        configuration_class = Configuration()
-        configuration = configuration_class.load_config(config)
+    def __init__(self, config_path: Path | None = None):
+        config = Configuration(config_path)
         self.logger = Logging.initialize_logging(logging.getLogger(self.__class__.__qualname__))
 
         ## Make sure there's a Discord token before doing anything else
-        self.token = configuration.get("discord_token")
+        self.token = config.get("discord_token")
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
 
-        self.name = configuration.get("name", "the bot").capitalize()
-        self.version = configuration.get("version")
-        self.description = configuration.get("description", [DEFAULT_DESCRIPTION])
+        self.name = config.get("name", "the bot").capitalize()
+        self.version = config.get("version")
+        self.description = config.get("description", [DEFAULT_DESCRIPTION])
 
         ## Init the bot and module manager
         self.bot = commands.AutoShardedBot(
@@ -57,11 +56,12 @@ class Hawking:
         )
 
         ## Prepare to register modules
-        self._module_manager = ModuleManager(configuration_class, self, self.bot)
+        self._module_manager = ModuleManager(config, self, self.bot)
 
         ## Register the modules (no circular dependencies!)
         self.module_manager.register_module(
             message_parser.MessageParser,
+            config,
             dependencies=[]
         )
         self.module_manager.register_module(
@@ -74,22 +74,31 @@ class Hawking:
         )
         self.module_manager.register_module(
             database_manager.DatabaseManager,
+            config,
             dynamo_db_client.DynamoDbClient(),
             dependencies=[command_reconstructor.CommandReconstructor, anonymous_item_factory.AnonymousItemFactory]
         )
         self.module_manager.register_module(
             component_factory.ComponentFactory,
+            config,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
+            string_similarity.StringSimilarity,
+            config,
+            dependencies=[]
+        )
+        self.module_manager.register_module(
             admin_cog.AdminCog,
+            config,
             self,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             privacy_management_cog.PrivacyManagementCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
@@ -100,6 +109,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             invite_cog.InviteCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
@@ -109,12 +119,17 @@ class Hawking:
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
+            config,
             self.bot,
             dependencies=[admin_cog.AdminCog, database_manager.DatabaseManager]
         )
-        self.module_manager.register_module(tts_controller.TTSController)
+        self.module_manager.register_module(
+            tts_controller.TTSController,
+            config
+        )
         self.module_manager.register_module(
             speech_cog.SpeechCog,
+            config,
             self.bot,
             dependencies=[
                 invoked_command_handler.InvokedCommandHandler,
@@ -125,6 +140,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             help_cog.HelpCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, phrases.Phrases, database_manager.DatabaseManager]
         )
@@ -189,4 +205,4 @@ if(__name__ == "__main__"):
     )
     args = vars(parser.parse_args())
 
-    Hawking(config=args["config"]).run()
+    Hawking(config_path=args["config"]).run()

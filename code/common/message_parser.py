@@ -7,12 +7,10 @@ from common.module.module import Module
 
 class MessageParser(Module):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config: Configuration, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.config: Configuration = Configuration()
-
-        self.replace_emoji = self.config.get("replace_emoji", True)
+        self.replace_emoji = config.get("replace_emoji", True)
         self.emoji_map = self._build_emoji_name_map('en')
 
     ## Methods

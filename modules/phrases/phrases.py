@@ -47,6 +47,8 @@ class Phrases(DiscoverableCog):
         assert (self.database_manager is not None)
         self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
         assert (self.command_reconstructor is not None)
+        self.string_similarity: StringSimilarity = kwargs.get('dependencies', {}).get('StringSimilarity')
+        assert (self.string_similarity is not None)
 
         self.phrase_file_manager = PhraseFileManager()
 
@@ -173,7 +175,7 @@ class Phrases(DiscoverableCog):
         return counter
 
 
-    def build_phrase_command_string(self, phrase: Phrase, activation_str: str = None) -> str:
+    def build_phrase_command_string(self, phrase: Phrase, activation_str: str | None = None) -> str:
         """Builds an example string to invoke the specified phrase"""
 
         return f"{activation_str or '/'}{Phrases.PHRASE_COMMAND_NAME} {phrase.name}"
@@ -181,7 +183,7 @@ class Phrases(DiscoverableCog):
     ## Commands
 
     @describe(user="The user to speak the phrase to")
-    async def random_command(self, interaction: Interaction, user: discord.Member = None):
+    async def random_command(self, interaction: Interaction, user: discord.Member | None = None):
         """Speaks a random phrase"""
 
         phrase: Phrase = random.choice(list(self.phrases.values()))
@@ -199,7 +201,7 @@ class Phrases(DiscoverableCog):
 
 
         action = lambda: self.speech_cog.say(
-            phrase.message,
+            text=phrase.message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,
@@ -220,11 +222,11 @@ class Phrases(DiscoverableCog):
             return [generate_choice(phrase) for phrase in self.phrases.values() if phrase.name.startswith(current)]
 
 
-    async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member = None):
+    async def phrase_command(self, interaction: Interaction, name: str, user: discord.Member | None = None):
         """Speaks the specific phrase"""
 
         ## Get the actual phrase from the phrase name provided by autocomplete
-        phrase: Phrase = self.phrases.get(name)
+        phrase: Phrase | None = self.phrases.get(name)
         if (phrase is None):
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(
@@ -256,7 +258,7 @@ class Phrases(DiscoverableCog):
 
     @describe(search="The text to search the phrases for")
     @describe(user="The user to speak the phrase to, if a match is found")
-    async def find_command(self, interaction: Interaction, search: str, user: discord.Member = None):
+    async def find_command(self, interaction: Interaction, search: str, user: discord.Member | None = None):
         """Speaks the most similar phrase"""
 
         def calc_substring_score(message: str, description: str) -> float:
@@ -282,12 +284,12 @@ class Phrases(DiscoverableCog):
             ## Score the phrase
             scores.append(
                 calc_substring_score(search, phrase.name) +
-                StringSimilarity.similarity(search, phrase.name) / 2
+                self.string_similarity.similarity(search, phrase.name) / 2
             )
             if (phrase.description is not None):
                 scores.append(
                     calc_substring_score(search, phrase.description) +
-                    StringSimilarity.similarity(search, phrase.description) / 2
+                    self.string_similarity.similarity(search, phrase.description) / 2
                 )
 
             distance = sum(scores) / len(scores)
@@ -317,7 +319,7 @@ class Phrases(DiscoverableCog):
 
 
         action = lambda: self.speech_cog.say(
-            most_similar_phrase[0].message,
+            text=most_similar_phrase[0].message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,
@@ -327,4 +329,4 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor"])
+    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor", "StringSimilarity"])

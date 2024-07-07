@@ -2,7 +2,6 @@ import os
 import sys
 import logging
 import importlib
-import asyncio
 from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
@@ -25,7 +24,7 @@ class ModuleEntry:
     def __init__(self, cls: Module, *init_args, **init_kwargs):
         self.module = sys.modules[cls.__module__]
         self.cls = cls
-        self.name = cls.__name__
+        self.name = cls.__qualname__
         self.is_cog = issubclass(cls, commands.Cog)
         self.args = init_args
         self.kwargs = init_kwargs
@@ -50,16 +49,17 @@ class ModuleManager:
     def __init__(self, config: Configuration, bot_controller, bot: commands.Bot | commands.AutoShardedBot):
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
+        self.config = config
         self.bot_controller = bot_controller
         self.bot = bot
 
-        modules_dir_path = config.get('modules_dir_path')
+        modules_dir_path = self.config.get('modules_dir_path')
         if (modules_dir_path):
             self.modules_dir_path = Path(modules_dir_path)
         else:
             self.modules_dir_path = Path.joinpath(
                 utilities.get_root_path(),
-                config.get('modules_dir', 'modules')
+                self.config.get('modules_dir', 'modules')
             )
 
         self.modules = OrderedDict()

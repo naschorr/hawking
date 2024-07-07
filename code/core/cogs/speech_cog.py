@@ -18,16 +18,13 @@ from discord import app_commands, Interaction, Member
 from discord.app_commands import describe
 from discord.ext.commands import Bot
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class SpeechCog(Cog):
 
-    def __init__(self, bot: Bot, *args, **kwargs):
+    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
         self.audio_player_cog: AudioPlayer = kwargs.get('dependencies', {}).get('AudioPlayer')
         assert(self.audio_player_cog is not None)
@@ -38,7 +35,7 @@ class SpeechCog(Cog):
         self.tts_controller: TTSController = kwargs.get('dependencies', {}).get('TTSController')
         assert(self.tts_controller is not None)
 
-        self.channel_timeout_phrases = CONFIG_OPTIONS.get('channel_timeout_phrases', [])
+        self.channel_timeout_phrases = config.get('channel_timeout_phrases', [])
         self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
 
         ## Commands
@@ -60,7 +57,7 @@ class SpeechCog(Cog):
 
                 await self.audio_player_cog._play_audio_via_server_state(server_state, file_path, callback)
         except Exception as e:
-            LOGGER.exception("Exception during channel sign-off")
+            self.logger.exception("Exception during channel sign-off")
             await callback()
 
 
@@ -113,16 +110,16 @@ class SpeechCog(Cog):
             wav_path = await self.build_audio_file(text, ignore_char_limit, interaction)
 
         except BuildingAudioFileTimedOutExeption as e:
-            LOGGER.exception(f"Timed out building audio for message: '{text}'")
+            self.logger.exception(f"Timed out building audio for message: '{text}'")
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, it took too long to generate speech for that.")
 
         except MessageTooLongException as e:
-            LOGGER.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.tts_controller.char_limit})")
+            self.logger.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.tts_controller.char_limit})")
             ## todo: Specify how many characters need to be removed?
             return InvokedCommand(False, e, f"Wow <@{author.id}>, that's waaay too much. You've gotta keep messages shorter than {self.tts_controller.char_limit} characters.")
 
         except UnableToBuildAudioFileException as e:
-            LOGGER.exception(f"Unable to build .wav file for message: '{text}'")
+            self.logger.exception(f"Unable to build .wav file for message: '{text}'")
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         try:
@@ -135,7 +132,7 @@ class SpeechCog(Cog):
             )
 
         except NoVoiceChannelAvailableException as e:
-            LOGGER.error("No voice channel available", exc_info=e)
+            self.logger.error("No voice channel available", exc_info=e)
             if (e.target_member.id == author.id):
                 return InvokedCommand(False, e, f"Sorry <@{author.id}>, you're not in a voice channel.")
             else:
@@ -153,7 +150,7 @@ class SpeechCog(Cog):
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I'm not able to {' or '.join(error_values)} that channel. Check the permissions and try again later.")
 
         except FileNotFoundError as e:
-            LOGGER.error("FileNotFound when invoking `play_audio`", exc_info=e)
+            self.logger.error("FileNotFound when invoking `play_audio`", exc_info=e)
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, I can't say that right now.")
 
         return InvokedCommand(True)
@@ -171,7 +168,7 @@ class SpeechCog(Cog):
         if (isinstance(interaction.user, Member)):
             author = interaction.user
         else:
-            LOGGER.debug(f"Author '{interaction.user.id}' is not of type Member, say_command will be skipped.")
+            self.logger.debug(f"Author '{interaction.user.id}' is not of type Member, say_command will be skipped.")
             return
 
         ## Build the command and invoke it

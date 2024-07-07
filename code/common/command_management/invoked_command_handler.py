@@ -12,14 +12,12 @@ from common.module.module import Module
 
 from discord import Interaction, Member
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class InvokedCommandHandler(Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
         assert(self.message_parser is not None)
@@ -78,7 +76,7 @@ class InvokedCommandHandler(Module):
                     await callback(invoked_command)
                 else:
                     callback(invoked_command)
-                    return
+                return
 
             ## Handle command storage
             await self.database_manager.store(interaction, valid=invoked_command.successful)
@@ -97,7 +95,7 @@ class InvokedCommandHandler(Module):
                 raise RuntimeError("Unspecified error during command handling")
 
         except Exception as e:
-            LOGGER.error("Unspecified error during command handling", exc_info=e)
+            self.logger.error("Unspecified error during command handling", exc_info=e)
             await interaction.response.send_message(
                 f"I'm sorry <@{interaction.user.id}>, I'm afraid I can't do that.\n" +
                 f"Something went wrong, and I couldn't complete the **{command_string}** command.",
