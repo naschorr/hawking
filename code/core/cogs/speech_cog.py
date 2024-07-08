@@ -20,6 +20,9 @@ from discord.ext.commands import Bot
 
 
 class SpeechCog(Cog):
+    SAY_COMMAND_NAME = "say"
+
+    ## Lifecycle
 
     def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -40,7 +43,7 @@ class SpeechCog(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name="say",
+            name=SpeechCog.SAY_COMMAND_NAME,
             description=self.say_command.__doc__ or "Says your text aloud",
             callback=self.say_command
         ))

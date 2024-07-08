@@ -20,6 +20,9 @@ from discord.ext.commands import command, Context, Bot
 
 
 class PrivacyManagementCog(Cog):
+    PRIVACY_POLICY_COMMAND_NAME = "privacy_policy"
+
+    ## Lifecycle
 
     def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -84,7 +87,7 @@ class PrivacyManagementCog(Cog):
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
             self.add_command(app_commands.Command(
-                name="privacy_policy",
+                name=PrivacyManagementCog.PRIVACY_POLICY_COMMAND_NAME,
                 description=self.privacy_policy_command.__doc__,
                 callback=self.privacy_policy_command
             ))

@@ -318,11 +318,12 @@ class ServerStateManager:
 
 
 class AudioPlayer(Cog):
-    ## Keys
+    SKIP_COMMAND_NAME = "skip"
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
+    ## Lifecycle
 
     def __init__(self, config: Configuration, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -345,7 +346,7 @@ class AudioPlayer(Cog):
 
         ## Commands
         self.add_command(app_commands.Command(
-            name="skip",
+            name=AudioPlayer.SKIP_COMMAND_NAME,
             description=self.skip_command.__doc__ or "Skips the current audio",
             callback=self.skip_command
         ))

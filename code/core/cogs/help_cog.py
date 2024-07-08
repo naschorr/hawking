@@ -27,6 +27,10 @@ class HelpCog(Cog):
     ## need to get the full slash command conversion done before the Discord message content intent goes away. While
     ## terrible, and no doubt needlessly difficult to maintain in the future, it works.
 
+    HELP_COMMAND_NAME = "help"
+
+    ## Lifecycle
+
     def __init__(self, config: Configuration, bot: commands.Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
@@ -68,7 +72,7 @@ class HelpCog(Cog):
             await self._help_command(interaction, command, subcommand)
 
         self.help_command = app_commands.Command(
-            name="help",
+            name=HelpCog.HELP_COMMAND_NAME,
             description=self._help_command.__doc__,
             callback=help_command_wrapper,
             extras={"cog": self}

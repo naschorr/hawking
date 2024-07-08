@@ -247,7 +247,7 @@ class Phrases(DiscoverableCog):
 
 
         action = lambda: self.speech_cog.say(
-            phrase.message,
+            text=phrase.message,
             author=interaction.user,
             target_member=user,
             ignore_char_limit=True,

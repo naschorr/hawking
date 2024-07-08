@@ -13,6 +13,7 @@ from discord.ui import View, Button
 
 
 class InviteCog(Cog):
+    INVITE_COMMAND_NAME = "invite"
 
     def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -33,7 +34,7 @@ class InviteCog(Cog):
         ## Make sure the minimum config options are populated, so a proper embed can be generated later
         if (self.bot_invite_blurb is not None and self.bot_invite_url is not None):
             self.add_command(Command(
-                name="invite",
+                name=InviteCog.INVITE_COMMAND_NAME,
                 description=f"Posts invite links for {self.name}",
                 callback=self.invite_command
             ))
