@@ -526,6 +526,7 @@ class AudioPlayer(Cog):
         if(not state.is_playing):
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
+            return
 
         ## Add a skip vote and tally it up!
         voter = interaction.user
@@ -533,6 +534,7 @@ class AudioPlayer(Cog):
             state.skip_audio()
             await self.database_manager.store(interaction)
             await interaction.response.send_message(f"<@{voter.id}> skipped their own audio.")
+            return
 
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -555,7 +557,9 @@ class AudioPlayer(Cog):
 
                 await self.database_manager.store(interaction)
                 await interaction.response.send_message(f"Skip vote added! Currently at {total_votes} of {required_votes} votes.")
+            return
 
         else:
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"<@{voter.id}> has already voted!", ephemeral=True)
+            return
