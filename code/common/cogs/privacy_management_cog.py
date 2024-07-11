@@ -2,7 +2,6 @@ import os
 import stat
 import logging
 import asyncio
-import dateutil
 import datetime
 import json
 from pathlib import Path
@@ -14,6 +13,7 @@ from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
 
+import dateutil
 import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import command, Context, Bot
@@ -88,7 +88,7 @@ class PrivacyManagementCog(Cog):
         if (self.privacy_policy_url):
             self.add_command(app_commands.Command(
                 name=PrivacyManagementCog.PRIVACY_POLICY_COMMAND_NAME,
-                description=self.privacy_policy_command.__doc__,
+                description=self.privacy_policy_command.__doc__ or "Gives a link to the privacy policy",
                 callback=self.privacy_policy_command
             ))
 
