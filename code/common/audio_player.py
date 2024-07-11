@@ -73,13 +73,19 @@ class ServerStateManager:
     ## Property(s)
 
     @property
-    def audio(self) -> FFmpegPCMAudio:
-        return self.active_play_request.audio
+    def audio(self) -> FFmpegPCMAudio | None:
+        if (self.active_play_request):
+            return self.active_play_request.audio
+        
+        return None
 
 
     @property
-    def channel(self) -> VocalGuildChannel:
-        return self.active_play_request.channel
+    def channel(self) -> VocalGuildChannel | None:
+        if (self.active_play_request):
+            return self.active_play_request.channel
+        
+        return None
 
 
     @property
@@ -106,7 +112,9 @@ class ServerStateManager:
     async def get_members(self, include_bots = False) -> list[Member]:
         '''Returns a set of members in the current voice channel'''
 
-        members = self.active_play_request.channel.members
+        if (self.channel is None):
+            return []
+        members = self.channel.members
 
         if (include_bots):
             return members
@@ -178,7 +186,7 @@ class ServerStateManager:
     def skip_audio(self):
         '''Skips the currently playing audio. If more audio is queued up, it will be played immediately.'''
 
-        if(self.is_playing and self.voice_client != None):
+        if(self.active_play_request != None and self.is_playing and self.voice_client != None):
             self.logger.debug(
                 f"Skipping file at: {self.active_play_request.file_path}, "
                 f"in channel: {self.voice_client.channel.name}, "
@@ -186,8 +194,8 @@ class ServerStateManager:
                 f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
             )
             self.voice_client.stop()
+            self.active_play_request.skipped = True
 
-        self.active_play_request.skipped = True
         self.next.set()
         self.skip_votes.clear()
 
@@ -235,7 +243,12 @@ class ServerStateManager:
 
                 try:
                     async with async_timeout.timeout(self.channel_timeout_seconds):
-                        self.active_play_request: AudioPlayRequest = await self.audio_play_queue.get()
+                        self.active_play_request = await self.audio_play_queue.get()
+
+                        if (self.active_play_request == None):
+                            self.logger.warn("Got a None play request, skipping...")
+                            continue
+
                         self.logger.debug(f"Got new audio play request: {self.active_play_request}")
                 except asyncio.TimeoutError:
                     if (self.voice_client and self.voice_client.is_connected()):
@@ -295,8 +308,8 @@ class ServerStateManager:
                             self.next.set()
 
                             ## Perform callback after the audio has finished (assuming it's defined)
-                            callback = current_active_play_request.callback
-                            if(callback):
+                            if (current_active_play_request != None and current_active_play_request.callback):
+                                callback = current_active_play_request.callback
                                 if(asyncio.iscoroutinefunction(callback)):
                                     self.bot.loop.create_task(callback())
                                 else:
@@ -526,6 +539,10 @@ class AudioPlayer(Cog):
         if(not state.is_playing):
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
+            return
+
+        if (state.active_play_request is None):
+            self.logger.warn("No active play request, but the bot is playing audio.")
             return
 
         ## Add a skip vote and tally it up!
