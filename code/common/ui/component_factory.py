@@ -22,7 +22,7 @@ class ComponentFactory(Module):
 
     ## Embeds
 
-    def create_basic_embed(self, title: str = None, description: str = None, url: str = None) -> discord.Embed:
+    def create_basic_embed(self, title: str | None = None, description: str | None = None, url: str | None = None) -> discord.Embed:
         """Creates a basic embed with consistent coloring"""
 
         return discord.Embed(
@@ -33,7 +33,7 @@ class ComponentFactory(Module):
         )
 
 
-    def create_embed(self, title: str = None, description: str = None, url: str = None) -> discord.Embed:
+    def create_embed(self, title: str | None = None, description: str | None = None, url: str | None = None) -> discord.Embed:
         """Creates an embed with default logo thumbnail"""
 
         embed = self.create_basic_embed(title, description, url)
@@ -43,7 +43,7 @@ class ComponentFactory(Module):
 
     ## Buttons
 
-    def create_repo_link_button(self) -> discord.Button:
+    def create_repo_link_button(self) -> discord.ui.Button:
         """Creates a button that links to the bot's repository"""
 
         if (self.repo_url is None):
