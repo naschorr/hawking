@@ -1,5 +1,3 @@
-from typing import Callable
-
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Bot
@@ -15,13 +13,13 @@ class Module():
         if (self is Module or self is Cog):
             raise TypeError(f"{self.__class__.__name__} should be treated as abstract, and shouldn't be directly instantiated.")
 
-        self._successful = None
+        self._successful: bool | None = None
 
     ## Properties
 
     @property
     def successful(self) -> bool:
-        return self._successful
+        return bool(self._successful)
 
 
     @successful.setter

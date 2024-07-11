@@ -12,10 +12,6 @@ from discord.app_commands import Command
 from discord.ext.commands import Bot
 from discord.ui import View, Button
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class SpeechConfigHelpCog(Cog):
 
@@ -24,6 +20,7 @@ class SpeechConfigHelpCog(Cog):
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
@@ -33,7 +30,7 @@ class SpeechConfigHelpCog(Cog):
 
         self.add_command(Command(
             name="speech_config",
-            description=self.speech_config_command.__doc__,
+            description=self.speech_config_command.__doc__ or "Posts a link to the speech config docs",
             callback=self.speech_config_command
         ))
 

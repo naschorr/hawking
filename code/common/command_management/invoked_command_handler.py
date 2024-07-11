@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Callable
+from typing import Any, Callable, Coroutine
 
 from common.configuration import Configuration
 from common.command_management.command_reconstructor import CommandReconstructor
@@ -12,14 +12,12 @@ from common.module.module import Module
 
 from discord import Interaction, Member
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class InvokedCommandHandler(Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
         assert(self.message_parser is not None)
@@ -33,6 +31,12 @@ class InvokedCommandHandler(Module):
     def get_first_mention(self, interaction: Interaction) -> Member | None:
         mention = None
 
+        if (interaction.guild is None):
+            return None
+
+        if (interaction.data is None):
+            return None
+
         members = interaction.data.get("resolved", {}).get("members", {})
         if (len(members.items()) == 0):
             return None
@@ -42,8 +46,11 @@ class InvokedCommandHandler(Module):
         potential_mention = members.popitem()
         if (potential_mention is not None):
             ## popitem returns a tuple of the mapping, so make sure we're working with the actual value, and not the key-value pair
-            potential_mention = potential_mention[1]
-            mention = Member(data=potential_mention, guild=interaction.guild, state=interaction._state)
+            potential_mention_member = potential_mention[1]
+            if (not isinstance(potential_mention_member, Member)):
+                return None
+
+            return potential_mention_member
 
         return mention
 
@@ -51,9 +58,9 @@ class InvokedCommandHandler(Module):
     async def invoke_command(
             self,
             interaction: Interaction,
-            action: Callable[..., InvokedCommand],
+            action: Callable[[], Coroutine[Any, Any, InvokedCommand]],
             ephemeral: bool = True,
-            callback: Callable[[InvokedCommand], None] = None
+            callback: Callable[[InvokedCommand], None] | None = None
     ):
         '''Handles user feedback when running a deferred command'''
 
@@ -88,7 +95,7 @@ class InvokedCommandHandler(Module):
                 raise RuntimeError("Unspecified error during command handling")
 
         except Exception as e:
-            LOGGER.error("Unspecified error during command handling", exc_info=e)
+            self.logger.error("Unspecified error during command handling", exc_info=e)
             await interaction.response.send_message(
                 f"I'm sorry <@{interaction.user.id}>, I'm afraid I can't do that.\n" +
                 f"Something went wrong, and I couldn't complete the **{command_string}** command.",

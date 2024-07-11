@@ -1,11 +1,6 @@
-import os
-import sys
 import asyncio
 import async_timeout
-import time
-import inspect
 import logging
-import random
 import math
 from typing import Callable
 from concurrent import futures
@@ -18,14 +13,10 @@ from common.logging import Logging
 from common.database.database_manager import DatabaseManager
 from common.module.module import Cog
 
-import discord
+from discord import app_commands, Interaction, Guild, Member, VoiceClient, FFmpegPCMAudio, Permissions
 from discord.ext import commands
 from discord.ext.commands import Context
-from discord import app_commands, Interaction, Guild, Member, VoiceClient, VoiceChannel, FFmpegPCMAudio
-
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
+from discord.channel import VocalGuildChannel
 
 
 class AudioPlayRequest:
@@ -38,11 +29,11 @@ class AudioPlayRequest:
         self,
         author: Member | None,
         target: Member | None,
-        channel: VoiceChannel,
+        channel: VocalGuildChannel,
         audio: FFmpegPCMAudio,
         file_path: Path,
-        interaction: Interaction = None,
-        callback: Callable = None
+        interaction: Interaction | None = None, ## Can be None if the request originates from the bot itself (ex: timeout)
+        callback: Callable | None = None
     ):
         self.author = author
         self.target = target
@@ -64,36 +55,37 @@ class ServerStateManager:
     This class helps to manage the bot, initiate audio play requests, and move between channels.
     '''
 
-    def __init__(self, bot: commands.Bot, audio_player_cog, guild: Guild, channel_timeout_handler = None):
+    def __init__(self, config: Configuration, bot: commands.Bot, audio_player_cog, guild: Guild, channel_timeout_handler = None):
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
         self.audio_player_cog = audio_player_cog
         self.guild = guild
-        self.active_play_request: AudioPlayRequest = None
+        self.active_play_request: AudioPlayRequest | None = None
         self.next = asyncio.Event() # flag for alerting the audio_player to play the next AudioPlayRequest
         self.skip_votes = set() # set of Members that voted to skip
         self.audio_play_queue = asyncio.Queue() # queue of AudioPlayRequest to play
         self.audio_player = self.bot.loop.create_task(self.audio_player_loop())
         self.voice_client = None
 
-        self.channel_timeout_seconds = int(CONFIG_OPTIONS.get('channel_timeout_seconds', 15 * 60))
+        self.channel_timeout_seconds = int(config.get('channel_timeout_seconds', 15 * 60))
         self.channel_timeout_handler = channel_timeout_handler
 
     ## Property(s)
 
     @property
-    def audio(self) -> discord.FFmpegPCMAudio:
-        return self.active_play_request.audio
+    def audio(self) -> FFmpegPCMAudio | None:
+        if (self.active_play_request):
+            return self.active_play_request.audio
+        
+        return None
 
 
     @property
-    def channel(self) -> discord.VoiceChannel:
-        return self.active_play_request.channel
-
-
-    @property
-    def interaction(self) -> Interaction:
-        if (self.active_play_request is None):
-            return None
+    def channel(self) -> VocalGuildChannel | None:
+        if (self.active_play_request):
+            return self.active_play_request.channel
+        
+        return None
 
 
     @property
@@ -120,7 +112,9 @@ class ServerStateManager:
     async def get_members(self, include_bots = False) -> list[Member]:
         '''Returns a set of members in the current voice channel'''
 
-        members = self.active_play_request.channel.members
+        if (self.channel is None):
+            return []
+        members = self.channel.members
 
         if (include_bots):
             return members
@@ -134,21 +128,39 @@ class ServerStateManager:
         await self.audio_play_queue.put(play_request)
 
 
-    def can_bot_connect_to_channel(self, channel: discord.VoiceChannel) -> bool:
-        me = self.guild.get_member(self.bot.user.id)
-        permissions: discord.Permissions = channel.permissions_for(me)
+    def can_bot_connect_to_channel(self, channel: VocalGuildChannel) -> bool:
+        '''Checks if the bot can connect to the given channel'''
 
+        if (self.bot.user == None):
+            self.logger.error("Bot user is None, and thus can't connect to a channel.")
+            return False
+
+        me = self.guild.get_member(self.bot.user.id)
+        if (me is None):
+            self.logger.error("Bot isn't a member of this guild, and thus can't connect to a channel.")
+            return False
+
+        permissions: Permissions = channel.permissions_for(me)
         return permissions.connect
 
 
-    def can_bot_speak_in_channel(self, channel: discord.VoiceChannel) -> bool:
-        me = self.guild.get_member(self.bot.user.id)
-        permissions: discord.Permissions = channel.permissions_for(me)
+    def can_bot_speak_in_channel(self, channel: VocalGuildChannel) -> bool:
+        '''Checks if the bot can speak in the given channel'''
 
+        if (self.bot.user == None):
+            self.logger.error("Bot user is None, and thus can't speak in a channel.")
+            return False
+
+        me = self.guild.get_member(self.bot.user.id)
+        if (me is None):
+            self.logger.error("Bot isn't a member of this guild, and thus can't speak in a channel.")
+            return False
+
+        permissions: Permissions = channel.permissions_for(me)
         return permissions.speak
 
 
-    async def get_voice_client(self, channel: discord.VoiceChannel) -> VoiceClient:
+    async def get_voice_client(self, channel: VocalGuildChannel) -> VoiceClient:
         '''Handles voice client management by connecting, and moving between voice channels'''
 
         can_connect = self.can_bot_connect_to_channel(channel)
@@ -174,16 +186,16 @@ class ServerStateManager:
     def skip_audio(self):
         '''Skips the currently playing audio. If more audio is queued up, it will be played immediately.'''
 
-        if(self.is_playing):
-            LOGGER.debug(
+        if(self.active_play_request != None and self.is_playing and self.voice_client != None):
+            self.logger.debug(
                 f"Skipping file at: {self.active_play_request.file_path}, "
                 f"in channel: {self.voice_client.channel.name}, "
                 f"in server: {self.guild.name}, "
                 f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
             )
             self.voice_client.stop()
+            self.active_play_request.skipped = True
 
-        self.active_play_request.skipped = True
         self.next.set()
         self.skip_votes.clear()
 
@@ -192,9 +204,10 @@ class ServerStateManager:
         """Disconnects the current voice client from the current channel"""
 
         async def clean_up_voice_client():
-            await self.voice_client.disconnect()
-            LOGGER.debug(f"Successfully disconnected voice client from channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
-            self.voice_client = None
+            if (self.voice_client != None):
+                await self.voice_client.disconnect()
+                self.logger.debug(f"Successfully disconnected voice client from channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
+                self.voice_client = None
 
 
         ## No voice client to disconnect!
@@ -203,7 +216,7 @@ class ServerStateManager:
 
         ## Try to use the channel_timeout_handler, if this a disconnect that the bot initiated due to inactivity.
         if (inactive and self.channel_timeout_handler):
-            LOGGER.debug(
+            self.logger.debug(
                 f"Attempting to leave channel: {self.voice_client.channel.name}, "
                 f"in server: {self.guild.name}, "
                 f"due to inactivity for past {self.channel_timeout_seconds} seconds"
@@ -212,7 +225,7 @@ class ServerStateManager:
             ## Note that this doesn't actually wait for the speech process to continue.
             await self.channel_timeout_handler(self, clean_up_voice_client)
         else:
-            LOGGER.debug(f"Attempting to leave channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
+            self.logger.debug(f"Attempting to leave channel: {self.voice_client.channel.name}, in server: {self.guild.name}")
             await clean_up_voice_client()
 
 
@@ -230,22 +243,31 @@ class ServerStateManager:
 
                 try:
                     async with async_timeout.timeout(self.channel_timeout_seconds):
-                        self.active_play_request: AudioPlayRequest = await self.audio_play_queue.get()
-                        LOGGER.debug(f"Got new audio play request: {self.active_play_request}")
+                        self.active_play_request = await self.audio_play_queue.get()
+
+                        if (self.active_play_request == None):
+                            self.logger.warn("Got a None play request, skipping...")
+                            continue
+
+                        self.logger.debug(f"Got new audio play request: {self.active_play_request}")
                 except asyncio.TimeoutError:
                     if (self.voice_client and self.voice_client.is_connected()):
                         self.bot.loop.create_task(self.disconnect(inactive=True))
                     continue
                 except asyncio.CancelledError as e:
-                    LOGGER.exception("CancelledError during audio_player_loop, ignoring and continuing loop.", exc_info=e)
+                    self.logger.exception("CancelledError during audio_player_loop, ignoring and continuing loop.", exc_info=e)
                     continue
 
                 ## Join the requester's voice channel & play their requested audio (Or Handle the appropriate exception)
                 try:
                     self.voice_client = await self.get_voice_client(self.active_play_request.channel)
                 except futures.TimeoutError:
-                    LOGGER.error("Timed out trying to connect to the voice channel")
-                    if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
+                    self.logger.error("Timed out trying to connect to the voice channel")
+                    if (
+                            self.active_play_request.interaction is not None and
+                            self.active_play_request.interaction.followup is not None and
+                            self.active_play_request.author is not None
+                        ):
                         await self.active_play_request.interaction.response.send_message(
                             f"Sorry <@{self.active_play_request.author.id}>, I can't connect to that channel right now.",
                             ephemeral=True
@@ -253,7 +275,7 @@ class ServerStateManager:
                     continue
 
                 except UnableToConnectToVoiceChannelException as e:
-                    LOGGER.error("Unable to connect to voice channel")
+                    self.logger.error("Unable to connect to voice channel")
 
                     required_permission_phrases = []
                     if (not e.can_connect):
@@ -261,7 +283,11 @@ class ServerStateManager:
                     if (not e.can_speak):
                         required_permission_phrases.append("speak in that channel")
 
-                    if (self.active_play_request.interaction is not None and self.active_play_request.interaction.followup is not None):
+                    if (
+                            self.active_play_request.interaction is not None and
+                            self.active_play_request.interaction.followup is not None and
+                            self.active_play_request.author is not None
+                        ):
                         await self.active_play_request.interaction.response.send_message(
                             f"Sorry <@{self.active_play_request.author.id}>, I don't have permission to {' or '.join(required_permission_phrases)}",
                             ephemeral=True
@@ -282,8 +308,8 @@ class ServerStateManager:
                             self.next.set()
 
                             ## Perform callback after the audio has finished (assuming it's defined)
-                            callback = current_active_play_request.callback
-                            if(callback):
+                            if (current_active_play_request != None and current_active_play_request.callback):
+                                callback = current_active_play_request.callback
                                 if(asyncio.iscoroutinefunction(callback)):
                                     self.bot.loop.create_task(callback())
                                 else:
@@ -291,7 +317,7 @@ class ServerStateManager:
 
                     return after_play
 
-                LOGGER.debug(
+                self.logger.debug(
                     f"Playing file at: {self.active_play_request.file_path}, "
                     f"in channel: {self.active_play_request.channel.name}, "
                     f"in server: {self.active_play_request.channel.guild.name}, "
@@ -301,21 +327,22 @@ class ServerStateManager:
                 await self.next.wait()
 
             except Exception as e:
-                LOGGER.exception('Exception inside audio player event loop', exc_info=e)
+                self.logger.exception('Exception inside audio player event loop', exc_info=e)
 
 
 class AudioPlayer(Cog):
     SKIP_COMMAND_NAME = "skip"
-
-    ## Keys
     SKIP_PERCENTAGE_KEY = "skip_percentage"
     FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
     FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
 
+    ## Lifecycle
 
-    def __init__(self, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
+    def __init__(self, config: Configuration, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
+        self.config = config
         self.bot = bot
         self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
@@ -326,14 +353,14 @@ class AudioPlayer(Cog):
         self.channel_timeout_handler = channel_timeout_handler
 
         ## Clamp between 0.0 and 1.0
-        self.skip_percentage = max(min(float(CONFIG_OPTIONS.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
-        self.ffmpeg_parameters = CONFIG_OPTIONS.get(self.FFMPEG_PARAMETERS_KEY, "")
-        self.ffmpeg_post_parameters = CONFIG_OPTIONS.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
+        self.skip_percentage = max(min(float(self.config.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
+        self.ffmpeg_parameters = self.config.get(self.FFMPEG_PARAMETERS_KEY, "")
+        self.ffmpeg_post_parameters = self.config.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
 
         ## Commands
         self.add_command(app_commands.Command(
             name=AudioPlayer.SKIP_COMMAND_NAME,
-            description=self.skip_command.__doc__,
+            description=self.skip_command.__doc__ or "Skips the current audio",
             callback=self.skip_command
         ))
 
@@ -342,19 +369,29 @@ class AudioPlayer(Cog):
         async def skip(ctx: Context):
             """Skips the current audio"""
 
+            guild = ctx.guild
+            if (guild is None):
+                await ctx.send("This command must be used in a server.")
+                return
+
             await self.database_manager.store(ctx)
 
-            state = self.get_server_state(ctx.guild)
-            await state.skip_audio()
+            state = self.get_server_state(guild)
+            state.skip_audio()
 
 
         @self.admin_cog.admin.command()
         async def disconnect(ctx: Context):
             """Disconnect from the current voice channel"""
 
+            guild = ctx.guild
+            if (guild is None):
+                await ctx.send("This command must be used in a server.")
+                return
+
             await self.database_manager.store(ctx)
 
-            state = self.get_server_state(ctx.guild)
+            state = self.get_server_state(guild)
             await state.disconnect()
 
     ## Properties
@@ -386,38 +423,45 @@ class AudioPlayer(Cog):
         server_state = self.server_states.get(guild.id)
 
         if (server_state is None):
-            server_state = ServerStateManager(self.bot, self, guild, self.channel_timeout_handler)
+            server_state = ServerStateManager(self.config, self.bot, self, guild, self.channel_timeout_handler)
             self.server_states[guild.id] = server_state
 
         return server_state
 
 
-    def build_player(self, file_path: Path) -> discord.FFmpegPCMAudio:
+    def build_player(self, file_path: Path) -> FFmpegPCMAudio:
         '''Builds an audio player for playing the file located at 'file_path'.'''
 
-        return discord.FFmpegPCMAudio(
+        return FFmpegPCMAudio(
             str(file_path),
             before_options=self.ffmpeg_parameters,
             options=self.ffmpeg_post_parameters
         )
 
 
-    async def play_audio(self, file_path: Path, author: Member, target_member: Member, interaction: Interaction = None, callback: Callable = None):
+    async def play_audio(
+            self,
+            *,
+            file_path: Path,
+            author: Member,
+            target_member: Member,
+            interaction: Interaction | None = None,
+            callback: Callable | None = None
+    ):
         '''Plays the given audio file aloud to your channel'''
 
         ## Make sure file_path points to an actual file
         if (not file_path.is_file()):
             error_text = f"Unable to play file at: {file_path}, file doesn't exist or isn't a file."
-            LOGGER.error(error_text)
+            self.logger.error(error_text)
             raise FileNotFoundError(error_text)
 
         ## Verify that the target/requester is in a channel
-        voice_channel = None
-        if (target_member.voice is None):
+        if (target_member.voice is None or target_member.voice.channel is None):
             error_text = f"Target member {target_member.id} isn't in a voice channel"
-            LOGGER.warn(error_text)
+            self.logger.warn(error_text)
             raise NoVoiceChannelAvailableException(error_text, target_member)
-        voice_channel = target_member.voice.channel
+        vocal_guild_channel = target_member.voice.channel
 
         ## Get/build the server state
         state = self.get_server_state(target_member.guild)
@@ -425,39 +469,58 @@ class AudioPlayer(Cog):
         ## Initial permissions check. This is unlikely to be necessary, but if a server's audio_play_queue gets big
         ## enough and the admin is tweaking permissions, then there's a chance that the permissions now and the
         ## permissions upon playing won't align.
-        can_connect = state.can_bot_connect_to_channel(voice_channel)
-        can_speak = state.can_bot_speak_in_channel(voice_channel)
+        can_connect = state.can_bot_connect_to_channel(vocal_guild_channel)
+        can_speak = state.can_bot_speak_in_channel(vocal_guild_channel)
         if (not can_connect or not can_speak):
-            LOGGER.error(
-                f"Unable to connect to voice channel {voice_channel.name} in server {target_member.guild.name}, "
+            self.logger.error(
+                f"Unable to connect to voice channel {vocal_guild_channel.name} in server {target_member.guild.name}, "
                 f"invalid permissions. Can connect: {can_connect}, can speak: {can_speak}"
             )
             raise UnableToConnectToVoiceChannelException(
                 "Unable to speak and/or connect to the channel",
-                voice_channel,
+                vocal_guild_channel,
                 can_connect=can_connect,
                 can_speak=can_speak
             )
 
         ## Build the player, and add it to the state
         player = self.build_player(file_path)
-        await state.add_play_request(AudioPlayRequest(author, target_member, voice_channel, player, file_path, interaction, callback))
+        await state.add_play_request(
+            AudioPlayRequest(author, target_member, vocal_guild_channel, player, file_path, interaction, callback)
+        )
 
 
-    async def _play_audio_via_server_state(self, server_state: ServerStateManager, file_path: Path, callback: Callable = None):
+    async def _play_audio_via_server_state(
+            self,
+            server_state: ServerStateManager,
+            file_path: Path,
+            callback: Callable | None = None
+    ):
         '''Internal method for playing audio without a requester. Instead it'll play from the active voice_client.'''
+
+        ## Make sure the server_state has a voice_client
+        if (server_state.voice_client == None):
+            return
 
         ## Make sure file_path points to an actual file
         if (not file_path.is_file()):
             error_text = f"Unable to play file at: {file_path}, file doesn't exist or isn't a file."
-            LOGGER.error(error_text)
+            self.logger.error(error_text)
             raise FileNotFoundError(error_text)
 
         ## Create a player for the audio file
         player = self.build_player(file_path)
 
         ## On successful player creation, build a AudioPlayRequest and push it into the queue
-        play_request = AudioPlayRequest(None, None, server_state.voice_client.channel, player, file_path, None, callback)
+        play_request = AudioPlayRequest(
+            None,
+            None,
+            server_state.voice_client.channel,
+            player,
+            file_path,
+            None,
+            callback
+        )
         await server_state.add_play_request(play_request)
 
     ## Commands
@@ -465,12 +528,22 @@ class AudioPlayer(Cog):
     async def skip_command(self, interaction: Interaction):
         '''Vote to skip what's currently playing'''
 
-        state = self.get_server_state(interaction.guild)
+        guild = interaction.guild
+        if (guild is None):
+            await interaction.response.send_message("This command must be used in a server.", ephemeral=True)
+            return
+
+        state = self.get_server_state(guild)
 
         ## Is the bot speaking?
         if(not state.is_playing):
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message("I'm not speaking at the moment.", ephemeral=True)
+            return
+
+        if (state.active_play_request is None):
+            self.logger.warn("No active play request, but the bot is playing audio.")
+            return
 
         ## Add a skip vote and tally it up!
         voter = interaction.user
@@ -478,6 +551,7 @@ class AudioPlayer(Cog):
             state.skip_audio()
             await self.database_manager.store(interaction)
             await interaction.response.send_message(f"<@{voter.id}> skipped their own audio.")
+            return
 
         elif(voter.id not in state.skip_votes):
             state.skip_votes.add(voter.id)
@@ -500,7 +574,9 @@ class AudioPlayer(Cog):
 
                 await self.database_manager.store(interaction)
                 await interaction.response.send_message(f"Skip vote added! Currently at {total_votes} of {required_votes} votes.")
+            return
 
         else:
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(f"<@{voter.id}> has already voted!", ephemeral=True)
+            return

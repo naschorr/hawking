@@ -11,7 +11,7 @@ from common.module.module_initialization_container import ModuleInitializationCo
 
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 

@@ -10,13 +10,15 @@ if (_root_path not in sys.path):
 import os
 import logging
 import asyncio
+import argparse
+from pathlib import Path
 
 import discord
 from discord.ext import commands
 
 from core.cogs import admin_cog, help_cog, speech_cog, speech_config_help_cog
 from core.tts import tts_controller
-from common import audio_player, message_parser
+from common import audio_player, message_parser, string_similarity
 from common.cogs import privacy_management_cog, invite_cog
 from common.configuration import Configuration
 from common.logging import Logging
@@ -28,22 +30,23 @@ from common.module.module_manager import ModuleManager
 from common.ui import component_factory
 from modules.phrases import phrases
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
+DEFAULT_DESCRIPTION = "The retro TTS bot for Discord"
 
 
 class Hawking:
     ## Initialize the bot, and add base cogs
-    def __init__(self, **kwargs):
+    def __init__(self, config_path: Path | None = None):
+        config = Configuration(config_path)
+        self.logger = Logging.initialize_logging(logging.getLogger(self.__class__.__qualname__))
+
         ## Make sure there's a Discord token before doing anything else
-        self.token = CONFIG_OPTIONS.get("discord_token")
+        self.token = config.get("discord_token")
         if (not self.token):
             raise RuntimeError("Unable to get Discord token!")
 
-        self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
-        self.version = CONFIG_OPTIONS.get("version")
-        self.description = CONFIG_OPTIONS.get("description", ["The retro TTS bot for Discord"])
+        self.name = config.get("name", "the bot").capitalize()
+        self.version = config.get("version")
+        self.description = config.get("description", [DEFAULT_DESCRIPTION])
 
         ## Init the bot and module manager
         self.bot = commands.AutoShardedBot(
@@ -53,10 +56,14 @@ class Hawking:
         )
 
         ## Prepare to register modules
-        self._module_manager = ModuleManager(self, self.bot)
+        self._module_manager = ModuleManager(config, self, self.bot)
 
         ## Register the modules (no circular dependencies!)
-        self.module_manager.register_module(message_parser.MessageParser)
+        self.module_manager.register_module(
+            message_parser.MessageParser,
+            config,
+            dependencies=[]
+        )
         self.module_manager.register_module(
             command_reconstructor.CommandReconstructor,
             dependencies=[message_parser.MessageParser]
@@ -67,22 +74,31 @@ class Hawking:
         )
         self.module_manager.register_module(
             database_manager.DatabaseManager,
+            config,
             dynamo_db_client.DynamoDbClient(),
             dependencies=[command_reconstructor.CommandReconstructor, anonymous_item_factory.AnonymousItemFactory]
         )
         self.module_manager.register_module(
             component_factory.ComponentFactory,
+            config,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
+            string_similarity.StringSimilarity,
+            config,
+            dependencies=[]
+        )
+        self.module_manager.register_module(
             admin_cog.AdminCog,
+            config,
             self,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )
         self.module_manager.register_module(
             privacy_management_cog.PrivacyManagementCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
@@ -93,6 +109,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             invite_cog.InviteCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager]
         )
@@ -102,12 +119,17 @@ class Hawking:
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
+            config,
             self.bot,
             dependencies=[admin_cog.AdminCog, database_manager.DatabaseManager]
         )
-        self.module_manager.register_module(tts_controller.TTSController)
+        self.module_manager.register_module(
+            tts_controller.TTSController,
+            config
+        )
         self.module_manager.register_module(
             speech_cog.SpeechCog,
+            config,
             self.bot,
             dependencies=[
                 invoked_command_handler.InvokedCommandHandler,
@@ -118,6 +140,7 @@ class Hawking:
         )
         self.module_manager.register_module(
             help_cog.HelpCog,
+            config,
             self.bot,
             dependencies=[component_factory.ComponentFactory, phrases.Phrases, database_manager.DatabaseManager]
         )
@@ -147,13 +170,13 @@ class Hawking:
                 status = discord.Activity(name=f"/{loaded_help_cog.help_command.name}", type=discord.ActivityType.watching)
                 await self.bot.change_presence(activity=status)
 
-            LOGGER.info(f"Logged in as '{self.bot.user.name}' (version: {self.version}), (id: {self.bot.user.id})")
+            self.logger.info(f"Logged in as '{self.bot.user.name}' (version: {self.version}), (id: {self.bot.user.id})")
 
 
         @self.bot.event
         async def on_command_error(ctx, exception):
             ## Something weird happened, log it!
-            LOGGER.exception("Unhandled exception in during command execution", exc_info=exception)
+            self.logger.exception("Unhandled exception in during command execution", exc_info=exception)
             await self.database_manager.store(ctx, valid=False)
 
     ## Properties
@@ -166,9 +189,20 @@ class Hawking:
     def run(self):
         '''Starts the bot up'''
 
-        LOGGER.info(f"Starting up {self.name}")
+        self.logger.info(f"Starting up {self.name}")
         self.bot.run(self.token)
 
 
 if(__name__ == "__main__"):
-    Hawking().run()
+    parser = argparse.ArgumentParser(description=DEFAULT_DESCRIPTION)
+    parser.add_argument(
+        "--config",
+        "-c",
+        help="Path to the production configuration file to use",
+        default=None,
+        type=Path,
+        action="store"
+    )
+    args = vars(parser.parse_args())
+
+    Hawking(config_path=args["config"]).run()

@@ -10,27 +10,24 @@ from common.module.module_initialization_container import ModuleInitializationCo
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, errors
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class AdminCog(Cog):
     ## Keys
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, hawking: Hawking, bot: Bot, *args, **kwargs):
+    def __init__(self, config: Configuration, hawking: Hawking, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.hawking = hawking
         self.bot = bot
 
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.admins = CONFIG_OPTIONS.get(self.ADMINS_KEY, [])
-        self.announce_updates = CONFIG_OPTIONS.get(self.ANNOUNCE_UPDATES_KEY, False)
+        self.admins = config.get(self.ADMINS_KEY, [])
+        self.announce_updates = config.get(self.ANNOUNCE_UPDATES_KEY, False)
 
     ## Commands
 

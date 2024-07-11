@@ -72,7 +72,12 @@ class Fortune(DiscoverableCog):
                 await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
 
-        action = lambda: self.speech_cog.say(fortune, author=interaction.user, ignore_char_limit=True, interaction=interaction)
+        action = lambda: self.speech_cog.say(
+            text=fortune,
+            author=interaction.user,
+            ignore_char_limit=True,
+            interaction=interaction
+        )
         await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 

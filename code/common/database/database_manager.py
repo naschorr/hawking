@@ -14,28 +14,25 @@ from common.database.database_client import DatabaseClient
 from common.exceptions import UnableToStoreInDatabaseException
 from common.module.module import Module
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class DatabaseManager(Module):
-    def __init__(self, client: DatabaseClient = None, *args, **kwargs):
+    def __init__(self, config: Configuration, client: DatabaseClient, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
         assert (self.command_reconstructor is not None)
         self.anonymous_item_factory: AnonymousItemFactory = kwargs.get('dependencies', {}).get('AnonymousItemFactory')
         assert (self.anonymous_item_factory is not None)
 
-        self.enabled = CONFIG_OPTIONS.get('database_enable', False)
-
+        self.enabled = config.get('database_enable', False)
         self._client: DatabaseClient = client
 
     ## Methods
 
     def register_client(self, client: DatabaseClient):
-        LOGGER.info(f"Registering new database client: {client.name}")
+        self.logger.info(f"Registering new database client: {client.name}")
         self._client = client
 
 

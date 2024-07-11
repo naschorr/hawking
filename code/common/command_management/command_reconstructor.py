@@ -7,10 +7,7 @@ from common.configuration import Configuration
 from common.logging import Logging
 from common.message_parser import MessageParser
 from common.module.module import Module
-
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
+from core.exceptions import UnableToReconstructCommandException
 
 
 class CommandReconstructor(Module):
@@ -18,16 +15,30 @@ class CommandReconstructor(Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
+
         self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
         assert(self.message_parser is not None)
 
 
     def _reconstruct_command_from_context(self, context: Context) -> str:
+        if (context.command is None):
+            raise UnableToReconstructCommandException("Unable to reconstruct command string from context, no command found.")
+
         ## No param values stored in the context now? Names are available, but that's not very useful.
         return f"{context.clean_prefix}{context.command.qualified_name}"
 
 
-    def _reconstruct_command_from_interaction(self, interaction: Interaction, add_parameter_keys = False, anonymize_mentions = False, replace_mentions = True) -> str:
+    def _reconstruct_command_from_interaction(
+            self,
+            interaction: Interaction,
+            add_parameter_keys = False,
+            anonymize_mentions = False,
+            replace_mentions = True
+    ) -> str:
+        if (interaction.data is None or interaction.command is None):
+            raise UnableToReconstructCommandException("Unable to reconstruct command string from interaction, no command found.")
+
         ## All interactions refer to slash commands, right?
         prefix = "/"
         name = interaction.command.qualified_name

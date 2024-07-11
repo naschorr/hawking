@@ -16,15 +16,15 @@ from common.module.module_initialization_container import ModuleInitializationCo
 from common.ui.component_factory import ComponentFactory
 from question import Question
 
-import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config(Path(__file__).parent)
+CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class StupidQuestions(DiscoverableCog):
+    STUPID_QUESTION_COMMAND_NAME = "stupid_question"
     THOUGHT_PROVOKING_STRINGS = [
         "🤔?",
         "have you ever pondered:",
@@ -37,6 +37,8 @@ class StupidQuestions(DiscoverableCog):
         "take a gander at this highly intelligent and deeply insightful question:",
         "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:"
     ]
+
+    ## Lifecycle
 
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
@@ -83,8 +85,8 @@ class StupidQuestions(DiscoverableCog):
         asyncio.create_task(self.load_questions())
 
         self.add_command(app_commands.Command(
-            name="stupid_question",
-            description=self.stupid_question_command.__doc__,
+            name=StupidQuestions.STUPID_QUESTION_COMMAND_NAME,
+            description=self.stupid_question_command.__doc__ or "Ask a stupid question",
             callback=self.stupid_question_command
         ))
 
@@ -161,7 +163,12 @@ class StupidQuestions(DiscoverableCog):
                 self.bot.loop.create_task(self.load_questions())
 
 
-        action = lambda: self.speech_cog.say(question.text, author=interaction.user, ignore_char_limit=True, interaction=interaction)
+        action = lambda: self.speech_cog.say(
+            text=question.text,
+            author=interaction.user,
+            ignore_char_limit=True,
+            interaction=interaction
+        )
         await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 
 

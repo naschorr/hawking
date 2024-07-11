@@ -12,31 +12,30 @@ from common.module.module import Module
 
 import async_timeout
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class TTSController(Module):
-    def __init__(self, **kwargs):
+    def __init__(self, config: Configuration, **kwargs):
         super().__init__(**kwargs)
 
-        self.exe_path = TTSController.get_tts_executable_path()
-        self.args = CONFIG_OPTIONS.get("args", {})
-        self.audio_generate_timeout_seconds = CONFIG_OPTIONS.get("audio_generate_timeout_seconds", 3)
-        self.prepend = CONFIG_OPTIONS.get("prepend", "[:phoneme on]")
-        self.append = CONFIG_OPTIONS.get("append", "")
-        self.char_limit = int(CONFIG_OPTIONS.get("char_limit", 1250))
-        self.newline_replacement = CONFIG_OPTIONS.get("newline_replacement", "[_<250,10>]")
-        self.output_extension = CONFIG_OPTIONS.get("output_extension", "wav")
-        self.wine = CONFIG_OPTIONS.get("wine", "wine")
-        self.xvfb_prepend = CONFIG_OPTIONS.get("xvfb_prepend", "DISPLAY=:0.0")
-        self.is_headless = CONFIG_OPTIONS.get("headless", False)
+        self.config = config
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
-        if (output_dir_path := CONFIG_OPTIONS.get("tts_output_dir_path")):
+        self.exe_path = self.get_tts_executable_path()
+        self.args = self.config.get("args", {})
+        self.audio_generate_timeout_seconds = self.config.get("audio_generate_timeout_seconds", 3)
+        self.prepend = self.config.get("prepend", "[:phoneme on]")
+        self.append = self.config.get("append", "")
+        self.char_limit = int(self.config.get("char_limit", 1250))
+        self.newline_replacement = self.config.get("newline_replacement", "[_<250,10>]")
+        self.output_extension = self.config.get("output_extension", "wav")
+        self.wine = self.config.get("wine", "wine")
+        self.xvfb_prepend = self.config.get("xvfb_prepend", "DISPLAY=:0.0")
+        self.is_headless = self.config.get("headless", False)
+
+        if (output_dir_path := self.config.get("tts_output_dir_path")):
             self.output_dir_path = Path(output_dir_path)
         else:
-            self.output_dir_path = Path.joinpath(utilities.get_root_path(), CONFIG_OPTIONS.get("tts_output_dir", "temp"))
+            self.output_dir_path = Path.joinpath(utilities.get_root_path(), self.config.get("tts_output_dir", "temp"))
 
         self.paths_to_delete = []
 
@@ -48,14 +47,13 @@ class TTSController(Module):
         self._init_output_dir()
 
 
-    @staticmethod
-    def get_tts_executable_path() -> Path:
-        tts_executable_path = CONFIG_OPTIONS.get("tts_executable_path")
+    def get_tts_executable_path(self) -> Path:
+        tts_executable_path = self.config.get("tts_executable_path")
 
         if (tts_executable_path is not None):
             return Path(tts_executable_path)
         else:
-            return Path(utilities.get_root_path(), "code", "core", "tts", CONFIG_OPTIONS.get("tts_executable", "say.exe"))
+            return Path(utilities.get_root_path(), "code", "core", "tts", self.config.get("tts_executable", "say.exe"))
 
 
     def _init_output_dir(self):
@@ -67,7 +65,7 @@ class TTSController(Module):
                     try:
                         os.remove(os.sep.join([root, file]))
                     except OSError:
-                        LOGGER.exception(f"Error removing file: {str(file)}")
+                        self.logger.exception(f"Error removing file: {str(file)}")
 
 
     def _generate_unique_file_name(self, extension):
@@ -115,7 +113,7 @@ class TTSController(Module):
                 ## The goal was to remove the file, and as long as it doesn't exist then we're good.
                 continue
             except Exception:
-                LOGGER.exception(f"Error deleting file: {path}")
+                self.logger.exception(f"Error deleting file: {path}")
                 to_delete.append(path)
 
         self.paths_to_delete = to_delete[:]
@@ -149,6 +147,7 @@ class TTSController(Module):
             args = f"{self.xvfb_prepend} {args}"
 
         has_timed_out = False
+        retval = 1
         try:
             ## See https://github.com/naschorr/hawking/issues/50
             async with async_timeout.timeout(self.audio_generate_timeout_seconds):
@@ -158,7 +157,7 @@ class TTSController(Module):
             raise BuildingAudioFileTimedOutExeption(f"Building wav timed out for '{message}'")
         except asyncio.CancelledError as e:
             if (not has_timed_out):
-                LOGGER.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
+                self.logger.exception("CancelledError during wav generation, but not from a timeout!", exc_info=e)
 
         if(retval == 0):
             return output_file_path

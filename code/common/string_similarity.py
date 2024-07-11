@@ -1,38 +1,45 @@
 from difflib import SequenceMatcher
 
 from common.configuration import Configuration
-
-## Config
-CONFIG_OPTIONS = Configuration.load_config()
+from common.module.module import Module
 
 
-class StringSimilarity:
+class StringSimilarity(Module):
+
     ## https://stackoverflow.com/questions/17388213/find-the-similarity-metric-between-two-strings
     ## https://stackoverflow.com/questions/6690739/fuzzy-string-comparison-in-python-confused-with-which-library-to-use
 
+    ## Lifecycle
+    def __init__(self, config: Configuration, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.similarity_algorithm = config.get("string_similarity_algorithm")
+
+    ## Methods
+
     @staticmethod
-    def _calcJaroWinkleDistance(stringA, stringB):
+    def _calcJaroWinkleDistance(left: str, right: str):
         raise NotImplementedError(
             "Jaro-Winkle distance calculation hasn't been implemented. Use difflib implementation"
         )
 
+
     @staticmethod
-    def _calcDamerauLevenshteinDistance(stringA, stringB):
+    def _calcDamerauLevenshteinDistance(left: str, right: str):
         raise NotImplementedError(
             "Damerau-Levenshtein distance calculation hasn't been implemented. Use difflib implementation"
         )
 
-    @staticmethod
-    def _calcDifflibDistance(stringA, stringB):
-        return SequenceMatcher(None, stringA, stringB).ratio()
 
     @staticmethod
-    def similarity(stringA, stringB):
-        similarity_algorithm = CONFIG_OPTIONS.get("string_similarity_algorithm")
+    def _calcDifflibDistance(left: str, right: str):
+        return SequenceMatcher(None, left, right).ratio()
 
-        if (similarity_algorithm == "jaro-winkler"):
-            return StringSimilarity._calcJaroWinkleDistance(stringA, stringB)
-        elif (similarity_algorithm == "damerau–levenshtein"):
-            return StringSimilarity._calcDamerauLevenshteinDistance(stringA, stringB)
+
+    def similarity(self, left: str, right: str):
+        if (self.similarity_algorithm == "jaro-winkler"):
+            return StringSimilarity._calcJaroWinkleDistance(left, right)
+        elif (self.similarity_algorithm == "damerau-levenshtein"):
+            return StringSimilarity._calcDamerauLevenshteinDistance(left, right)
         else:
-            return StringSimilarity._calcDifflibDistance(stringA, stringB)
+            return StringSimilarity._calcDifflibDistance(left, right)

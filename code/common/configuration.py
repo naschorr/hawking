@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import common.utilities as utilities
 
@@ -8,9 +9,15 @@ class Configuration:
     PROD_CONFIG_NAME = "config.prod.json"   # The name of the prod config file
     DEV_CONFIG_NAME = "config.dev.json"     # The name of the dev config file
 
+    ## Lifecycle
 
-    @staticmethod
-    def _load_config_chunks(directory_path: Path = None) -> dict:
+    def __init__(self, root_config_path: Path | None = None):
+        self.root_config_path = root_config_path or utilities.get_root_path()
+        self._config = self.load_config(self.root_config_path)
+
+    ## Methods
+
+    def _load_config_chunks(self, directory_path: Path | None = None) -> dict:
         '''
         Loads configuration data from the given directory (or the app's root if not provided) into a dictionary. The
         expected prod, dev, and config configuration files are loaded separately and combined into the same dict under
@@ -22,7 +29,7 @@ class Configuration:
         :rtype: dict
         '''
 
-        path = directory_path or utilities.get_root_path()
+        path = directory_path or self.root_config_path
         config = {}
 
         dev_config_path = Path.joinpath(path, Configuration.DEV_CONFIG_NAME)
@@ -40,8 +47,7 @@ class Configuration:
         return config
 
 
-    @staticmethod
-    def load_config(directory_path: Path = None) -> dict:
+    def load_config(self, directory_path: Path | None = None) -> dict:
         '''
         Parses one or more JSON configuration files to build a dictionary with proper precedence for configuring the program
 
@@ -51,11 +57,11 @@ class Configuration:
         :rtype: dict
         '''
 
-        root_config_chunks = Configuration._load_config_chunks(utilities.get_root_path())
+        root_config_chunks = self._load_config_chunks(self.root_config_path)
 
         config_chunks = {}
         if (directory_path is not None):
-            config_chunks = Configuration._load_config_chunks(directory_path)
+            config_chunks = self._load_config_chunks(directory_path)
 
         ## Build up a configuration hierarchy, allowing for global configuration if desired
         ## See: https://github.com/naschorr/hawking/issues/181
@@ -67,3 +73,29 @@ class Configuration:
         config |= config_chunks.get("dev", {})
 
         return config
+
+
+    def get(self, key: str, default: Any | None = None) -> Any:
+        '''
+        Gets a configuration value from the configuration dictionary, or returns the default value if the key is not found.
+
+        :param key: The key to look up in the configuration dictionary.
+        :type key: str
+        :param default: The default value to return if the key is not found.
+        :type default: any, optional
+        :return: The value associated with the given key, or the default value if the key is not found.
+        :rtype: any
+        '''
+
+        try:
+            return self._config[key]
+        except KeyError:
+            return default
+
+
+    def reload_config(self):
+        '''
+        Reloads the configuration dictionary
+        '''
+
+        self._config = self.load_config(self.root_config_path)

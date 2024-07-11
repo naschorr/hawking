@@ -1,34 +1,23 @@
-from dataclasses import replace
 import re
 import emoji
 
-from common import utilities
 from common.configuration import Configuration
 from common.module.module import Module
 
-## Config
-CONFIG_OPTIONS = Configuration.load_config()
-
 
 class MessageParser(Module):
-    ## Keys
-    REPLACE_EMOJI_KEY = "replace_emoji"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config: Configuration, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.replace_emoji = CONFIG_OPTIONS.get(self.REPLACE_EMOJI_KEY, True)
-
-        ## Invert emoji.UNICODE_EMOJI's emoji dict
-        self.emoji_map = {}
-        for emoji_code, emoji_name in emoji.UNICODE_EMOJI.items():
-            self.emoji_map[emoji_code.lower()] = self._strip_underscores(emoji_name[1:-1])
+        self.replace_emoji = config.get("replace_emoji", True)
+        self.emoji_map = self._build_emoji_name_map('en')
 
     ## Methods
 
-    ## Parses a given message, replacing discord mentions with their proper names, and replacing emoji with their
-    ## textual names.
-    def parse_message(self, message: str, interaction_data: dict):
+    def parse_message(self, message: str, interaction_data: dict) -> str:
+        '''Parses a given message, replacing discord mentions with their proper names, and replacing emoji with their textual names.'''
+
         message = self.replace_mentions(message, interaction_data)
 
         if(self.replace_emoji):
@@ -39,13 +28,30 @@ class MessageParser(Module):
         return message
 
 
-    ## Removes all underscores from a string, and replaces them with spaces.
+    def _build_emoji_name_map(self, language_code: str | None) -> dict[str, str]:
+        '''Builds a map of emoji names to their actual names'''
+
+        if (language_code is None and language_code not in emoji.LANGUAGES):
+            language_code = 'en'
+
+        ## Invert emoji.EMOJI_DATA's emoji dict for emoji names in the specified language
+        emoji_map = {}
+        for emoji_code, emoji_properties in emoji.EMOJI_DATA.items():
+            if (emoji_name := emoji_properties.get(language_code)):
+                emoji_map[emoji_code.lower()] = self._strip_underscores(emoji_name[1:-1])
+
+        return emoji_map
+
+
     def _strip_underscores(self, string):
+        '''Removes all underscores from a string, and replaces them with spaces.'''
+
         return re.sub(r"_", " ", string)
 
 
-    ## Replaces emoji with their actual strings
     def _replace_emoji(self, message):
+        '''Replaces emoji with their actual strings'''
+
         char_array = list(message)
 
         for index, char in enumerate(char_array):
@@ -57,8 +63,9 @@ class MessageParser(Module):
         return ''.join(char_array)
 
 
-    ## Removes all emoji from a given string
     def _strip_emoji(self, message):
+        '''Removes all emoji from a given string'''
+
         char_array = list(message)
 
         for index, char in enumerate(char_array):
@@ -102,7 +109,8 @@ class MessageParser(Module):
             id_mapping[user["id"]] = f"user{unique_mention_counter}" if anonymize_mentions else user["username"]
 
         for member in interaction_data.get("resolved", {}).get("members", {}).values():
-            id_mapping[member["user"]["id"]] = f"member{unique_mention_counter}" if anonymize_mentions else member.get("nick") or member["user"]["username"]
+            if ("user" in member):
+                id_mapping[member["user"]["id"]] = f"member{unique_mention_counter}" if anonymize_mentions else member.get("nick") or member["user"]["username"]
 
         for channel in interaction_data.get("resolved", {}).get("channels", {}).values():
             id_mapping[channel["id"]] = f"channel{unique_mention_counter}" if anonymize_mentions else channel["name"]

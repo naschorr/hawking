@@ -1,12 +1,11 @@
 import logging
-from typing import List
 
 from common.module.module import Module
 from common.configuration import Configuration
 from common.logging import Logging
 
 ## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
+CONFIG_OPTIONS = Configuration().load_config()
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
@@ -19,11 +18,16 @@ class DependencyNode:
 
 
     def __str__(self):
-        return "{}: {}, children: {}, parents: {}, loaded: {}".format(DependencyNode.__name__,  self.name, self.children, self.parents, self.loaded)
+        return self.__repr__()
 
 
     def __repr__(self):
-        return "{}: {}, children: {}, parents: {}, loaded: {}".format(DependencyNode.__name__,  self.name, self.children, self.parents, self.loaded)
+        node_name = DependencyNode.__name__
+        child_names = [child.__name__ for child in self.children]
+        parent_names = [parent.__name__ for parent in self.parents]
+
+        return f"{node_name}: {self.name}, children: {child_names}, parents: {parent_names}, loaded: {self.loaded}"
+
 
 class DependencyGraph:
     def __init__(self):
@@ -33,11 +37,11 @@ class DependencyGraph:
 
     ## Methods
 
-    def insert(self, class_name: str, dependencies = list) -> DependencyNode:
+    def insert(self, class_name: str, dependencies: list = []) -> DependencyNode:
         ## Don't insert duplicates
         if (class_name in self._node_map):
             LOGGER.warn(f'Unable to insert {class_name}, as it\'s already been added.')
-            return
+            return self._node_map[class_name]
 
         ## Build initial node & update mappings
         node = DependencyNode(class_name)

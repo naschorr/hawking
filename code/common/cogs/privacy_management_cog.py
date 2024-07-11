@@ -2,7 +2,6 @@ import os
 import stat
 import logging
 import asyncio
-import dateutil
 import datetime
 import json
 from pathlib import Path
@@ -14,20 +13,21 @@ from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
 
+import dateutil
 import discord
 from discord import app_commands, Interaction
 from discord.ext.commands import command, Context, Bot
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class PrivacyManagementCog(Cog):
+    PRIVACY_POLICY_COMMAND_NAME = "privacy_policy"
 
-    def __init__(self, bot: Bot, *args, **kwargs):
+    ## Lifecycle
+
+    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
@@ -35,20 +35,20 @@ class PrivacyManagementCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name = CONFIG_OPTIONS.get("name", "the bot").capitalize()
-        self.privacy_policy_url = CONFIG_OPTIONS.get('privacy_policy_url')
-        self.delete_request_scheduled_weekday = int(CONFIG_OPTIONS.get('delete_request_weekday_to_process', 0))
+        self.name = config.get("name", "the bot").capitalize()
+        self.privacy_policy_url = config.get('privacy_policy_url')
+        self.delete_request_scheduled_weekday = int(config.get('delete_request_weekday_to_process', 0))
         self._delete_request_scheduled_weekday_name = utilities.get_weekday_name_from_day_of_week(self.delete_request_scheduled_weekday)
-        self.delete_request_scheduled_time = dateutil.parser.parse(CONFIG_OPTIONS.get('delete_request_time_to_process', "T00:00:00Z"))
+        self.delete_request_scheduled_time = dateutil.parser.parse(config.get('delete_request_time_to_process', "T00:00:00Z"))
 
         ## Build the filepaths for the various tracking files
-        delete_request_queue_file_path = CONFIG_OPTIONS.get('delete_request_queue_file_path')
+        delete_request_queue_file_path = config.get('delete_request_queue_file_path')
         if (delete_request_queue_file_path):
             self.delete_request_queue_file_path = Path(delete_request_queue_file_path)
         else:
             self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt')
 
-        delete_request_meta_file_path = CONFIG_OPTIONS.get('delete_request_meta_file_path')
+        delete_request_meta_file_path = config.get('delete_request_meta_file_path')
         if (delete_request_meta_file_path):
             self.delete_request_meta_file_path = Path(delete_request_meta_file_path)
         else:
@@ -58,14 +58,14 @@ class PrivacyManagementCog(Cog):
         if (not self.is_file_accessible(self.delete_request_queue_file_path)):
             message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_queue_file_path)
 
-            LOGGER.error(message)
+            self.logger.error(message)
             raise RuntimeError(message)
 
         ## Make sure the file containing the delete request metadata is accessible.
         if (not self.is_file_accessible(self.delete_request_meta_file_path)):
             message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_meta_file_path)
 
-            LOGGER.error(message)
+            self.logger.error(message)
             raise RuntimeError(message)
 
         ## Keep a copy of all user ids that should be deleted in memory, so the actual file can't get spammed by repeats.
@@ -87,8 +87,8 @@ class PrivacyManagementCog(Cog):
         # Don't add a privacy policy link if there isn't a URL to link to
         if (self.privacy_policy_url):
             self.add_command(app_commands.Command(
-                name="privacy_policy",
-                description=self.privacy_policy_command.__doc__,
+                name=PrivacyManagementCog.PRIVACY_POLICY_COMMAND_NAME,
+                description=self.privacy_policy_command.__doc__ or "Gives a link to the privacy policy",
                 callback=self.privacy_policy_command
             ))
 
@@ -146,7 +146,7 @@ class PrivacyManagementCog(Cog):
                     fd.write(str(user_id) + '\n')
                 user_id_written = True
             except IOError as e:
-                LOGGER.exception(f"Unable to write id {user_id} to file at {self.delete_request_queue_file_path}.", exc_info=e)
+                self.logger.exception(f"Unable to write id {user_id} to file at {self.delete_request_queue_file_path}.", exc_info=e)
                 ## Give the file some time to close
                 await asyncio.sleep(1);
 
@@ -163,17 +163,17 @@ class PrivacyManagementCog(Cog):
         user_ids = list(self.get_all_queued_delete_request_ids())
 
         if (not user_ids):
-            LOGGER.info("Skipping delete request processing, as queue is empty.")
+            self.logger.info("Skipping delete request processing, as queue is empty.")
             return
 
-        LOGGER.info(f"Batch deleting {len(user_ids)} users from the database")
+        self.logger.info(f"Batch deleting {len(user_ids)} users from the database")
         await self.database_manager.batch_delete_users(user_ids)
 
-        LOGGER.info("Successfully performed batch delete")
+        self.logger.info("Successfully performed batch delete")
         self.queued_user_ids = set()
         self.empty_queued_delete_request_file()
 
-        LOGGER.info("Updating metadata file with time of completion.")
+        self.logger.info("Updating metadata file with time of completion.")
         self.update_last_process_delete_request_queue_time(datetime.datetime.now(datetime.timezone.utc))
 
 

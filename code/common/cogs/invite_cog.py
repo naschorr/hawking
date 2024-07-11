@@ -11,16 +11,14 @@ from discord.app_commands import Command
 from discord.ext.commands import Bot
 from discord.ui import View, Button
 
-## Config & logging
-CONFIG_OPTIONS = Configuration.load_config()
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class InviteCog(Cog):
+    INVITE_COMMAND_NAME = "invite"
 
-    def __init__(self, bot: Bot, *args, **kwargs):
+    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
         self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
@@ -28,15 +26,15 @@ class InviteCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name: str = CONFIG_OPTIONS.get("name", "the bot").capitalize()
-        self.bot_invite_blurb: str = CONFIG_OPTIONS.get("bot_invite_blurb", CONFIG_OPTIONS.get("description")[0])
-        self.bot_invite_url: str = CONFIG_OPTIONS.get("bot_invite_url")
-        self.support_discord_invite_url: str = CONFIG_OPTIONS.get("support_discord_invite_url")
+        self.name: str = config.get("name", "the bot").capitalize()
+        self.bot_invite_blurb: str = config.get("bot_invite_blurb", config.get("description")[0])
+        self.bot_invite_url: str = config.get("bot_invite_url")
+        self.support_discord_invite_url: str = config.get("support_discord_invite_url")
 
         ## Make sure the minimum config options are populated, so a proper embed can be generated later
         if (self.bot_invite_blurb is not None and self.bot_invite_url is not None):
             self.add_command(Command(
-                name="invite",
+                name=InviteCog.INVITE_COMMAND_NAME,
                 description=f"Posts invite links for {self.name}",
                 callback=self.invite_command
             ))

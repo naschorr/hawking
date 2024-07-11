@@ -10,7 +10,7 @@ from common.utilities import *
 class Logging:
     @staticmethod
     def initialize_logging(logger):
-        config = Configuration.load_config()
+        config = Configuration().load_config()
 
         log_format = "%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s"
         formatter = logging.Formatter(log_format)
