@@ -38,6 +38,8 @@ class StupidQuestions(DiscoverableCog):
         "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:"
     ]
 
+    ## Lifecycle
+
     def __init__(self, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
@@ -84,7 +86,7 @@ class StupidQuestions(DiscoverableCog):
 
         self.add_command(app_commands.Command(
             name=StupidQuestions.STUPID_QUESTION_COMMAND_NAME,
-            description=self.stupid_question_command.__doc__,
+            description=self.stupid_question_command.__doc__ or "Ask a stupid question",
             callback=self.stupid_question_command
         ))
 

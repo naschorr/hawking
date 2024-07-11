@@ -147,6 +147,7 @@ class TTSController(Module):
             args = f"{self.xvfb_prepend} {args}"
 
         has_timed_out = False
+        retval = 1
         try:
             ## See https://github.com/naschorr/hawking/issues/50
             async with async_timeout.timeout(self.audio_generate_timeout_seconds):

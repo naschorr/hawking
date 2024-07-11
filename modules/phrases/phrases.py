@@ -113,14 +113,14 @@ class Phrases(DiscoverableCog):
             ## Add the random command
             self.add_command(discord.app_commands.Command(
                 name=Phrases.RANDOM_COMMAND_NAME,
-                description=self.random_command.__doc__,
+                description=self.random_command.__doc__ or "Speaks a random phrase",
                 callback=self.random_command
             ))
 
             # Add the find command
             self.add_command(discord.app_commands.Command(
                 name=Phrases.FIND_COMMAND_NAME,
-                description=self.find_command.__doc__,
+                description=self.find_command.__doc__ or "Finds a similar phrase",
                 callback=self.find_command
             ))
 
@@ -131,12 +131,12 @@ class Phrases(DiscoverableCog):
             @autocomplete(name=self._phrase_name_command_autocomplete)
             @describe(name="The name of the phrase to speak")
             @describe(user="The user to speak the phrase to")
-            async def phrase_command_wrapper(interaction: Interaction, name: str, user: discord.Member = None):
+            async def phrase_command_wrapper(interaction: Interaction, name: str, user: discord.Member | None = None):
                 await self.phrase_command(interaction, name, user)
 
             self.add_command(discord.app_commands.Command(
                 name=Phrases.PHRASE_COMMAND_NAME,
-                description=self.phrase_command.__doc__,
+                description=self.phrase_command.__doc__ or "Speaks the specific phrase",
                 callback=phrase_command_wrapper,
                 extras={"cog": self}
             ))
@@ -296,7 +296,7 @@ class Phrases(DiscoverableCog):
             if (distance > most_similar_phrase[1]):
                 most_similar_phrase = (phrase, distance)
 
-        if (most_similar_phrase[1] < self.find_command_minimum_similarity):
+        if (most_similar_phrase[1] < self.find_command_minimum_similarity or most_similar_phrase[0] is None):
             await self.database_manager.store(interaction, valid=False)
             await interaction.response.send_message(
                 f"Sorry <@{interaction.user.id}>, I couldn't find anything close to that.", ephemeral=True

@@ -30,7 +30,7 @@ class SpeechConfigHelpCog(Cog):
 
         self.add_command(Command(
             name="speech_config",
-            description=self.speech_config_command.__doc__,
+            description=self.speech_config_command.__doc__ or "Posts a link to the speech config docs",
             callback=self.speech_config_command
         ))
 
