@@ -233,7 +233,7 @@ class ModuleManager:
                     continue
 
                 ## Build args to register the module
-                register_module_args = []
+                register_module_args = [self.config]
                 register_module_kwargs = {**module_init.init_kwargs}
 
                 if (module_init.is_cog):

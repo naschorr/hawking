@@ -21,10 +21,6 @@ from discord import Interaction
 from discord.app_commands import autocomplete, Choice, describe
 from discord.ext.commands import Context, Bot
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
-
 
 class Phrases(DiscoverableCog):
     PHRASES_NAME = "phrases"
@@ -32,10 +28,11 @@ class Phrases(DiscoverableCog):
     RANDOM_COMMAND_NAME = "random"
     FIND_COMMAND_NAME = "find"
 
-    def __init__(self, bot: Bot, *args, **kwargs):
-        super().__init__(bot, *args, **kwargs)
-
+    def __init__(self, config: Configuration, bot: Bot, **kwargs):
+        super().__init__(config, bot, **kwargs)
+        self.config = config
         self.bot = bot
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
@@ -54,7 +51,7 @@ class Phrases(DiscoverableCog):
 
         self.phrases: dict[str, Phrase] = {}
         self.phrase_groups: dict[str, PhraseGroup] = {}
-        self.find_command_minimum_similarity = float(CONFIG_OPTIONS.get('find_command_minimum_similarity', 0.5))
+        self.find_command_minimum_similarity = float(self.config.get('find_command_minimum_similarity', 0.5))
         self.phrases_folder_path = self.phrase_file_manager.phrases_folder_path
 
         ## Load and add the phrases
@@ -162,7 +159,7 @@ class Phrases(DiscoverableCog):
                 try:
                     self.phrases[phrase.name] = phrase
                 except Exception as e:
-                    LOGGER.warning("Skipping...", exc_info=e)
+                    self.logger.warning("Skipping...", exc_info=e)
                 else:
                     counter += 1
 
@@ -171,7 +168,7 @@ class Phrases(DiscoverableCog):
             if(counter > starting_count):
                 self.phrase_groups[phrase_group.key] = phrase_group
 
-        LOGGER.info(f'Loaded {counter} phrase{"s" if counter != 1 else ""}.')
+        self.logger.info(f'Loaded {counter} phrase{"s" if counter != 1 else ""}.')
         return counter
 
 

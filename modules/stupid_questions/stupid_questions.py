@@ -2,7 +2,6 @@ import logging
 import random
 import time
 import asyncio
-from pathlib import Path
 
 from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
@@ -19,9 +18,6 @@ from question import Question
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 class StupidQuestions(DiscoverableCog):
     STUPID_QUESTION_COMMAND_NAME = "stupid_question"
@@ -40,10 +36,11 @@ class StupidQuestions(DiscoverableCog):
 
     ## Lifecycle
 
-    def __init__(self, bot: Bot, *args, **kwargs):
-        super().__init__(bot, *args, **kwargs)
-
+    def __init__(self, config: Configuration, bot: Bot, **kwargs):
+        super().__init__(config, bot, **kwargs)
+        self.config = config
         self.bot = bot
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
@@ -57,7 +54,7 @@ class StupidQuestions(DiscoverableCog):
         ## Handle Reddit dependency
         reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
         if (not reddit_dependency):
-            LOGGER.info(f"No Reddit dependency provided, unable to load {self.__class__.__name__}.")
+            self.logger.info(f"No Reddit dependency provided, unable to load {self.__class__.__name__}.")
             self.successful = False
             return
         self.reddit = reddit_dependency.reddit
@@ -70,10 +67,10 @@ class StupidQuestions(DiscoverableCog):
         self.last_question_refresh_time = time.time()
 
         ## Load config data
-        self.submission_top_time = CONFIG_OPTIONS.get("stupid_question_top_time", "month")
-        self.submission_count = CONFIG_OPTIONS.get("stupid_question_submission_count", 500)
-        self.refresh_time_seconds = CONFIG_OPTIONS.get("stupid_question_refresh_time_seconds", 21600)
-        subreddits = CONFIG_OPTIONS.get("stupid_question_subreddits", ["NoStupidQuestions"])
+        self.submission_top_time = self.config.get("stupid_question_top_time", "month")
+        self.submission_count = self.config.get("stupid_question_submission_count", 500)
+        self.refresh_time_seconds = self.config.get("stupid_question_refresh_time_seconds", 21600)
+        subreddits = self.config.get("stupid_question_subreddits", ["NoStupidQuestions"])
 
         try:
             ## Use a multireddit to pull random post from any of the chosen subreddits
@@ -94,16 +91,16 @@ class StupidQuestions(DiscoverableCog):
     async def load_questions(self) -> None:
         ## Don't try to pull more data from Reddit if it's already happening
         if (self.is_mid_question_refresh):
-            LOGGER.debug("Skipping load_questions as they're already being refreshed.")
+            self.logger.debug("Skipping load_questions as they're already being refreshed.")
             return
         self.is_mid_question_refresh = True
 
-        LOGGER.info(f"Loading questions from reddit: top({self.submission_top_time}), {self.submission_count} submissions")
+        self.logger.info(f"Loading questions from reddit: top({self.submission_top_time}), {self.submission_count} submissions")
         questions = []
         try:
             submission_generator = self.subreddit.top(self.submission_top_time, limit=self.submission_count)
         except Exception as e:
-            LOGGER.exception("Unable to load submission from Reddit.", e)
+            self.logger.exception("Unable to load submission from Reddit.", e)
             return
 
         for submission in submission_generator:
@@ -113,7 +110,7 @@ class StupidQuestions(DiscoverableCog):
         self.questions = questions
         self.is_mid_question_refresh = False
 
-        LOGGER.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
+        self.logger.info("{} questions loaded at {}".format(len(self.questions), time.asctime()))
 
     ## Commands
 
@@ -151,7 +148,7 @@ class StupidQuestions(DiscoverableCog):
             now = time.time()
             question_refresh_time = 0#self.last_question_refresh_time + self.refresh_time_seconds
             if (now > question_refresh_time):
-                LOGGER.debug(f"Question refresh task due, {now} > {question_refresh_time}")
+                self.logger.debug(f"Question refresh task due, {now} > {question_refresh_time}")
                 ## Note that fetching questions before the interaction has been responded to will cause the interaction
                 ## to fail. This might be avoidable by using deferred responses, however that then locks you in to
                 ## either an ephemeral response (or not), which can be frustrating if an error happens and you've locked
