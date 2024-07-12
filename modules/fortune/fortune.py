@@ -5,14 +5,13 @@ from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.database.database_manager import DatabaseManager
+from common.configuration import Configuration
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 
 import discord
-
-## Logging
-LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
+from discord.ext.commands import Bot
 
 
 class Fortune(DiscoverableCog):
@@ -45,8 +44,10 @@ class Fortune(DiscoverableCog):
     ]
 
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, config: Configuration, bot: Bot, **kwargs):
+        super().__init__(config, bot, **kwargs)
+        self.config = config
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
         assert (self.speech_cog is not None)
