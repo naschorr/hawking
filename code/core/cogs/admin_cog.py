@@ -5,7 +5,6 @@ from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
-from common.module.module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
 from discord.ext.commands import Bot, Context, errors
@@ -44,6 +43,10 @@ class AdminCog(Cog):
     async def sync_local(self, ctx: Context):
         """Syncs bot command tree to the current guild"""
 
+        if (ctx.guild is None):
+            await ctx.message.reply("This command is only available in guilds.")
+            return
+
         await self.database_manager.store(ctx)
 
         ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
@@ -59,7 +62,7 @@ class AdminCog(Cog):
 
         await self.database_manager.store(ctx)
 
-        synced = await self.bot.tree.sync()
+        synced = await self.bot.tree.sync(guild=None)
 
         await ctx.message.reply(f"Synced {len(synced)} commands globally.")
 
@@ -70,11 +73,22 @@ class AdminCog(Cog):
 
         await self.database_manager.store(ctx)
 
-        ## todo: No global clear method? Is that as designed and normal syncing is fine?
         self.bot.tree.clear_commands(guild=ctx.guild)
-        await self.bot.tree.sync()
+        await self.bot.tree.sync(guild=ctx.guild)
 
         await ctx.message.reply("Removed all commands locally.")
+
+
+    @admin.command()
+    async def clear_global(self, ctx: Context):
+        """Removed all bot commands from the current guild"""
+
+        await self.database_manager.store(ctx)
+
+        self.bot.tree.clear_commands(guild=None)
+        await self.bot.tree.sync(guild=None)
+
+        await ctx.message.reply("Removed all commands globally.")
 
 
     @admin.command(no_pm=True)
