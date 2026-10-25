@@ -16,10 +16,10 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
-from core.cogs import admin_cog, help_cog, speech_cog, speech_config_help_cog
+from core.cogs import help_cog, speech_cog, speech_config_help_cog
 from core.tts import tts_controller
 from common import audio_player, message_parser, string_similarity
-from common.cogs import privacy_management_cog, invite_cog
+from common.cogs import admin_cog, privacy_management_cog, invite_cog
 from common.configuration import Configuration
 from common.logging import Logging
 from common.command_management import invoked_command_handler, command_reconstructor
@@ -92,7 +92,7 @@ class Hawking:
         self.module_manager.register_module(
             admin_cog.AdminCog,
             config,
-            self,
+            self.module_manager,
             self.bot,
             dependencies=[database_manager.DatabaseManager]
         )

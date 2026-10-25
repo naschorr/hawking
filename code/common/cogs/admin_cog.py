@@ -4,6 +4,7 @@ from hawking import Hawking
 from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
+from common.module.module_manager import ModuleManager
 from common.module.module import Cog
 
 from discord.ext import commands
@@ -15,11 +16,11 @@ class AdminCog(Cog):
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, config: Configuration, hawking: Hawking, bot: Bot, *args, **kwargs):
+    def __init__(self, config: Configuration, module_manager: ModuleManager, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
-        self.hawking = hawking
+        self.module_manager = module_manager
         self.bot = bot
 
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
@@ -91,14 +92,14 @@ class AdminCog(Cog):
         await ctx.message.reply("Removed all commands globally.")
 
 
-    @admin.command(no_pm=True)
+    @admin.command()
     async def reload_modules(self, ctx: Context):
         """Reloads the bot's modules"""
 
         await self.database_manager.store(ctx)
 
-        count = await self.hawking.module_manager.reload_registered_modules()
-        total = len(self.hawking.module_manager.modules)
+        count = await self.module_manager.reload_registered_modules()
+        total = len(self.module_manager.modules)
 
         loaded_modules_string = f"Loaded {count} of {total} modules/cogs. Consider syncing commands if anything has changed."
         await ctx.reply(loaded_modules_string)
