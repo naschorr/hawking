@@ -4,7 +4,7 @@ import inspect
 from discord import app_commands, Interaction
 from discord.ext.commands import Context
 
-from common.configuration import Configuration
+from common.database.database_manager_config import DatabaseManagerConfig
 from common.logging import Logging
 from common.command_management.command_reconstructor import CommandReconstructor
 from common.database.factories.anonymous_item_factory import AnonymousItemFactory
@@ -16,9 +16,10 @@ from common.module.module import Module
 
 
 class DatabaseManager(Module):
-    def __init__(self, config: Configuration, client: DatabaseClient, *args, **kwargs):
+    def __init__(self, config: DatabaseManagerConfig, client: DatabaseClient, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.command_reconstructor: CommandReconstructor = kwargs.get('dependencies', {}).get('CommandReconstructor')
@@ -26,7 +27,7 @@ class DatabaseManager(Module):
         self.anonymous_item_factory: AnonymousItemFactory = kwargs.get('dependencies', {}).get('AnonymousItemFactory')
         assert (self.anonymous_item_factory is not None)
 
-        self.enabled = config.get('database_enable', False)
+        self.enabled = self.config.enabled
         self._client: DatabaseClient = client
 
     ## Methods

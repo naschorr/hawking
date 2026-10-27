@@ -1,34 +1,31 @@
 import os
 import logging
 import boto3
-from pathlib import Path
 from boto3.dynamodb.conditions import Key
 
-from common.configuration import Configuration
 from common.logging import Logging
 from common.database.database_client import DatabaseClient
+from common.database.clients.dynamo_db.dynamo_db_client_config import DynamoDbClientConfig
 from common.database.factories.anonymous_item_factory import AnonymousItemFactory
 from common.database.models.anonymous_item import AnonymousItem
 from common.database.models.detailed_item import DetailedItem
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class DynamoDbClient(DatabaseClient):
-    def __init__(self):
-        name = CONFIG_OPTIONS.get("name", "bot").capitalize()
-        self._detailed_table_name = CONFIG_OPTIONS.get("database_detailed_table_name", name)
-        self._anonymous_table_name = CONFIG_OPTIONS.get("database_anonymous_table_name", f"{name}Detailed")
-        self._detailed_table_ttl_seconds = CONFIG_OPTIONS.get("database_detailed_table_ttl_seconds", 31536000)   ## One year
+    def __init__(self, config: DynamoDbClientConfig):
+        self.config = config
+        self._detailed_table_name = self.config.detailed_table
+        self._anonymous_table_name = self.config.anonymous_table
+        self._detailed_table_ttl_seconds = self.config.detailed_table_ttl_seconds
 
-        self.resource = CONFIG_OPTIONS.get('dynamo_db_resource', 'dynamodb')
-        self.region_name = CONFIG_OPTIONS.get('dynamo_db_region_name', 'us-east-2')
-        self.primary_key = CONFIG_OPTIONS.get('dynamo_db_primary_key', 'QueryId')
+        self.resource = self.config.dynamodb.resource
+        self.region_name = self.config.dynamodb.region_name
+        self.primary_key = self.config.dynamodb.primary_key
 
-        if (credentials_path := CONFIG_OPTIONS.get('dynamo_db_credentials_file_path')):
-            os.environ['AWS_SHARED_CREDENTIALS_FILE'] = credentials_path
+        if (credentials_path := self.config.dynamodb.credentials_file_path):
+            os.environ['AWS_SHARED_CREDENTIALS_FILE'] = str(credentials_path)
 
         self.dynamo_db = boto3.resource(self.resource, region_name=self.region_name)
         self.detailed_table = self.dynamo_db.Table(self.detailed_table_name)
