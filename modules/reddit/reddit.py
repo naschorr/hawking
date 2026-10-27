@@ -2,21 +2,21 @@ import logging
 
 from praw import Reddit as PrawReddit
 
-from common.configuration import Configuration
 from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableModule
 from common.module.module_initialization_container import ModuleInitializationContainer
+from modules.reddit.reddit_config import RedditConfig
 
 
 class Reddit(DiscoverableModule):
-    def __init__(self, config: Configuration, **kwargs):
+    def __init__(self, config: RedditConfig, **kwargs):
         super().__init__(config, **kwargs)
         self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
-        client_id = self.config.get('reddit_client_id')
-        client_secret = self.config.get('reddit_secret')
+        client_id = self.config.client_id
+        client_secret = self.config.client_secret
 
         ## Is there a better way?
         if (client_id.find('goes here') > -1):
@@ -26,9 +26,9 @@ class Reddit(DiscoverableModule):
 
         try:
             user_agent = self._build_user_agent_string(
-                self.config.get('reddit_user_agent_platform'),
-                self.config.get('reddit_user_agent_app_id'),
-                self.config.get('reddit_user_agent_contact_name')
+                self.config.user_agent.platform,
+                self.config.user_agent.app_id,
+                self.config.user_agent.contact_name
             )
         except RuntimeError as e:
             raise ModuleLoadException("Unable to build user_agent string for Reddit", e) from e
@@ -61,10 +61,8 @@ class Reddit(DiscoverableModule):
         if (contact_name.find('Make sure to change this') > -1):
             raise RuntimeError('The \'reddit_user_agent_contact_name\' property in config.json must be changed!')
 
-        version = self.config.get('version', "1.0.0")
-
         return "{platform}:{app_id}:{version} (by {contact_name})".format(
-            platform=platform, app_id=app_id, version=version, contact_name=contact_name
+            platform=platform, app_id=app_id, version=self.config.version, contact_name=contact_name
         )
 
 
