@@ -6,12 +6,12 @@ import asyncio
 from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
+from modules.stupid_questions.stupid_questions_config import StupidQuestionsConfig
 from common.ui.component_factory import ComponentFactory
 from question import Question
 
@@ -36,7 +36,7 @@ class StupidQuestions(DiscoverableCog):
 
     ## Lifecycle
 
-    def __init__(self, config: Configuration, bot: Bot, **kwargs):
+    def __init__(self, config: StupidQuestionsConfig, bot: Bot, **kwargs):
         super().__init__(config, bot, **kwargs)
         self.config = config
         self.bot = bot
@@ -67,10 +67,10 @@ class StupidQuestions(DiscoverableCog):
         self.last_question_refresh_time = time.time()
 
         ## Load config data
-        self.submission_top_time = self.config.get("stupid_question_top_time", "month")
-        self.submission_count = self.config.get("stupid_question_submission_count", 500)
-        self.refresh_time_seconds = self.config.get("stupid_question_refresh_time_seconds", 21600)
-        subreddits = self.config.get("stupid_question_subreddits", ["NoStupidQuestions"])
+        self.submission_top_time = self.config.top_time
+        self.submission_count = self.config.submission_count
+        self.refresh_time_seconds = self.config.refresh_time_seconds
+        subreddits = self.config.subreddits
 
         try:
             ## Use a multireddit to pull random post from any of the chosen subreddits
