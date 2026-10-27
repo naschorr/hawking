@@ -1,11 +1,9 @@
 import logging
 
 from common.module.module import Module
-from common.configuration import Configuration
 from common.logging import Logging
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
+## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
