@@ -1,7 +1,6 @@
 import logging
 from subprocess import call
 
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog

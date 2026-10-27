@@ -6,13 +6,13 @@ from typing import Callable
 from core.exceptions import MessageTooLongException, BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from core.tts.tts_controller import TTSController
 from common.audio_player import AudioPlayer
-from common.configuration import Configuration
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.exceptions import NoVoiceChannelAvailableException, UnableToConnectToVoiceChannelException
 from common.logging import Logging
 from common.module.module import Cog
 from common.message_parser import MessageParser
+from core.cogs.speech_cog_config import SpeechConfig
 
 from discord import app_commands, Interaction, Member
 from discord.app_commands import describe
@@ -24,9 +24,10 @@ class SpeechCog(Cog):
 
     ## Lifecycle
 
-    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
+    def __init__(self, bot: Bot, config: SpeechConfig, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
         self.audio_player_cog: AudioPlayer = kwargs.get('dependencies', {}).get('AudioPlayer')
@@ -37,8 +38,7 @@ class SpeechCog(Cog):
         assert(self.message_parser is not None)
         self.tts_controller: TTSController = kwargs.get('dependencies', {}).get('TTSController')
         assert(self.tts_controller is not None)
-
-        self.channel_timeout_phrases = config.get('channel_timeout_phrases', [])
+        self.channel_timeout_phrases = self.config.channel_timeout_phrases
         self.audio_player_cog.channel_timeout_handler = self.play_random_channel_timeout_message
 
         ## Commands
@@ -73,16 +73,29 @@ class SpeechCog(Cog):
         '''Turns a string of text into a wav file for later playing. Returns a filepath pointing to that file.'''
 
         ## Make sure the message isn't too long
-        if(not self.tts_controller.check_length(text) and not ignore_char_limit):
-            raise MessageTooLongException(f"Message is {len(text)} characters long when it should be less than {self.tts_controller.char_limit}")
+        if(len(text) > self.config.character_limit and not ignore_char_limit):
+            raise MessageTooLongException(f"Message is {len(text)} characters long when it should be less than {self.config.character_limit}")
 
         ## Parse down the message before sending it to the TTS service
         if (interaction is not None and interaction.data is not None):
-            text = self.message_parser.parse_message(text, interaction.data)
+            text = self.message_parser.parse_message(
+                text,
+                interaction.data,
+                replace_emoji=self.config.replace_emoji
+            )
+
+        if(self.config.newline_replacement):
+            text = text.replace("\n", self.config.newline_replacement)
+
+        if(self.config.prepend):
+            text = self.config.prepend + text
+
+        if(self.config.append):
+            text += self.config.append
 
         ## Build the audio file for speaking
-        file_path = await self.tts_controller.save(text, ignore_char_limit)
-        
+        file_path = await self.tts_controller.save(text)
+
         if (file_path is None):
             raise UnableToBuildAudioFileException(f"Unable to save audio file for message: '{text}'")
         else:
@@ -117,9 +130,9 @@ class SpeechCog(Cog):
             return InvokedCommand(False, e, f"Sorry <@{author.id}>, it took too long to generate speech for that.")
 
         except MessageTooLongException as e:
-            self.logger.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.tts_controller.char_limit})")
+            self.logger.warn(f"Unable to build too long message. Message was {len(text)} characters long (out of {self.config.character_limit})")
             ## todo: Specify how many characters need to be removed?
-            return InvokedCommand(False, e, f"Wow <@{author.id}>, that's waaay too much. You've gotta keep messages shorter than {self.tts_controller.char_limit} characters.")
+            return InvokedCommand(False, e, f"Wow <@{author.id}>, that's waaay too much. You've gotta keep messages shorter than {self.config.character_limit} characters.")
 
         except UnableToBuildAudioFileException as e:
             self.logger.exception(f"Unable to build .wav file for message: '{text}'")

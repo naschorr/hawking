@@ -1,26 +1,29 @@
 import re
 import emoji
 
-from common.configuration import Configuration
 from common.module.module import Module
 
 
 class MessageParser(Module):
 
-    def __init__(self, config: Configuration, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.replace_emoji = config.get("replace_emoji", True)
         self.emoji_map = self._build_emoji_name_map('en')
 
     ## Methods
 
-    def parse_message(self, message: str, interaction_data: dict) -> str:
+    def parse_message(
+            self,
+            message: str,
+            interaction_data: dict,
+            replace_emoji: bool = True
+    ) -> str:
         '''Parses a given message, replacing discord mentions with their proper names, and replacing emoji with their textual names.'''
 
         message = self.replace_mentions(message, interaction_data)
 
-        if(self.replace_emoji):
+        if(replace_emoji):
             message = self._replace_emoji(message)
         else:
             message = self._strip_emoji(message)
