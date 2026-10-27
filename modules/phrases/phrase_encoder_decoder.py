@@ -1,14 +1,11 @@
 import codecs
 import logging
-from pathlib import Path
 
-from common.configuration import Configuration
 from common.logging import Logging
 from modules.phrases.phrase_cipher_enum import PhraseCipher
 from modules.phrases.models.phrase import Phrase
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
+## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 

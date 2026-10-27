@@ -8,22 +8,22 @@ from typing import Callable
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent/'code'))
 
-from common.configuration import Configuration
 from common.logging import Logging
+from common.configuration.configuration import load_hawking_config
 from models.phrase import Phrase
 from models.phrase_group import PhraseGroup
 from phrase_encoder_decoder import PhraseEncoderDecoder
 from phrase_file_manager import PhraseFileManager
+from modules.phrases.phrases_config import PhrasesConfig
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
+## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseTools:
     @staticmethod
-    def _process_phrases(phrase_operation: Callable):
-        phrase_file_manager = PhraseFileManager()
+    def _process_phrases(phrase_operation: Callable, config: PhrasesConfig):
+        phrase_file_manager = PhraseFileManager(config)
 
         phrases_folder_path = phrase_file_manager.phrases_folder_path
         phrase_group_paths = phrase_file_manager.discover_phrase_groups(phrases_folder_path)
@@ -51,13 +51,13 @@ class PhraseTools:
 
 
     @staticmethod
-    def encode():
-        PhraseTools._process_phrases(PhraseEncoderDecoder.encode)
+    def encode(config: PhrasesConfig):
+        PhraseTools._process_phrases(PhraseEncoderDecoder.encode, config)
 
 
     @staticmethod
-    def decode():
-        PhraseTools._process_phrases(PhraseEncoderDecoder.decode)
+    def decode(config: PhrasesConfig):
+        PhraseTools._process_phrases(PhraseEncoderDecoder.decode, config)
 
 
 if (__name__ == '__main__'):
@@ -84,4 +84,5 @@ if (__name__ == '__main__'):
     except Exception as e:
         LOGGER.error("Missing required '--encode' or '--decode' argument.", exc_info=e)
 
-    operation()
+    config = load_hawking_config().modules.phrases
+    operation(config)
