@@ -6,36 +6,28 @@ from pathlib import Path
 
 from core.exceptions import BuildingAudioFileTimedOutExeption, UnableToBuildAudioFileException
 from common import utilities
-from common.configuration import Configuration
 from common.logging import Logging
 from common.module.module import Module
+from core.tts.tts_controller_config import TTSControllerConfig
 
 import async_timeout
 
 
 class TTSController(Module):
-    def __init__(self, config: Configuration, **kwargs):
+    def __init__(self, config: TTSControllerConfig, **kwargs):
         super().__init__(**kwargs)
 
         self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.exe_path = self.get_tts_executable_path()
-        self.args = self.config.get("args", {})
-        self.audio_generate_timeout_seconds = self.config.get("audio_generate_timeout_seconds", 3)
-        self.prepend = self.config.get("prepend", "[:phoneme on]")
-        self.append = self.config.get("append", "")
-        self.char_limit = int(self.config.get("char_limit", 1250))
-        self.newline_replacement = self.config.get("newline_replacement", "[_<250,10>]")
-        self.output_extension = self.config.get("output_extension", "wav")
-        self.wine = self.config.get("wine", "wine")
-        self.xvfb_prepend = self.config.get("xvfb_prepend", "DISPLAY=:0.0")
-        self.is_headless = self.config.get("headless", False)
-
-        if (output_dir_path := self.config.get("tts_output_dir_path")):
-            self.output_dir_path = Path(output_dir_path)
-        else:
-            self.output_dir_path = Path.joinpath(utilities.get_root_path(), self.config.get("tts_output_dir", "temp"))
+        self.args = self.config.args
+        self.audio_generate_timeout_seconds = self.config.generate_timeout_seconds
+        self.output_extension = self.config.output_extension
+        self.wine = self.config.wine_command
+        self.xvfb_prepend = self.config.xvfb_prepend
+        self.is_headless = self.config.headless
+        self.output_dir_path = self.config.output_directory_path
 
         self.paths_to_delete = []
 
@@ -48,12 +40,7 @@ class TTSController(Module):
 
 
     def get_tts_executable_path(self) -> Path:
-        tts_executable_path = self.config.get("tts_executable_path")
-
-        if (tts_executable_path is not None):
-            return Path(tts_executable_path)
-        else:
-            return Path(utilities.get_root_path(), "code", "core", "tts", self.config.get("tts_executable", "say.exe"))
+        return self.config.executable_path
 
 
     def _init_output_dir(self):
@@ -77,24 +64,6 @@ class TTSController(Module):
             file_name = f"{time_ms}.{extension}"
 
         return file_name
-
-
-    def check_length(self, message):
-        return (len(message) <= self.char_limit)
-
-
-    def _parse_message(self, message):
-        if(self.newline_replacement):
-            message = message.replace("\n", self.newline_replacement)
-
-        if(self.prepend):
-            message = self.prepend + message
-
-        if(self.append):
-            message = message + self.append
-
-        message = message.replace('"', "")
-        return message
 
 
     def delete(self, file_path):
@@ -121,15 +90,11 @@ class TTSController(Module):
         return True
 
 
-    async def save(self, message, ignore_char_limit=False):
-        ## Check message size
-        if(not self.check_length(message) and not ignore_char_limit):
-            return None
-
-        ## Generate and validate filename, build the output path save option, and parse the message
+    async def save(self, message):
+        ## Generate filename and output path
         output_file_path = Path.joinpath(self.output_dir_path, self._generate_unique_file_name(self.output_extension))
         save_option = f"-w \"{str(output_file_path)}\""
-        message = self._parse_message(message)
+        message = message.replace('"', "")
 
         ## Build args for execution
         args = f"\"{str(self.exe_path)}\" {save_option} \"{message}\""
