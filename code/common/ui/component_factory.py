@@ -1,8 +1,8 @@
 import logging
 
-from common.configuration import Configuration
 from common.logging import Logging
 from common.module.module import Module
+from common.app_config import AppConfig
 
 import discord
 
@@ -10,15 +10,16 @@ import discord
 class ComponentFactory(Module):
     """Central module for building commonly used Discord UI components"""
 
-    def __init__(self, config: Configuration, bot, *args, **kwargs):
+    def __init__(self, config: AppConfig, bot, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
-        self.name: str = config.get("name", "the bot").capitalize()
-        self.color: int = int(config.get("accent_color_hex", "000000"), 16)
-        self.repo_url = config.get("repo_url")
+        self.name: str = self.config.name.capitalize()
+        self.color: int = int(self.config.ui.accent_color_hex, 16)
+        self.repo_url = self.config.repository_url
 
     ## Embeds
 
