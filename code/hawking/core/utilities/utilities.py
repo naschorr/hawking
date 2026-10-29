@@ -1,4 +1,3 @@
-import os
 import sys
 import json
 from pathlib import Path
@@ -46,6 +45,3 @@ def get_weekday_name_from_day_of_week(day_of_week: int) -> str:
     ]
 
     return day_names[day_of_week]
-
-
-os.environ = {}
