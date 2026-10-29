@@ -1,0 +1,117 @@
+import logging
+
+from hawking.core.services.database.database_manager import DatabaseManager
+from hawking.core.modules.admin.admin_cog_config import AdminCogConfig
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.module_manager.module_manager import ModuleManager
+from hawking.core.services.module_manager.module import Cog
+
+from discord.ext import commands
+from discord.ext.commands import Bot, Context, errors
+
+
+class AdminCog(Cog):
+    ## Keys
+    ADMINS_KEY = "admins"
+    ANNOUNCE_UPDATES_KEY = "announce_updates"
+
+    def __init__(self, config: AdminCogConfig, module_manager: ModuleManager, bot: Bot, *args, **kwargs):
+        super().__init__(bot, *args, **kwargs)
+
+        self.config = config
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
+        self.module_manager = module_manager
+        self.bot = bot
+
+        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
+        assert (self.database_manager is not None)
+
+        self.admins = self.config.admins
+        self.announce_updates = self.config.announce_updates
+
+    ## Commands
+
+    @commands.group(hidden=True)
+    @commands.is_owner()
+    async def admin(self, ctx: Context):
+        """Root command for the admin-only commands"""
+
+        if(ctx.invoked_subcommand is None):
+            await ctx.message.reply("Missing subcommand")
+
+
+    @admin.command()
+    async def sync_local(self, ctx: Context):
+        """Syncs bot command tree to the current guild"""
+
+        if (ctx.guild is None):
+            await ctx.message.reply("This command is only available in guilds.")
+            return
+
+        await self.database_manager.store(ctx)
+
+        ## Sync example: https://gist.github.com/AbstractUmbra/a9c188797ae194e592efe05fa129c57f?permalink_comment_id=4121434#gistcomment-4121434
+        self.bot.tree.copy_global_to(guild=ctx.guild)
+        synced = await self.bot.tree.sync(guild=ctx.guild)
+
+        await ctx.message.reply(f"Synced {len(synced)} commands locally.")
+
+
+    @admin.command()
+    async def sync_global(self, ctx: Context):
+        """Syncs bot command tree to the all guilds"""
+
+        await self.database_manager.store(ctx)
+
+        synced = await self.bot.tree.sync(guild=None)
+
+        await ctx.message.reply(f"Synced {len(synced)} commands globally.")
+
+
+    @admin.command()
+    async def clear_local(self, ctx: Context):
+        """Removed all bot commands from the current guild"""
+
+        await self.database_manager.store(ctx)
+
+        self.bot.tree.clear_commands(guild=ctx.guild)
+        await self.bot.tree.sync(guild=ctx.guild)
+
+        await ctx.message.reply("Removed all commands locally.")
+
+
+    @admin.command()
+    async def clear_global(self, ctx: Context):
+        """Removed all bot commands from the current guild"""
+
+        await self.database_manager.store(ctx)
+
+        self.bot.tree.clear_commands(guild=None)
+        await self.bot.tree.sync(guild=None)
+
+        await ctx.message.reply("Removed all commands globally.")
+
+
+    @admin.command()
+    async def reload_modules(self, ctx: Context):
+        """Reloads the bot's modules"""
+
+        await self.database_manager.store(ctx)
+
+        count = await self.module_manager.reload_registered_modules()
+        total = len(self.module_manager.modules)
+
+        loaded_modules_string = f"Loaded {count} of {total} modules/cogs. Consider syncing commands if anything has changed."
+        await ctx.reply(loaded_modules_string)
+
+        return (count >= 0)
+
+
+    async def cog_command_error(self, ctx: Context, error: Exception) -> None:
+        if (isinstance(error, errors.NotOwner)):
+            await self.database_manager.store(ctx, valid=False)
+            await ctx.message.reply("Sorry, this command is only available to the bot's owner (and not the server owner).")
+            return
+
+        return await super().cog_command_error(ctx, error)
+

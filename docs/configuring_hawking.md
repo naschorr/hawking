@@ -1,89 +1,108 @@
 # Configuring Hawking
-See `config.json` in the Hawking installation's root.
 
-### Discord Configuration
-- **name** - String - The bot's name.
-- **version** - String - The bot's current semantic version.
-- **description** - Array - An array of strings making up the bot's description. Each element in the array goes on a new line in the help interface.
-- **channel_timeout_seconds** - Int - The time in seconds before the bot will leave its current voice channel due to inactivity.
-- **channel_timeout_phrases** - Array - Array of strings that the bot can speak right before it leaves. One phrase is chosen randomly from the array.
-- **skip_percentage** - Float - The minimum percentage of other users who need to request a skip before the currently playing audio will be skipped. Must be a floating point number between 0.0 and 1.0 inclusive.
-- **repo_url** - String - The URL of the repository that hosts the bot
-- **bot_invite_url** - String - The URL used to invite the bot to any Discord servers the user controls.
-- **bot_invite_blurb** - String - A string of text that is applied to bot invites, so users can have more context about the bot.
-- **support_discord_invite_url** - String - The URL of the invite for the bot's support Discord.
-- **privacy_policy_url** - String - The URL of the bot's privacy policy.
-- **accent_color_hex** - String - A hex string containing the color code for the bot's accent color. This is used to customize embeds to ensure they're visually consistent with the bot.
+Hawking reads configuration from `config.json` in the installation root. It then deep-merges the environment-specific `config.<environment>.json` file over it. The environment is selected with `HAWKING_ENV` and defaults to `dev`; for example, `HAWKING_ENV=production` loads `config.production.json`. Put shared, non-secret settings in `config.json` and environment-specific values or secrets in the matching override file. Do not commit credentials or bot tokens.
 
-### Bot Configuration
-- **log_level** - String - The minimum error level to log. Potential values are `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`, in order of severity (ascending). For example, choosing the `WARNING` log level will log everything tagged as `WARNING`, `ERROR`, and `CRITICAL`.
-- **log_path** - String - The path where logs should be stored. If left empty, it will default to a `logs` folder inside the Hawking root.
-- **log_backup_count** - Int - The maximum number of logs to keep before deleting the oldest ones.
-- **discord_token** - String - The token for the bot, used to authenticate with Discord.
-- **delete_request_queue_file_path** - String - The path where the delete requests file should be stored. If left empty, it will default to a `privacy/delete_request.txt` file inside the Hawking root.
-- **delete_request_meta_file_path** - String - The path where the delete requests metadata file should be stored. For example, this includes the time the delete request queue was last parsed. If left empty, it will default to a `privacy/metadata.json` file inside the Hawking root.
-- **delete_request_weekday_to_process** - Integer - The integer corresponding to the day of the week to perform the delete request queue processing. 0 is Monday, 7 is Sunday, and so on.
-- **delete_request_time_to_process** - String - The ISO8601 time string that specifies when the queue should be processed, when the provided day comes up each week. Make sure to use the format `THH:MM:SSZ`.
-- **tts_executable** - String - The name of the text-to-speech executable.
-- **\_tts_executable_path** - String - Force the bot to use a specific text-to-speech executable, rather than the normal `say.exe` file. Remove the leading underscore to activate it.
-- **tts_output_dir** - String - The name of the file where the temporary speech files are stored.
-- **\_tts_output_dir_path** - String - Force the bot to use a specific text-to-speech output folder, rather than the normal `temp/` folder. Remove the leading underscore to activate it.
-- **audio_generate_timeout_seconds** - Int - Number of seconds to wait before timing out of the audio generation. Certain 'expanded' phrases can crash Hawking if too many are used at once (See: https://github.com/naschorr/hawking/issues/50)
-- **ffmpeg_parameters** - String - Options to send to the FFmpeg executable before the `-i` flag. Used when building the audio player.
-- **ffmpeg_post_parameters** - String - Options to send to the FFmpeg executable after the `-i` flag. Used when building the audio player.
-- **output_extension** - String - The file extension of the text-to-speech engine's output.
-- **wine** - String - The command to invoke Wine on your system. Linux only.
-- **xvfb_prepend** - String - The string that'll select your `xvfb` display. Headless only.
-- **headless** - Boolean - Indicate that the bot is running on a machine without a display. Uses `xvfb` to simulate a display required for the text-to-speech engine.
-- **modules_dir** - String - The name of the directory, located in Hawking's root, which will contain the modules to dynamically load. See ModuleManager's discover() method for more info about how modules need to be formatted for loading.
-- **\_modules_dir_path** - String - The path to the directory that contains the modules to be loaded for the bot. Remove the leading underscore to activate it.
-- **string_similarity_algorithm** - String - The name of the algorithm to use when calculating how similar two given strings are. Currently only supports 'difflib'.
-- **invalid_command_minimum_similarity** - Float - The minimum similarity an invalid command must have with an existing command before the existing command will be suggested as an alternative.
-- **find_command_minimum_similarity** - Float - The minimum similarity the find command must have with an existing command, before the existing command will be suggested for use.
-> *A quick note about minimum similarity*: If the value is set too low, then you can run into issues where seemingly irrelevant commands are suggested. Likewise, if the value is set too high, then commands might not ever be suggested to the user. For both of the minimum similarities, the value should be values between 0 and 1 (inclusive), and should rarely go below 0.4.
+Settings are documented below by their exact dotted path in the JSON tree. Paths may be absolute or relative to the Hawking installation root unless noted otherwise.
 
-### Speech Configuration
-- **prepend** - String - A string that'll always be prepended onto the text sent to the text-to-speech engine.
-- **append** - String - A string that'll always be appended onto the text sent to the text-to-speech engine.
-- **char_limit** - Int - A hard character limit for messages to be sent to the text-to-speech engine.
-- **newline_replacement** - String - A string that'll replace all newline characters in the text sent to the text-to-speech engine.
-- **replace_emoji** - Boolean - If `true`, indicates that the bot should convert emoji into their textual form (ex. :thinking: -> "thinking face"). This isn't a perfect conversion, as Discord encodes emoji into their unicode representation before the bot is able to parse it. If this is set to `false`, then the bot will just strip out emoji completely, as if they weren't there.
+The configuration mirrors the package layout: core settings are under `hawking.core`, built-in module settings are under `hawking.modules`, and optional addon settings are under `addons`.
 
-### Module Configuration
-Modify the specified module's `config.json` file to update these properties.
+## Core settings
 
-#### Phrases Configuration
-- **phrases_file_extension** - String - The file extension to look for when searching for phrase files. For example: `.json`.
-- **phrases_folder** - String - The name of the folder that contains phrase files.
-- **\_phrases_folder_path** - String - Force the bot to use a specific phrases folder, rather than the normal `phrases/` folder. Remove the leading underscore to activate it.
+### Application identity and UI (`hawking.core.app`)
+- `hawking.core.app.name` - String - Bot name shared by the help and UI components.
+- `hawking.core.app.version` - String - Hawking version. Also used in the Reddit user-agent string.
+- `hawking.core.app.description` - Array of strings - Lines shown as the bot description in Discord.
+- `hawking.core.app.repository_url` - Optional string - Repository link used by the help and UI components.
+- `hawking.core.app.ui.accent_color_hex` - Hex string - Embed accent color parsed as a hexadecimal integer, normally without a leading `#`.
 
-#### Reddit Configuration
-You'll need to get access to the Reddit API via OAuth2, so follow the "First Steps" section of [this guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) to get authenticated.
+### Discord (`hawking.core.discord`)
+- `hawking.core.discord.token` - Required non-empty string - Bot token used to authenticate with Discord.
 
-- **reddit_client_id** - String - This is the `client_id` provided to you by Reddit when you create the script.
-- **reddit_secret** - String - This is the `secret` provided to you by Reddit when you create the script.
-- **reddit_user_agent_platform** - String - The platform that your script will be running on. For example: `discord-bot-py`.
-- **reddit_user_agent_app_id** - String - A unique identifier for the bot. For example: `hawking-tts`.
-- **reddit_user_agent_contact_name** - String - The is the Reddit username that's associated with your script. For example, it should look something like `/u/this-is-my-username`.
+### Voice playback (`hawking.core.audio`)
+- `hawking.core.audio.channel_timeout_seconds` - Positive integer - Seconds of inactivity before Hawking leaves a voice channel.
+- `hawking.core.audio.skip_percentage` - Number from `0.0` to `1.0` - Fraction of active non-bot listeners required to skip the current audio.
+- `hawking.core.audio.ffmpeg.parameters` - String - FFmpeg arguments passed before the input-file argument.
+- `hawking.core.audio.ffmpeg.post_parameters` - String - FFmpeg arguments passed after the input-file argument.
 
-All of the above `reddit*` properties are required to use the Reddit module, and thus any modules that depend on it (ex. the StupidQuestions module). Also, the user-agent that'll be sent to Reddit will be built from all of the user-agent properties above. For example, if you use the above examples, the the user-agent `discord-bot:hawking-tts:1.0.5 (by /u/this-is-my-username)` will be generated (assuming that you're running version 1.0.5 of Hawking). Lastly, please note that Reddit has some specific requirements about those user-agent components, so take a look at their [API guide](https://github.com/reddit-archive/reddit/wiki/API) for more details.
+### Logging (`hawking.core.logging`)
+- `hawking.core.logging.level` - `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` - Minimum level written to the log.
+- `hawking.core.logging.directory_path` - Path - Log directory. It must already exist and be a directory.
+- `hawking.core.logging.backup_count` - Positive integer - Number of rotated log files to retain.
+- `hawking.core.logging.service_name` - Non-empty string - Log filename prefix. Defaults to `hawking.core.app.name` when omitted.
+- `hawking.core.logging.max_bytes` - Positive integer - Present in the configuration schema, but currently unused; logging rotates on a time-based schedule.
 
-#### StupidQuestion Configuration
-- **stupid_question_subreddits** - Array of Strings - An array of subreddit names to pull questions from, should be an array of length of at least one (and ideally that one is "NoStupidQuestions" or similar).
-- **stupid_question_top_time** - String - Length of time to pull top posts from. Must be one of: `hour`, `day`, `week`, `month`, `year`, or `all`.
-- **stupid_question_submission_count** - Int - The number of posts to retrieve when querying Reddit.
-- **stupid_question_refresh_time_seconds** - Int - The number of seconds to wait before loading more questions.
+### Privacy (`hawking.core.privacy`)
+- `hawking.core.privacy.policy_url` - HTTP(S) URL - Link to the privacy policy.
+- `hawking.core.privacy.delete_requests.queue_file_path` - Path - Delete-request queue file. Missing files and parent directories are created during validation.
+- `hawking.core.privacy.delete_requests.metadata_file_path` - Path - Delete-request metadata file. Missing files and parent directories are created during validation.
+- `hawking.core.privacy.delete_requests.weekday_to_process` - Integer from `0` to `6` - Day of the week to process the queue; `0` is Monday and `6` is Sunday.
+- `hawking.core.privacy.delete_requests.time_to_process` - Time string - Scheduled processing time, formatted as `THH:MM:SSZ`.
 
-### Analytics Configuration
-#### Database Configuration
-These are generic, non-specific database configuration options
-- **database_enable** - Boolean - Indicate that you want the bot to upload analytics to the remote database.
-- **database_detailed_table_name** - String - The name of the table to insert detailed, temporary data into.
-- **database_anonymous_table_name** - String - The name of the table to insert anonymized, long term data into.
-- **database_detailed_table_ttl_seconds** - Integer - The number of seconds before a record in the detailed table should be automatically removed.
+### Analytics database (`hawking.core.database`)
+- `hawking.core.database.enabled` - Boolean - Whether to record analytics.
+- `hawking.core.database.detailed_table` - Non-empty string - DynamoDB table for detailed, temporary records.
+- `hawking.core.database.anonymous_table` - Non-empty string - DynamoDB table for anonymized records.
+- `hawking.core.database.detailed_table_ttl_seconds` - Positive integer - Record lifetime in the detailed table, in seconds.
+- `hawking.core.database.dynamodb.credentials_file_path` - Path - Existing AWS credentials file. The current schema requires a file path; an empty value is not accepted. The path is relative to the Hawking root or absolute.
+- `hawking.core.database.dynamodb.resource` - String - Boto3 resource name; normally `dynamodb`.
+- `hawking.core.database.dynamodb.region_name` - String - AWS region containing the tables.
+- `hawking.core.database.dynamodb.primary_key` - String - Partition-key attribute used by both tables.
 
-#### DynamoDB Configuration
-- **dynamo_db_credentials_file_path** - String - Path to your AWS credentials file, if it's not being picked up automatically. If empty, this will be ignored.
-- **dynamo_db_resource** - String - The AWS boto-friendly resource to upload to.
-- **dynamo_db_region_name** - String - The AWS region of your chosen `dynamo_db_resource`.
-- **dynamo_db_primary_key** - String - The primary key of the above tables.
+### Module discovery (`hawking.core.module_loader`)
+- `hawking.core.module_loader.directory_path` - Path - Existing directory containing dynamically loaded modules. Hawking does not create it.
+
+### String similarity (`hawking.core.string_similarity`)
+- `hawking.core.string_similarity.similarity_algorithm` - String - Selects the matching algorithm. `difflib` is implemented; `jaro-winkler` and `damerau-levenshtein` are accepted by the schema but are not implemented.
+
+### Invite (`hawking.core.invite`)
+- `hawking.core.invite.blurb` - Non-empty string - Text shown with the bot invite.
+- `hawking.core.invite.invite_url` - HTTP(S) URL - Bot invite link.
+- `hawking.core.invite.support_invite_url` - HTTP(S) URL - Support Discord invite link.
+
+### Administration (`hawking.core.admin`)
+- `hawking.core.admin.admins` - Array of integers - Discord user IDs allowed to use admin commands.
+
+## Module settings
+
+Built-in module settings mirror the `hawking/modules` package and are nested under `hawking.modules`.
+
+### Speech (`hawking.modules.speech`)
+- `hawking.modules.speech.prepend` - String - Text added before each message sent to the TTS engine.
+- `hawking.modules.speech.append` - String - Text added after each message sent to the TTS engine.
+- `hawking.modules.speech.character_limit` - Positive integer - Maximum input-message length accepted for speech generation.
+- `hawking.modules.speech.newline_replacement` - String - Replacement text for newline characters before TTS.
+- `hawking.modules.speech.replace_emoji` - Boolean - If true, convert emoji to text names; if false, strip them. Conversion depends on the emoji representation Discord provides.
+- `hawking.modules.speech.channel_timeout_phrases` - Array of strings - Phrases from which one is selected when Hawking leaves a voice channel after inactivity.
+
+### Text-to-speech engine (`hawking.modules.tts`)
+- `hawking.modules.tts.executable_path` - Path - Required existing TTS executable, relative to the Hawking root or absolute.
+- `hawking.modules.tts.output_directory_path` - Path - Directory for generated audio. It may be missing; Hawking creates it at startup. An existing non-directory path is rejected.
+- `hawking.modules.tts.generate_timeout_seconds` - Positive integer - Maximum time allowed for generating an audio file. Excessive expanded phrases can cause generation to hang (see [issue 50](https://github.com/naschorr/hawking/issues/50)).
+- `hawking.modules.tts.output_extension` - String - Extension used for generated audio files, normally `wav`.
+- `hawking.modules.tts.wine_command` - String - Command used to invoke Wine on Linux.
+- `hawking.modules.tts.xvfb_prepend` - String - Display environment prefix used for headless Linux operation.
+- `hawking.modules.tts.headless` - Boolean - Whether to run the TTS engine through a virtual display.
+- `hawking.modules.tts.args` - Object of string values - Accepted by the config model, but currently not used when constructing the TTS command.
+
+### Phrases (`addons.phrases`)
+- `addons.phrases.directory_path` - Required path or empty string - Existing phrase directory. An empty string selects the bundled phrase data directory under the installation root.
+- `addons.phrases.minimum_similarity` - Number from `0.0` to `1.0` - Minimum match score for phrase lookup. Lower values can produce unrelated matches; higher values can prevent matches.
+
+### Reddit (`addons.reddit`)
+
+Create a Reddit script application and configure its OAuth2 details. See Reddit's [OAuth2 guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) and [API guide](https://github.com/reddit-archive/reddit/wiki/API) for account and user-agent requirements.
+
+- `addons.reddit.client_id` - Required non-empty string - Client ID provided by Reddit.
+- `addons.reddit.client_secret` - Required non-empty string - Client secret provided by Reddit.
+- `addons.reddit.user_agent.platform` - Non-empty string - Platform running the bot, for example `discord-bot-py`.
+- `addons.reddit.user_agent.app_id` - Non-empty string - Identifier for the bot, for example `hawking-tts`.
+- `addons.reddit.user_agent.contact_name` - Non-empty string - Contact name for the Reddit application, for example `/u/your-username`.
+- `addons.reddit.version` - Non-empty string - Version component of the Reddit user-agent. Defaults to `hawking.app.version` when omitted.
+
+The user-agent is assembled as `platform:app_id:version (by contact_name)`. Reddit settings are required by the Reddit module and by modules that depend on it, such as Stupid Questions.
+
+### Stupid Questions (`addons.stupid_questions`)
+- `addons.stupid_questions.subreddits` - Array of strings - Subreddits to query; configure at least one subreddit.
+- `addons.stupid_questions.top_time` - String - Reddit listing period: `hour`, `day`, `week`, `month`, `year`, or `all`.
+- `addons.stupid_questions.submission_count` - Positive integer - Maximum number of posts retrieved per query.
+- `addons.stupid_questions.refresh_time_seconds` - Positive integer - Delay between question refreshes, in seconds.

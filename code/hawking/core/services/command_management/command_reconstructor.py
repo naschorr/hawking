@@ -1,0 +1,84 @@
+import logging
+
+from discord import Interaction
+from discord.ext.commands import Context
+
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.message_parser.message_parser import MessageParser
+from hawking.core.services.module_manager.module import Module
+from hawking.modules.speech.speech_exceptions import UnableToReconstructCommandException
+
+
+class CommandReconstructor(Module):
+    ## Could maybe leverage static methods, but I don't really want to rework how the module management system works
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
+
+        self.message_parser: MessageParser = kwargs.get('dependencies', {}).get('MessageParser')
+        assert(self.message_parser is not None)
+
+
+    def _reconstruct_command_from_context(self, context: Context) -> str:
+        if (context.command is None):
+            raise UnableToReconstructCommandException("Unable to reconstruct command string from context, no command found.")
+
+        ## No param values stored in the context now? Names are available, but that's not very useful.
+        return f"{context.clean_prefix}{context.command.qualified_name}"
+
+
+    def _reconstruct_command_from_interaction(
+            self,
+            interaction: Interaction,
+            add_parameter_keys = False,
+            anonymize_mentions = False,
+            replace_mentions = True
+    ) -> str:
+        if (interaction.data is None or interaction.command is None):
+            raise UnableToReconstructCommandException("Unable to reconstruct command string from interaction, no command found.")
+
+        ## All interactions refer to slash commands, right?
+        prefix = "/"
+        name = interaction.command.qualified_name
+        parameters = []
+
+        for option in list(interaction.data.get("options", [])):
+            flavor = int(option["type"])
+            key = option["name"] + ":"
+            value = option["value"]
+
+            ## https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-option-type
+            if (flavor == 6 or flavor == 8):   ## User or Role
+                value = f"<@{value}>"
+            elif (flavor == 7): ## Channel
+                value = f"<#{value}>"
+            elif (flavor == 9): ## Mentionable (how's this different from users or roles? Different format?)
+                value = f"<@{value}>"
+
+            parameter = f"{key if add_parameter_keys else ''}{value}"
+            parameters.append(parameter)
+
+        command_string = f"{prefix}{name}{(' ' if parameters else '') + (' '.join(parameters))}"
+
+        if (replace_mentions):
+            return self.message_parser.replace_mentions(
+                command_string,
+                interaction.data,
+                hide_mention_formatting=False,
+                hide_meta_mentions=False,
+                anonymize_mentions=anonymize_mentions
+            )
+        else:
+            return command_string
+
+
+    def reconstruct_command_string(self, data: Context | Interaction, add_parameter_keys = False, anonymize_mentions = False, replace_mentions = True) -> str:
+        """Builds an approximation of the string entered by the user to invoke the provided command"""
+
+        if (isinstance(data, Context)):
+            return self._reconstruct_command_from_context(data)
+        elif (isinstance(data, Interaction)):
+            return self._reconstruct_command_from_interaction(data, add_parameter_keys, anonymize_mentions, replace_mentions)
+        else:
+            raise RuntimeError("Unable to reconstruct command string, data isn't of type Context or Interaction")

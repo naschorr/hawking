@@ -39,11 +39,11 @@ pyvenv.cfg
 
 # Ignore credentials
 token.json
-modules/*.json
+code/addons/*.json
 
 # Ignore misc phrase files, but include default phrases
-*/phrases/phrases/*
-!*/phrases/phrases/classics.json
+code/addons/phrases/phrases/*
+!code/addons/phrases/phrases/classics.json
 
 # Ignore logfiles
 logs/*
@@ -54,3 +54,6 @@ privacy/*
 
 # Ignore linter config
 *.pylintrc
+
+# todo: where is this pickle file coming from?
+update_checker_cache.pkl
