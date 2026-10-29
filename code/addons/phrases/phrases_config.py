@@ -12,7 +12,6 @@ class PhrasesConfig(BaseModel):
 
     directory_path: Path
     minimum_similarity: float = Field(default=0.5, ge=0.0, le=1.0)
-    similarity_algorithm: str = "difflib"
 
     @field_validator("directory_path", mode="before")
     @classmethod

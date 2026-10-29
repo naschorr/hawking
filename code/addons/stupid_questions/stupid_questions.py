@@ -170,4 +170,8 @@ class StupidQuestions(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(StupidQuestions, dependencies=["Reddit", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"])
+    return ModuleInitializationContainer(
+        StupidQuestions,
+        config_model=StupidQuestionsConfig,
+        dependencies=["Reddit", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "ComponentFactory"],
+    )

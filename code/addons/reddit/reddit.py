@@ -67,4 +67,4 @@ class Reddit(DiscoverableModule):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Reddit)
+    return ModuleInitializationContainer(Reddit, config_model=RedditConfig)

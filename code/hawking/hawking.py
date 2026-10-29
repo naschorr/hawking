@@ -42,12 +42,12 @@ class Hawking:
     ## Initialize the bot, and add base cogs
     def __init__(self, config_path: Path | None = None):
         config: HawkingConfig = load_hawking_config(config_path)
-        app_config = config.hawking.app
+        app_config = config.hawking.core.app
         self.logger = Logging.initialize_logging(
-            logging.getLogger(self.__class__.__qualname__), config.hawking.logging
+            logging.getLogger(self.__class__.__qualname__), config.hawking.core.logging
         )
 
-        self.token = config.hawking.discord.token
+        self.token = config.hawking.core.discord.token
 
         self.name = app_config.name.capitalize()
         self.version = app_config.version
@@ -74,8 +74,8 @@ class Hawking:
         )
         self.module_manager.register_module(
             database_manager.DatabaseManager,
-            config.hawking.database,
-            dynamo_db_client.DynamoDbClient(config.hawking.database),
+            config.hawking.core.database,
+            dynamo_db_client.DynamoDbClient(config.hawking.core.database),
             dependencies=[command_reconstructor.CommandReconstructor, anonymous_item_factory.AnonymousItemFactory],
         )
         self.module_manager.register_module(
@@ -86,13 +86,11 @@ class Hawking:
         )
         self.module_manager.register_module(
             string_similarity.StringSimilarity,
-            StringSimilarityConfig.model_validate({
-                "similarity_algorithm": config.modules.phrases.similarity_algorithm,
-            }),
+            config.hawking.core.string_similarity,
         )
         self.module_manager.register_module(
             admin_cog.AdminCog,
-            config.hawking.admin,
+            config.hawking.core.admin,
             self.module_manager,
             self.bot,
             dependencies=[database_manager.DatabaseManager],
@@ -100,7 +98,7 @@ class Hawking:
         self.module_manager.register_module(
             privacy_management_cog.PrivacyManagementCog,
             app_config,
-            config.hawking.privacy,
+            config.hawking.core.privacy,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager],
         )
@@ -112,7 +110,7 @@ class Hawking:
         self.module_manager.register_module(
             invite_cog.InviteCog,
             app_config,
-            config.hawking.invite,
+            config.hawking.core.invite,
             self.bot,
             dependencies=[component_factory.ComponentFactory, database_manager.DatabaseManager],
         )
@@ -122,15 +120,15 @@ class Hawking:
         )
         self.module_manager.register_module(
             audio_player.AudioPlayer,
-            config.hawking.audio,
+            config.hawking.core.audio,
             self.bot,
             dependencies=[admin_cog.AdminCog, database_manager.DatabaseManager],
         )
-        self.module_manager.register_module(tts_controller.TTSController, config.modules.tts)
+        self.module_manager.register_module(tts_controller.TTSController, config.hawking.modules.tts)
         self.module_manager.register_module(
             speech_cog.SpeechCog,
             self.bot,
-            config.modules.speech,
+            config.hawking.modules.speech,
             dependencies=[
                 invoked_command_handler.InvokedCommandHandler,
                 message_parser.MessageParser,

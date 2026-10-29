@@ -4,6 +4,7 @@ import importlib
 from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
+from pydantic import ValidationError
 
 from hawking.configuration import HawkingConfig
 from hawking.core.exceptions import ModuleLoadException
@@ -47,7 +48,7 @@ class ModuleManager:
         self.bot_controller = bot_controller
         self.bot = bot
 
-        self.module_config = self.config.hawking.module_loader
+        self.module_config = self.config.hawking.core.module_loader
         self.modules_dir_path = self.module_config.directory_path
 
         self.modules = OrderedDict()
@@ -77,8 +78,12 @@ class ModuleManager:
             )
         except ModuleLoadException as e:
             self.logger.error(f"Error: '{e.message}' while loading module: {module_entry.name}.")
-            if instantiated_module is not None and instantiated_module.successful is not False:
-                instantiated_module.successful = False
+            return False
+        except Exception as e:
+            self.logger.exception(
+                f"Unexpected error while loading module: {module_entry.name}; skipping it.",
+                exc_info=e,
+            )
             return False
 
         if module_entry.is_cog:
@@ -166,7 +171,20 @@ class ModuleManager:
                 self.logger.info(f"Skipping module {module_path.name}, as its initialization data was false")
                 continue
 
-            module_config = getattr(self.config.modules, module_path.name, self.config)
+            module_config_data = self.config.addons.get(module_path.name, {})
+            config_model = module_init.config_model
+            if config_model is not None:
+                try:
+                    module_config = config_model.model_validate(module_config_data)
+                except ValidationError as e:
+                    self.logger.error(
+                        f"Invalid configuration for addon {module_path.name}; skipping it.",
+                        exc_info=e,
+                    )
+                    continue
+            else:
+                module_config = module_config_data
+
             register_module_args = [module_config]
             register_module_kwargs = {**module_init.init_kwargs}
             if module_init.is_cog:

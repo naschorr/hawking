@@ -325,4 +325,8 @@ class Phrases(DiscoverableCog):
 
 
 def main() -> ModuleInitializationContainer:
-    return ModuleInitializationContainer(Phrases, dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor", "StringSimilarity"])
+    return ModuleInitializationContainer(
+        Phrases,
+        config_model=PhrasesConfig,
+        dependencies=["AdminCog", "SpeechCog", "InvokedCommandHandler", "DatabaseManager", "CommandReconstructor", "StringSimilarity"],
+    )

@@ -76,5 +76,6 @@ if (__name__ == '__main__'):
     except Exception as e:
         LOGGER.error("Missing required '--encode' or '--decode' argument.", exc_info=e)
 
-    config = load_hawking_config().modules.phrases
+    config_data = load_hawking_config().addons.get("phrases", {})
+    config = PhrasesConfig.model_validate(config_data)
     operation(config)

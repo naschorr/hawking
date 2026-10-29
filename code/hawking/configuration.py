@@ -22,15 +22,13 @@ from hawking.core.services.database.database_manager_config import DatabaseManag
 from hawking.core.services.configuration.discord_config import DiscordConfig
 from hawking.core.services.logging.logging_config import LoggingConfig
 from hawking.core.services.module_manager.module_manager_config import ModuleManagerConfig
+from hawking.core.services.string_similarity.string_similarity_config import StringSimilarityConfig
 from hawking.modules.speech.speech_cog_config import SpeechConfig
 from hawking.services.tts_manager.tts_controller_config import TTSControllerConfig
-from addons.phrases.phrases_config import PhrasesConfig
-from addons.reddit.reddit_config import RedditConfig
-from addons.stupid_questions.stupid_questions_config import StupidQuestionsConfig
 from hawking.core.utilities import utilities
 
 
-class HawkingSettings(BaseModel):
+class HawkingCoreSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     app: AppConfig = Field(default_factory=AppConfig)
@@ -40,6 +38,7 @@ class HawkingSettings(BaseModel):
     privacy: PrivacyManagementCogConfig
     database: DatabaseManagerConfig
     module_loader: ModuleManagerConfig = Field(default_factory=ModuleManagerConfig)
+    string_similarity: StringSimilarityConfig = Field(default_factory=StringSimilarityConfig)
     invite: InviteCogConfig
     admin: AdminCogConfig = Field(default_factory=AdminCogConfig)
 
@@ -49,9 +48,13 @@ class HawkingModules(BaseModel):
 
     speech: SpeechConfig = Field(default_factory=SpeechConfig)
     tts: TTSControllerConfig
-    phrases: PhrasesConfig
-    reddit: RedditConfig
-    stupid_questions: StupidQuestionsConfig = Field(default_factory=StupidQuestionsConfig)
+
+
+class HawkingPackageConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    core: HawkingCoreSettings
+    modules: HawkingModules
 
 
 class _HawkingConfigSources(BaseModel):
@@ -60,7 +63,7 @@ class _HawkingConfigSources(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     hawking: dict[str, Any] = Field(default_factory=dict)
-    modules: dict[str, Any] = Field(default_factory=dict)
+    addons: dict[str, Any] = Field(default_factory=dict)
 
 
 class HawkingConfig(BaseModel):
@@ -68,34 +71,17 @@ class HawkingConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    hawking: HawkingSettings
-    modules: HawkingModules
+    hawking: HawkingPackageConfig
+    addons: dict[str, Any] = Field(default_factory=dict)
 
-    @model_validator(mode="before")
-    @classmethod
-    def populate_shared_app_fields(cls, value):
-        if not isinstance(value, dict):
-            return value
+    @model_validator(mode="after")
+    def populate_shared_app_fields(self):
+        app = self.hawking.core.app
 
-        hawking = value.get("hawking")
-        modules = value.get("modules")
-        if not isinstance(hawking, dict) or not isinstance(modules, dict):
-            return value
+        if "service_name" not in self.hawking.core.logging.model_fields_set and app.name:
+            self.hawking.core.logging.service_name = app.name
 
-        app = hawking.get("app", {})
-        app = app if isinstance(app, dict) else {}
-        app_name = app.get("name")
-        app_version = app.get("version")
-
-        logging_config = hawking.get("logging")
-        if isinstance(logging_config, dict) and app_name:
-            logging_config.setdefault("service_name", app_name)
-
-        reddit_config = modules.get("reddit")
-        if isinstance(reddit_config, dict) and app_version:
-            reddit_config.setdefault("version", app_version)
-
-        return value
+        return self
 
 
 @lru_cache(maxsize=4)

@@ -1,10 +1,11 @@
 from inspect import isclass
 
 from discord.ext import commands
+from pydantic import BaseModel
 
 
 class ModuleInitializationContainer:
-    def __init__(self, cls, *init_args, **init_kwargs):
+    def __init__(self, cls, *init_args, config_model: type[BaseModel] | None = None, **init_kwargs):
         if(not isclass(cls)):
             raise RuntimeError("Provided class parameter '{}' isn't actually a class.".format(cls))
 
@@ -12,3 +13,4 @@ class ModuleInitializationContainer:
         self.is_cog = issubclass(cls, commands.Cog)
         self.init_args = init_args
         self.init_kwargs = init_kwargs
+        self.config_model = config_model

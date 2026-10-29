@@ -12,7 +12,7 @@ from hawking.core.utilities.utilities import is_windows
 class Logging:
     @staticmethod
     def initialize_logging(logger, logging_config: LoggingConfig | None = None):
-        logging_config = logging_config or load_hawking_config().hawking.logging
+        logging_config = logging_config or load_hawking_config().hawking.core.logging
 
         log_format = "%(asctime)s - %(module)s - %(funcName)s - %(levelname)s - %(message)s"
         formatter = logging.Formatter(log_format)

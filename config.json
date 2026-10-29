@@ -1,91 +1,97 @@
 {
     "hawking": {
-        "app": {
-            "name": "hawking",
-            "version": "2.5.0",
-            "description": [
-                "The retro TTS bot for Discord, inspired by Moonbase Alpha!"
-            ],
-            "repository_url": "https://github.com/naschorr/hawking",
-            "ui": {
-                "accent_color_hex": "0079f4"
+        "core": {
+            "app": {
+                "name": "hawking",
+                "version": "2.5.0",
+                "description": [
+                    "The retro TTS bot for Discord, inspired by Moonbase Alpha!"
+                ],
+                "repository_url": "https://github.com/naschorr/hawking",
+                "ui": {
+                    "accent_color_hex": "0079f4"
+                }
+            },
+            "discord": {
+                "token": "discord bot token goes here"
+            },
+            "audio": {
+                "channel_timeout_seconds": 300,
+                "skip_percentage": 0.5,
+                "ffmpeg": {
+                    "parameters": "-ac 2 -guess_layout_max 0",
+                    "post_parameters": "-loglevel 16"
+                }
+            },
+            "logging": {
+                "level": "DEBUG",
+                "directory_path": "logs",
+                "max_bytes": 10485760,
+                "backup_count": 7
+            },
+            "privacy": {
+                "policy_url": "https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md",
+                "delete_requests": {
+                    "queue_file_path": "privacy/delete_requests.txt",
+                    "metadata_file_path": "privacy/meta.json",
+                    "weekday_to_process": 0,
+                    "time_to_process": "T00:00:00Z"
+                }
+            },
+            "database": {
+                "enabled": false,
+                "detailed_table": "Hawking",
+                "anonymous_table": "HawkingAnonymous",
+                "detailed_table_ttl_seconds": 31536000,
+                "dynamodb": {
+                    "credentials_file_path": "",
+                    "resource": "dynamodb",
+                    "region_name": "us-east-2",
+                    "primary_key": "QueryId"
+                }
+            },
+            "module_loader": {
+                "directory_path": "code/addons"
+            },
+            "string_similarity": {
+                "similarity_algorithm": "difflib"
+            },
+            "invite": {
+                "blurb": "The retro TTS bot for Discord, inspired by Moonbase Alpha!\nAdd Hawking to your server and start speaking now! _/say aeiou_",
+                "invite_url": "https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072",
+                "support_invite_url": "https://discord.gg/JJqx8C4"
             }
         },
-        "discord": {
-            "token": "discord bot token goes here"
-        },
-        "audio": {
-            "channel_timeout_seconds": 300,
-            "skip_percentage": 0.5,
-            "ffmpeg": {
-                "parameters": "-ac 2 -guess_layout_max 0",
-                "post_parameters": "-loglevel 16"
+        "modules": {
+            "speech": {
+                "prepend": "[:phoneme on]",
+                "append": "",
+                "character_limit": 1250,
+                "newline_replacement": "[_<250,10>]",
+                "replace_emoji": true,
+                "channel_timeout_phrases": [
+                    "Bye",
+                    "Well, I'm done here",
+                    "Take it easy",
+                    "See ya later",
+                    "[:nh] I'll be [baa<250>k<100>]",
+                    "ight i'm a head out"
+                ]
+            },
+            "tts": {
+                "executable_path": "code/hawking/services/tts_manager/say.exe",
+                "output_directory_path": "temp",
+                "generate_timeout_seconds": 3,
+                "output_extension": "wav",
+                "wine_command": "wine",
+                "xvfb_prepend": "DISPLAY=:0.0",
+                "headless": false
             }
-        },
-        "logging": {
-            "level": "DEBUG",
-            "directory_path": "logs",
-            "max_bytes": 10485760,
-            "backup_count": 7
-        },
-        "privacy": {
-            "policy_url": "https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md",
-            "delete_requests": {
-                "queue_file_path": "privacy/delete_requests.txt",
-                "metadata_file_path": "privacy/meta.json",
-                "weekday_to_process": 0,
-                "time_to_process": "T00:00:00Z"
-            }
-        },
-        "database": {
-            "enabled": false,
-            "detailed_table": "Hawking",
-            "anonymous_table": "HawkingAnonymous",
-            "detailed_table_ttl_seconds": 31536000,
-            "dynamodb": {
-                "credentials_file_path": "",
-                "resource": "dynamodb",
-                "region_name": "us-east-2",
-                "primary_key": "QueryId"
-            }
-        },
-        "module_loader": {
-            "directory_path": "code/addons"
-        },
-        "invite": {
-            "blurb": "The retro TTS bot for Discord, inspired by Moonbase Alpha!\nAdd Hawking to your server and start speaking now! _/say aeiou_",
-            "invite_url": "https://discordapp.com/oauth2/authorize?client_id=334894709292007424&scope=bot&permissions=53803072",
-            "support_invite_url": "https://discord.gg/JJqx8C4"
         }
     },
-    "modules": {
-        "speech": {
-            "prepend": "[:phoneme on]",
-            "append": "",
-            "character_limit": 1250,
-            "newline_replacement": "[_<250,10>]",
-            "replace_emoji": true,
-            "channel_timeout_phrases": [
-                "Bye",
-                "Well, I'm done here",
-                "Take it easy",
-                "See ya later",
-                "[:nh] I'll be [baa<250>k<100>]",
-                "ight i'm a head out"
-            ]
-        },
-        "tts": {
-            "executable_path": "code/hawking/services/tts_manager/say.exe",
-            "output_directory_path": "temp",
-            "generate_timeout_seconds": 3,
-            "output_extension": "wav",
-            "wine_command": "wine",
-            "xvfb_prepend": "DISPLAY=:0.0",
-            "headless": false
-        },
+    "addons": {
         "phrases": {
             "directory_path": "",
-            "similarity_algorithm": "difflib",
             "minimum_similarity": 0.5
         },
         "reddit": {
