@@ -50,7 +50,7 @@
             }
         },
         "module_loader": {
-            "directory_path": "modules"
+            "directory_path": "code/addons"
         },
         "invite": {
             "blurb": "The retro TTS bot for Discord, inspired by Moonbase Alpha!\nAdd Hawking to your server and start speaking now! _/say aeiou_",
@@ -75,7 +75,7 @@
             ]
         },
         "tts": {
-            "executable_path": "code/core/tts/say.exe",
+            "executable_path": "code/hawking/services/tts_manager/say.exe",
             "output_directory_path": "temp",
             "generate_timeout_seconds": 3,
             "output_extension": "wav",
