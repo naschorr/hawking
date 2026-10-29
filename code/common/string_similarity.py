@@ -1,6 +1,6 @@
 from difflib import SequenceMatcher
 
-from common.configuration import Configuration
+from common.string_similarity_config import StringSimilarityConfig
 from common.module.module import Module
 
 
@@ -10,10 +10,11 @@ class StringSimilarity(Module):
     ## https://stackoverflow.com/questions/6690739/fuzzy-string-comparison-in-python-confused-with-which-library-to-use
 
     ## Lifecycle
-    def __init__(self, config: Configuration, *args, **kwargs):
+    def __init__(self, config: StringSimilarityConfig, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.similarity_algorithm = config.get("string_similarity_algorithm")
+        self.config = config
+        self.similarity_algorithm = self.config.similarity_algorithm
 
     ## Methods
 

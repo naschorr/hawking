@@ -6,8 +6,7 @@ from collections import OrderedDict
 from pathlib import Path
 from functools import reduce
 
-from common import utilities
-from common.configuration import Configuration
+from common.configuration.configuration import HawkingConfig
 from common.exceptions import ModuleLoadException
 from common.logging import Logging
 from common.module.module import Module
@@ -16,12 +15,8 @@ from .module_initialization_container import ModuleInitializationContainer
 
 from discord.ext import commands
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
-
-
 class ModuleEntry:
-    def __init__(self, cls: Module, *init_args, **init_kwargs):
+    def __init__(self, cls: type[Module], *init_args, **init_kwargs):
         self.module = sys.modules[cls.__module__]
         self.cls = cls
         self.name = cls.__qualname__
@@ -35,7 +30,7 @@ class ModuleEntry:
 
     ## Methods
 
-    def get_class_callable(self) -> Module:
+    def get_class_callable(self) -> type[Module]:
         '''Returns an invokable object to instantiate the class defined in self.cls'''
         return getattr(self.module, self.name)
 
@@ -46,21 +41,15 @@ class ModuleManager:
     support reloading existing modules/cogs too.
     '''
 
-    def __init__(self, config: Configuration, bot_controller, bot: commands.Bot | commands.AutoShardedBot):
+    def __init__(self, config: HawkingConfig, bot_controller, bot: commands.Bot | commands.AutoShardedBot):
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
         self.config = config
         self.bot_controller = bot_controller
         self.bot = bot
 
-        modules_dir_path = self.config.get('modules_dir_path')
-        if (modules_dir_path):
-            self.modules_dir_path = Path(modules_dir_path)
-        else:
-            self.modules_dir_path = Path.joinpath(
-                utilities.get_root_path(),
-                self.config.get('modules_dir', 'modules')
-            )
+        self.module_config = self.config.hawking.module_loader
+        self.modules_dir_path = self.module_config.directory_path
 
         self.modules = OrderedDict()
         self.loaded_modules = {}    # Keep non-cog modules loaded in memory
@@ -178,7 +167,7 @@ class ModuleManager:
         return loaded_module_count
 
 
-    def register_module(self, cls: Module, *init_args, **init_kwargs):
+    def register_module(self, cls: type[Module], *init_args, **init_kwargs):
         '''Registers module data with the ModuleManager, and prepares any necessary dependencies'''
 
         module_entry = ModuleEntry(cls, *init_args, **init_kwargs)
@@ -233,7 +222,8 @@ class ModuleManager:
                     continue
 
                 ## Build args to register the module
-                register_module_args = [self.config]
+                module_config = getattr(self.config.modules, module_path.name, self.config)
+                register_module_args = [module_config]
                 register_module_kwargs = {**module_init.init_kwargs}
 
                 if (module_init.is_cog):

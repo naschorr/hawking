@@ -1,8 +1,7 @@
 import logging
 
-from hawking import Hawking
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
+from common.cogs.admin_cog_config import AdminCogConfig
 from common.logging import Logging
 from common.module.module_manager import ModuleManager
 from common.module.module import Cog
@@ -16,9 +15,10 @@ class AdminCog(Cog):
     ADMINS_KEY = "admins"
     ANNOUNCE_UPDATES_KEY = "announce_updates"
 
-    def __init__(self, config: Configuration, module_manager: ModuleManager, bot: Bot, *args, **kwargs):
+    def __init__(self, config: AdminCogConfig, module_manager: ModuleManager, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.module_manager = module_manager
         self.bot = bot
@@ -26,8 +26,8 @@ class AdminCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.admins = config.get(self.ADMINS_KEY, [])
-        self.announce_updates = config.get(self.ANNOUNCE_UPDATES_KEY, False)
+        self.admins = self.config.admins
+        self.announce_updates = self.config.announce_updates
 
     ## Commands
 

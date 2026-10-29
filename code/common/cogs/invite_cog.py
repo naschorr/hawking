@@ -1,9 +1,10 @@
 import logging
 
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
+from common.cogs.invite_cog_config import InviteCogConfig
 from common.logging import Logging
 from common.module.module import Cog
+from common.app_config import AppConfig
 from common.ui.component_factory import ComponentFactory
 
 from discord import Interaction, ButtonStyle
@@ -15,9 +16,11 @@ from discord.ui import View, Button
 class InviteCog(Cog):
     INVITE_COMMAND_NAME = "invite"
 
-    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
+    def __init__(self, app_config: AppConfig, config: InviteCogConfig, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.app_config = app_config
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
@@ -26,18 +29,16 @@ class InviteCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name: str = config.get("name", "the bot").capitalize()
-        self.bot_invite_blurb: str = config.get("bot_invite_blurb", config.get("description")[0])
-        self.bot_invite_url: str = config.get("bot_invite_url")
-        self.support_discord_invite_url: str = config.get("support_discord_invite_url")
+        self.name: str = self.app_config.name.capitalize()
+        self.bot_invite_blurb: str = self.config.blurb
+        self.bot_invite_url = str(self.config.invite_url)
+        self.support_discord_invite_url = str(self.config.support_invite_url)
 
-        ## Make sure the minimum config options are populated, so a proper embed can be generated later
-        if (self.bot_invite_blurb is not None and self.bot_invite_url is not None):
-            self.add_command(Command(
-                name=InviteCog.INVITE_COMMAND_NAME,
-                description=f"Posts invite links for {self.name}",
-                callback=self.invite_command
-            ))
+        self.add_command(Command(
+            name=InviteCog.INVITE_COMMAND_NAME,
+            description=f"Posts invite links for {self.name}",
+            callback=self.invite_command
+        ))
 
     ## Commands
 
@@ -59,12 +60,11 @@ class InviteCog(Cog):
             url=self.bot_invite_url
         ))
 
-        if (self.support_discord_invite_url is not None):
-            view.add_item(Button(
-                style=ButtonStyle.link,
-                label="Join the Support Discord",
-                url=self.support_discord_invite_url
-            ))
+        view.add_item(Button(
+            style=ButtonStyle.link,
+            label="Join the Support Discord",
+            url=self.support_discord_invite_url
+        ))
 
         if (repo_button := self.component_factory.create_repo_link_button()):
             view.add_item(repo_button)

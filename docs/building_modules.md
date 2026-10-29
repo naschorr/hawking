@@ -54,13 +54,7 @@ The configuration file is just a normal JSON file, with a root JSON object conta
 }
 ```
 
-Module specific configuration files can be loaded via the `load_config` function in [configuration.py](https://github.com/naschorr/hawking/blob/master/code/common/configuration.py), which just takes a path to a directory containing the `config.json` file. It returns a `dict` corresponding to the key-value pairs inside the module configuration file, and the global Hawking `config.json` file (with the module's configuration file taking precendence, so be careful!). It can be invoked like so:
-
-```
-from common import utilities
-
-config = utilities.load_module_config(Path(__file__).parent)
-```
+Module configuration is defined by a Pydantic model and assigned by the module manager from the matching section of the root `HawkingConfig` (for example, `modules.reddit`). New modules should add a typed config model and a corresponding section to the root configuration model rather than adding an untyped config file.
 
 ## Practical Examples
 

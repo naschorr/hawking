@@ -3,11 +3,9 @@ import uuid
 import datetime
 
 from common.database.models.command_item import CommandItem
-from common.configuration import Configuration
 from common.logging import Logging
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config()
+## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 

@@ -5,28 +5,22 @@ import re
 from pathlib import Path
 from typing import List
 
-from common.configuration import Configuration
 from common.logging import Logging
 from modules.phrases.models.phrase import Phrase
 from modules.phrases.models.phrase_group import PhraseGroup
 from modules.phrases.models.phrase_encoding import PhraseEncoding
 from modules.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
+from modules.phrases.phrases_config import PhrasesConfig
 
-## Config & logging
-CONFIG_OPTIONS = Configuration().load_config(Path(__file__).parent)
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 
 
 class PhraseFileManager:
-    def __init__(self):
-        self.phrases_file_extension = CONFIG_OPTIONS.get('phrases_file_extension', '.json')
-        self.non_letter_regex = re.compile('\W+')   # Compile a regex for filtering non-letter characters
-
-        phrases_folder_path = CONFIG_OPTIONS.get('phrases_folder_path')
-        if (phrases_folder_path):
-            self.phrases_folder_path = Path(phrases_folder_path)
-        else:
-            self.phrases_folder_path = Path.joinpath(Path(__file__).parent, CONFIG_OPTIONS.get('phrases_folder', 'phrases'))
+    def __init__(self, config: PhrasesConfig):
+        self.config = config
+        self.phrases_file_extension = ".json"
+        self.non_letter_regex = re.compile(r'\W+')   # Compile a regex for filtering non-letter characters
+        self.phrases_folder_path = self.config.directory_path
 
 
     def discover_phrase_groups(self, path_to_scan: Path) -> List[Path]:

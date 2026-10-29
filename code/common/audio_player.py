@@ -7,7 +7,7 @@ from concurrent import futures
 from pathlib import Path
 
 from common import utilities
-from common.configuration import Configuration
+from common.audio_player_config import AudioPlayerConfig
 from common.exceptions import UnableToConnectToVoiceChannelException, NoVoiceChannelAvailableException
 from common.logging import Logging
 from common.database.database_manager import DatabaseManager
@@ -55,7 +55,7 @@ class ServerStateManager:
     This class helps to manage the bot, initiate audio play requests, and move between channels.
     '''
 
-    def __init__(self, config: Configuration, bot: commands.Bot, audio_player_cog, guild: Guild, channel_timeout_handler = None):
+    def __init__(self, channel_timeout_seconds: int, bot: commands.Bot, audio_player_cog, guild: Guild, channel_timeout_handler = None):
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
         self.audio_player_cog = audio_player_cog
@@ -67,7 +67,7 @@ class ServerStateManager:
         self.audio_player = self.bot.loop.create_task(self.audio_player_loop())
         self.voice_client = None
 
-        self.channel_timeout_seconds = int(config.get('channel_timeout_seconds', 15 * 60))
+        self.channel_timeout_seconds = channel_timeout_seconds
         self.channel_timeout_handler = channel_timeout_handler
 
     ## Property(s)
@@ -76,7 +76,7 @@ class ServerStateManager:
     def audio(self) -> FFmpegPCMAudio | None:
         if (self.active_play_request):
             return self.active_play_request.audio
-        
+
         return None
 
 
@@ -84,7 +84,7 @@ class ServerStateManager:
     def channel(self) -> VocalGuildChannel | None:
         if (self.active_play_request):
             return self.active_play_request.channel
-        
+
         return None
 
 
@@ -332,17 +332,13 @@ class ServerStateManager:
 
 class AudioPlayer(Cog):
     SKIP_COMMAND_NAME = "skip"
-    SKIP_PERCENTAGE_KEY = "skip_percentage"
-    FFMPEG_PARAMETERS_KEY = "ffmpeg_parameters"
-    FFMPEG_POST_PARAMETERS_KEY = "ffmpeg_post_parameters"
-
     ## Lifecycle
 
-    def __init__(self, config: Configuration, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
+    def __init__(self, config: AudioPlayerConfig, bot: commands.Bot, channel_timeout_handler = None, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
-        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.config = config
+        self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
         self.admin_cog = kwargs.get('dependencies', {}).get('AdminCog')
         assert (self.admin_cog is not None)
@@ -352,10 +348,9 @@ class AudioPlayer(Cog):
         self.server_states = {}
         self.channel_timeout_handler = channel_timeout_handler
 
-        ## Clamp between 0.0 and 1.0
-        self.skip_percentage = max(min(float(self.config.get(self.SKIP_PERCENTAGE_KEY, 0.5)), 1.0), 0.0)
-        self.ffmpeg_parameters = self.config.get(self.FFMPEG_PARAMETERS_KEY, "")
-        self.ffmpeg_post_parameters = self.config.get(self.FFMPEG_POST_PARAMETERS_KEY, "")
+        self.skip_percentage = self.config.skip_percentage
+        self.ffmpeg_parameters = self.config.ffmpeg.parameters
+        self.ffmpeg_post_parameters = self.config.ffmpeg.post_parameters
 
         ## Commands
         self.add_command(app_commands.Command(
@@ -423,7 +418,13 @@ class AudioPlayer(Cog):
         server_state = self.server_states.get(guild.id)
 
         if (server_state is None):
-            server_state = ServerStateManager(self.config, self.bot, self, guild, self.channel_timeout_handler)
+            server_state = ServerStateManager(
+                self.config.channel_timeout_seconds,
+                self.bot,
+                self,
+                guild,
+                self.channel_timeout_handler
+            )
             self.server_states[guild.id] = server_state
 
         return server_state

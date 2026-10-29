@@ -6,11 +6,11 @@ from functools import reduce
 
 from core.cogs.speech_cog import SpeechCog
 from common.audio_player import AudioPlayer
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
+from common.app_config import AppConfig
 from modules.phrases.phrases import Phrases
 from modules.phrases.models.phrase import Phrase
 from modules.phrases.models.phrase_group import PhraseGroup
@@ -31,9 +31,10 @@ class HelpCog(Cog):
 
     ## Lifecycle
 
-    def __init__(self, config: Configuration, bot: commands.Bot, *args, **kwargs):
+    def __init__(self, config: AppConfig, bot: commands.Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
@@ -44,10 +45,10 @@ class HelpCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name = config.get("name", "help").capitalize()
-        self.version = config.get("version", "1.0.0")
-        self.description = config.get("description")
-        self.repo_url = config.get("repo_url")
+        self.name = self.config.name.capitalize()
+        self.version = self.config.version
+        self.description_lines = self.config.description
+        self.repo_url = self.config.repository_url
         self.activation_str = "/"   ## Slash commands
 
         ## Simple cog -> commands mapping
@@ -120,14 +121,13 @@ class HelpCog(Cog):
 
     def build_header_help_embed(self) -> Embed:
         ## Build a more all-encompassing description for the bot
-        description = [
-            self.description,
+        description = self.description_lines.copy()
+        description.append(
             ## The "{'ㅤ' * 10}" adds non-collapsing whitespace to the end of the final line, which forces the embed to
             ## fully expand. Otherwise all of the embeds will be slightly misaligned, and that's not very nice.
-            ## This is the least ugly solution, currently. Alternatively, a wide 1 pixel tall image might work as well.
-            ## However, hosting needs to be considered
-            f"Learn more, contribute, or ⭐ me on [GitHub]({self.repo_url}).{'ㅤ' * 10}",
-        ]
+            ## This is the least ugly solution currently.
+            f"Learn more, contribute, or ⭐ me on [GitHub]({self.repo_url}).{'ㅤ' * 10}"
+        )
 
         header = self.component_factory.create_embed(
             self.name,

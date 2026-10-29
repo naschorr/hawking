@@ -1,18 +1,17 @@
 import logging
 import random
-from pathlib import Path
 
 from core.cogs.speech_cog import SpeechCog
 from common.command_management.invoked_command import InvokedCommand
 from common.command_management.invoked_command_handler import InvokedCommandHandler
 from common.command_management.command_reconstructor import CommandReconstructor
-from common.configuration import Configuration
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.string_similarity import StringSimilarity
 from common.module.discoverable_module import DiscoverableCog
 from common.module.module_initialization_container import ModuleInitializationContainer
 from modules.phrases.phrase_file_manager import PhraseFileManager
+from modules.phrases.phrases_config import PhrasesConfig
 from modules.phrases.models.phrase_group import PhraseGroup
 from modules.phrases.models.phrase import Phrase
 
@@ -28,7 +27,7 @@ class Phrases(DiscoverableCog):
     RANDOM_COMMAND_NAME = "random"
     FIND_COMMAND_NAME = "find"
 
-    def __init__(self, config: Configuration, bot: Bot, **kwargs):
+    def __init__(self, config: PhrasesConfig, bot: Bot, **kwargs):
         super().__init__(config, bot, **kwargs)
         self.config = config
         self.bot = bot
@@ -47,11 +46,11 @@ class Phrases(DiscoverableCog):
         self.string_similarity: StringSimilarity = kwargs.get('dependencies', {}).get('StringSimilarity')
         assert (self.string_similarity is not None)
 
-        self.phrase_file_manager = PhraseFileManager()
+        self.phrase_file_manager = PhraseFileManager(self.config)
 
         self.phrases: dict[str, Phrase] = {}
         self.phrase_groups: dict[str, PhraseGroup] = {}
-        self.find_command_minimum_similarity = float(self.config.get('find_command_minimum_similarity', 0.5))
+        self.find_command_minimum_similarity = self.config.minimum_similarity
         self.phrases_folder_path = self.phrase_file_manager.phrases_folder_path
 
         ## Load and add the phrases

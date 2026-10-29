@@ -2,7 +2,6 @@ import asyncio
 import logging
 from typing import Any, Callable, Coroutine
 
-from common.configuration import Configuration
 from common.command_management.command_reconstructor import CommandReconstructor
 from common.command_management.invoked_command import InvokedCommand
 from common.database.database_manager import DatabaseManager

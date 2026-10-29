@@ -1,17 +1,15 @@
-import os
-import stat
 import logging
 import asyncio
 import datetime
 import json
-from pathlib import Path
 
 from common import utilities
-from common.configuration import Configuration
+from common.app_config import AppConfig
 from common.database.database_manager import DatabaseManager
 from common.logging import Logging
 from common.module.module import Cog
 from common.ui.component_factory import ComponentFactory
+from common.cogs.privacy_management_cog_config import PrivacyManagementCogConfig
 
 import dateutil
 import discord
@@ -24,9 +22,11 @@ class PrivacyManagementCog(Cog):
 
     ## Lifecycle
 
-    def __init__(self, config: Configuration, bot: Bot, *args, **kwargs):
+    def __init__(self, app_config: AppConfig, config: PrivacyManagementCogConfig, bot: Bot, *args, **kwargs):
         super().__init__(bot, *args, **kwargs)
 
+        self.app_config = app_config
+        self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
         self.bot = bot
 
@@ -35,38 +35,14 @@ class PrivacyManagementCog(Cog):
         self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
         assert (self.database_manager is not None)
 
-        self.name = config.get("name", "the bot").capitalize()
-        self.privacy_policy_url = config.get('privacy_policy_url')
-        self.delete_request_scheduled_weekday = int(config.get('delete_request_weekday_to_process', 0))
+        self.name = self.app_config.name.capitalize()
+        self.privacy_policy_url = str(self.config.policy_url)
+        self.delete_request_scheduled_weekday = self.config.delete_requests.weekday_to_process
         self._delete_request_scheduled_weekday_name = utilities.get_weekday_name_from_day_of_week(self.delete_request_scheduled_weekday)
-        self.delete_request_scheduled_time = dateutil.parser.parse(config.get('delete_request_time_to_process', "T00:00:00Z"))
+        self.delete_request_scheduled_time = dateutil.parser.parse(self.config.delete_requests.time_to_process)
 
-        ## Build the filepaths for the various tracking files
-        delete_request_queue_file_path = config.get('delete_request_queue_file_path')
-        if (delete_request_queue_file_path):
-            self.delete_request_queue_file_path = Path(delete_request_queue_file_path)
-        else:
-            self.delete_request_queue_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'delete_requests.txt')
-
-        delete_request_meta_file_path = config.get('delete_request_meta_file_path')
-        if (delete_request_meta_file_path):
-            self.delete_request_meta_file_path = Path(delete_request_meta_file_path)
-        else:
-            self.delete_request_meta_file_path = Path.joinpath(utilities.get_root_path(), 'privacy', 'meta.json')
-
-        ## Make sure the file containing all delete requests is accessible.
-        if (not self.is_file_accessible(self.delete_request_queue_file_path)):
-            message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_queue_file_path)
-
-            self.logger.error(message)
-            raise RuntimeError(message)
-
-        ## Make sure the file containing the delete request metadata is accessible.
-        if (not self.is_file_accessible(self.delete_request_meta_file_path)):
-            message = "Unable to access delete request queue file at: '{}'. Make sure that it exists and has r/w permissions applied to it".format(self.delete_request_meta_file_path)
-
-            self.logger.error(message)
-            raise RuntimeError(message)
+        self.delete_request_queue_file_path = self.config.delete_requests.queue_file_path
+        self.delete_request_meta_file_path = self.config.delete_requests.metadata_file_path
 
         ## Keep a copy of all user ids that should be deleted in memory, so the actual file can't get spammed by repeats.
         self.queued_user_ids = self.get_all_queued_delete_request_ids()
@@ -84,37 +60,13 @@ class PrivacyManagementCog(Cog):
         else:
             asyncio.create_task(self.schedule_process_delete_request_queue(seconds_until_process_delete_request))
 
-        # Don't add a privacy policy link if there isn't a URL to link to
-        if (self.privacy_policy_url):
-            self.add_command(app_commands.Command(
-                name=PrivacyManagementCog.PRIVACY_POLICY_COMMAND_NAME,
-                description=self.privacy_policy_command.__doc__ or "Gives a link to the privacy policy",
-                callback=self.privacy_policy_command
-            ))
+        self.add_command(app_commands.Command(
+            name=PrivacyManagementCog.PRIVACY_POLICY_COMMAND_NAME,
+            description=self.privacy_policy_command.__doc__ or "Gives a link to the privacy policy",
+            callback=self.privacy_policy_command
+        ))
 
     ## Methods
-
-    def is_file_accessible(self, file_path: Path) -> bool:
-        """Ensures that the file that holds the delete requests is accessible"""
-
-        if (file_path.is_file()):
-            if (    os.access(file_path, os.R_OK) and
-                    os.access(file_path, os.W_OK)):
-                return True
-            else:
-                try:
-                    os.chmod(file_path, stat.S_IREAD | stat.S_IWRITE)
-                    return True
-                except Exception:
-                    return False
-        else:
-            try:
-                file_path.parent.mkdir(parents=True, exist_ok=True)    ## Basically mkdir -p on the parent directory
-                file_path.touch(0o644, exist_ok=True)    ## u+rw, go+r
-                return True
-            except Exception as e:
-                return False
-
 
     def get_all_queued_delete_request_ids(self) -> set:
         """Retrieves all delete request ids from the file, and returns them all in a set"""
@@ -182,7 +134,10 @@ class PrivacyManagementCog(Cog):
             target.replace(hour=source.hour, minute=source.minute, second=source.second, microsecond=0)
 
         try:
-            last_process_time = dateutil.parser.isoparse(self.metadata.get('last_process_time'))
+            last_process_time_value = self.metadata.get('last_process_time')
+            if not isinstance(last_process_time_value, str):
+                return 0
+            last_process_time = dateutil.parser.isoparse(last_process_time_value)
         except Exception:
             ## If there is no last_process_time property, then it likely hasn't been done. So process the queue immediately
             return 0
