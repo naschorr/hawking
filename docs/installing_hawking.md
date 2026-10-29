@@ -14,7 +14,7 @@
   - If you run into issues during `PyNaCl`'s installation on Linux, you may need to run: `apt install build-essential libffi-dev python3.10-dev` to install some supplemental features for the setup process.
   - If you run into issue during `cffi`'s installation on Windows, you may need to install the Microsoft C++ Build Tools. You can find them [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
 - Make sure the [FFmpeg executable](https://www.ffmpeg.org/download.html) is in your system's `PATH` variable
-- Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token in `config.json` under `hawking.discord.token`.
+- Create a [Discord app](https://discordapp.com/developers/applications/me), flag it as a bot, and put the bot token in `config.json` under `hawking.core.discord.token`.
 - Register the Bot with your server. Go to: `https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=53803072`, but make sure to replace CLIENT_ID with your bot's client id.
 - Select your server, and hit "Authorize"
 - Check out `config.json` for any configuration you might want to do. It's set up to work well out of the box, change pathing, or modify the number of votes required for a skip. Note that linux based installations will require some extra tweaks to run Hawking, so check out the rest of this guide.

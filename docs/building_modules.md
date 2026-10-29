@@ -54,7 +54,7 @@ The configuration file is just a normal JSON file, with a root JSON object conta
 }
 ```
 
-Module configuration is defined by a Pydantic model and assigned by the module manager from the matching section of the root `HawkingConfig` (for example, `modules.reddit`). New addons should add a typed config model and a corresponding section to the application configuration model rather than adding an untyped config file.
+Built-in module configuration is defined by Pydantic models under `modules`. Addon settings live under the separate, optional `addons` object (for example, `addons.reddit`). The core treats addon entries as opaque data. An addon may declare its own Pydantic config model through `ModuleInitializationContainer(config_model=...)`; the module manager validates that addon's section and passes the typed result to its constructor. If validation fails, only that addon is skipped. Addons without a declared config model receive their section as a dictionary, or an empty dictionary when no section is configured.
 
 ## Practical Examples
 
