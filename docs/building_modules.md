@@ -4,11 +4,11 @@ Hawking allows for extending the existing text-to-speech functionality by implem
 
 ## Building Modules
 
-Hawking modules are just normal classes, with a few extra requirements:
+Hawking addons are normal Python packages under `code/addons/<addon_name>/`. Each package provides a same-named entrypoint file, such as `code/addons/fortune/fortune.py`, with a `main()` function. The reusable module lifecycle and Discord abstractions live under `code/hawking/core/`.
 
 ### Inheritance
 
-Hawking modules must inherit from either `DiscoverableCog` or `DiscoverableModule` (see [`discoverable_module.py`](https://github.com/naschorr/hawking/blob/master/code/common/module/discoverable_module.py) and [`module.py`](https://github.com/naschorr/hawking/blob/master/code/common/module/module.py)). In short, you're likely just going to want to use the `DiscoverableCog`. The idea of "cogs" comes from [discord.py](https://github.com/Rapptz/discord.py), wherein cogs are just classes that extend upon existing Discord functionality. Modules are basically just normal Pythonic modules, and have no connection to Discord at all. Note that all `DiscoverableCog`s are also `DiscoverableModule`s, but all `DiscoverableModule`s are **not** `DiscoverableCog`s.
+Hawking addons must inherit from either `DiscoverableCog` or `DiscoverableModule` (see [`discoverable_module.py`](https://github.com/naschorr/hawking/blob/master/code/hawking/core/services/module_manager/discoverable_module.py) and [`module.py`](https://github.com/naschorr/hawking/blob/master/code/hawking/core/services/module_manager/module.py)). In short, you're likely just going to want to use `DiscoverableCog`. The idea of "cogs" comes from [discord.py](https://github.com/Rapptz/discord.py), wherein cogs are classes that extend Discord functionality. Modules are normal Python classes with no direct connection to Discord. All `DiscoverableCog`s are also `DiscoverableModule`s, but not vice versa.
 
 For example, if you'd like to add a new command to Hawking that outputs the current time, then you'd have to use `DiscoverableCog`, since your new module needs to hook into the command system.
 
@@ -54,8 +54,8 @@ The configuration file is just a normal JSON file, with a root JSON object conta
 }
 ```
 
-Module configuration is defined by a Pydantic model and assigned by the module manager from the matching section of the root `HawkingConfig` (for example, `modules.reddit`). New modules should add a typed config model and a corresponding section to the root configuration model rather than adding an untyped config file.
+Built-in module configuration is defined by Pydantic models under `modules`. Addon settings live under the separate, optional `addons` object (for example, `addons.reddit`). The core treats addon entries as opaque data. An addon may declare its own Pydantic config model through `ModuleInitializationContainer(config_model=...)`; the module manager validates that addon's section and passes the typed result to its constructor. If validation fails, only that addon is skipped. Addons without a declared config model receive their section as a dictionary, or an empty dictionary when no section is configured.
 
 ## Practical Examples
 
-Check out the [Fortune](https://github.com/naschorr/hawking/blob/master/modules/fortune/fortune.py) module for a simple, self contained example that adds a single command. There's also the [Stupid Questions](https://github.com/naschorr/hawking/blob/master/modules/stupid_questions/stupid_questions.py) and [Reddit](https://github.com/naschorr/hawking/blob/master/modules/reddit/reddit.py) modules which illustrate both dependency management, as well as module configuration.
+Check out the [Fortune](https://github.com/naschorr/hawking/blob/master/code/addons/fortune/fortune.py) addon for a simple, self-contained example that adds a single command. The [Stupid Questions](https://github.com/naschorr/hawking/blob/master/code/addons/stupid_questions/stupid_questions.py) and [Reddit](https://github.com/naschorr/hawking/blob/master/code/addons/reddit/reddit.py) addons also illustrate dependency management and module configuration.
