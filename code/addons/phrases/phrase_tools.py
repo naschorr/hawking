@@ -1,20 +1,12 @@
 import argparse
 import logging
+import sys
 from pathlib import Path
 from typing import Callable
 
-## This is a hack to get the modules to import correctly.
-## Todo: Fix this properly
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent/'code'))
-
-from common.logging import Logging
-from common.configuration.configuration import load_hawking_config
-from models.phrase import Phrase
-from models.phrase_group import PhraseGroup
-from phrase_encoder_decoder import PhraseEncoderDecoder
-from phrase_file_manager import PhraseFileManager
-from modules.phrases.phrases_config import PhrasesConfig
+from hawking.core.services.logging.logging_service import Logging
+from hawking.configuration import load_hawking_config
+from addons.phrases.phrases_config import PhrasesConfig
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))

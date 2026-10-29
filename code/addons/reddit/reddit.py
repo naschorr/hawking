@@ -2,11 +2,11 @@ import logging
 
 from praw import Reddit as PrawReddit
 
-from common.exceptions import ModuleLoadException
-from common.logging import Logging
-from common.module.discoverable_module import DiscoverableModule
-from common.module.module_initialization_container import ModuleInitializationContainer
-from modules.reddit.reddit_config import RedditConfig
+from hawking.core.exceptions import ModuleLoadException
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.module_manager.discoverable_module import DiscoverableModule
+from hawking.core.services.module_manager.module_initialization_container import ModuleInitializationContainer
+from addons.reddit.reddit_config import RedditConfig
 
 
 class Reddit(DiscoverableModule):

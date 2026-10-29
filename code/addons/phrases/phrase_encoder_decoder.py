@@ -1,9 +1,9 @@
 import codecs
 import logging
 
-from common.logging import Logging
-from modules.phrases.phrase_cipher_enum import PhraseCipher
-from modules.phrases.models.phrase import Phrase
+from hawking.core.services.logging.logging_service import Logging
+from addons.phrases.phrase_cipher_enum import PhraseCipher
+from addons.phrases.models.phrase import Phrase
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))

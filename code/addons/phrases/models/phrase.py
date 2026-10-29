@@ -2,9 +2,9 @@ import copy
 import logging
 from pathlib import Path
 
-from common.logging import Logging
-from modules.phrases.models.phrase_encoding import PhraseEncoding
-from modules.phrases.to_dict import ToDict
+from hawking.core.services.logging.logging_service import Logging
+from addons.phrases.models.phrase_encoding import PhraseEncoding
+from addons.phrases.to_dict import ToDict
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))

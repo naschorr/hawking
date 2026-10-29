@@ -1,13 +1,13 @@
 import logging
 from random import choice
 
-from core.cogs.speech_cog import SpeechCog
-from common.command_management.invoked_command import InvokedCommand
-from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.database.database_manager import DatabaseManager
-from common.logging import Logging
-from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_container import ModuleInitializationContainer
+from hawking.modules.speech.speech_cog import SpeechCog
+from hawking.core.services.command_management.invoked_command import InvokedCommand
+from hawking.core.services.command_management.invoked_command_handler import InvokedCommandHandler
+from hawking.core.services.database.database_manager import DatabaseManager
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.module_manager.discoverable_module import DiscoverableCog
+from hawking.core.services.module_manager.module_initialization_container import ModuleInitializationContainer
 
 import discord
 from discord.ext.commands import Bot

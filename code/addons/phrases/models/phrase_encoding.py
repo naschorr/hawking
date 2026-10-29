@@ -2,9 +2,9 @@ import json
 import logging
 from typing import List
 
-from common.logging import Logging
-from modules.phrases.phrase_cipher_enum import PhraseCipher
-from modules.phrases.to_dict import ToDict
+from hawking.core.services.logging.logging_service import Logging
+from addons.phrases.phrase_cipher_enum import PhraseCipher
+from addons.phrases.to_dict import ToDict
 
 ## Logging
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))

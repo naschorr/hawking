@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from common.configuration.validators import resolve_config_path, validate_directory_exists
+from hawking.core.services.configuration.validators import resolve_config_path, validate_directory_exists
 
 
 class PhrasesConfig(BaseModel):
@@ -17,5 +17,5 @@ class PhrasesConfig(BaseModel):
     @field_validator("directory_path", mode="before")
     @classmethod
     def validate_directory_path(cls, value: str | Path) -> Path:
-        path = "modules/phrases/phrases" if value == "" else value
+        path = "code/addons/phrases/phrases" if value == "" else value
         return validate_directory_exists(resolve_config_path(path))

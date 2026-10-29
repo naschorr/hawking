@@ -1,19 +1,19 @@
 import logging
 import random
 
-from core.cogs.speech_cog import SpeechCog
-from common.command_management.invoked_command import InvokedCommand
-from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.command_management.command_reconstructor import CommandReconstructor
-from common.database.database_manager import DatabaseManager
-from common.logging import Logging
-from common.string_similarity import StringSimilarity
-from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_container import ModuleInitializationContainer
-from modules.phrases.phrase_file_manager import PhraseFileManager
-from modules.phrases.phrases_config import PhrasesConfig
-from modules.phrases.models.phrase_group import PhraseGroup
-from modules.phrases.models.phrase import Phrase
+from hawking.modules.speech.speech_cog import SpeechCog
+from hawking.core.services.command_management.invoked_command import InvokedCommand
+from hawking.core.services.command_management.invoked_command_handler import InvokedCommandHandler
+from hawking.core.services.command_management.command_reconstructor import CommandReconstructor
+from hawking.core.services.database.database_manager import DatabaseManager
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.string_similarity.string_similarity import StringSimilarity
+from hawking.core.services.module_manager.discoverable_module import DiscoverableCog
+from hawking.core.services.module_manager.module_initialization_container import ModuleInitializationContainer
+from addons.phrases.phrase_file_manager import PhraseFileManager
+from addons.phrases.phrases_config import PhrasesConfig
+from addons.phrases.models.phrase_group import PhraseGroup
+from addons.phrases.models.phrase import Phrase
 
 import discord
 from discord import Interaction

@@ -5,12 +5,12 @@ import re
 from pathlib import Path
 from typing import List
 
-from common.logging import Logging
-from modules.phrases.models.phrase import Phrase
-from modules.phrases.models.phrase_group import PhraseGroup
-from modules.phrases.models.phrase_encoding import PhraseEncoding
-from modules.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
-from modules.phrases.phrases_config import PhrasesConfig
+from hawking.core.services.logging.logging_service import Logging
+from addons.phrases.models.phrase import Phrase
+from addons.phrases.models.phrase_group import PhraseGroup
+from addons.phrases.models.phrase_encoding import PhraseEncoding
+from addons.phrases.phrase_encoder_decoder import PhraseEncoderDecoder
+from addons.phrases.phrases_config import PhrasesConfig
 
 LOGGER = Logging.initialize_logging(logging.getLogger(__name__))
 

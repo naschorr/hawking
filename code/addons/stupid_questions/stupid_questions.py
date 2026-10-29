@@ -3,17 +3,17 @@ import random
 import time
 import asyncio
 
-from core.cogs.speech_cog import SpeechCog
-from common.command_management.invoked_command import InvokedCommand
-from common.command_management.invoked_command_handler import InvokedCommandHandler
-from common.database.database_manager import DatabaseManager
-from common.exceptions import ModuleLoadException
-from common.logging import Logging
-from common.module.discoverable_module import DiscoverableCog
-from common.module.module_initialization_container import ModuleInitializationContainer
-from modules.stupid_questions.stupid_questions_config import StupidQuestionsConfig
-from common.ui.component_factory import ComponentFactory
-from question import Question
+from hawking.modules.speech.speech_cog import SpeechCog
+from hawking.core.services.command_management.invoked_command import InvokedCommand
+from hawking.core.services.command_management.invoked_command_handler import InvokedCommandHandler
+from hawking.core.services.database.database_manager import DatabaseManager
+from hawking.core.exceptions import ModuleLoadException
+from hawking.core.services.logging.logging_service import Logging
+from hawking.core.services.module_manager.discoverable_module import DiscoverableCog
+from hawking.core.services.module_manager.module_initialization_container import ModuleInitializationContainer
+from addons.stupid_questions.stupid_questions_config import StupidQuestionsConfig
+from hawking.core.ui.ui_component_factory import ComponentFactory
+from .question import Question
 
 from discord import app_commands, Interaction
 from discord.ext.commands import Bot
