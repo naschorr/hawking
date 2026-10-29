@@ -9,7 +9,6 @@ if _code_path not in sys.path:
 import os
 import logging
 import asyncio
-import argparse
 from typing import cast
 
 import discord
@@ -35,13 +34,9 @@ from hawking.core.services.string_similarity.string_similarity_config import Str
 from hawking.core.ui import ui_component_factory as component_factory
 from addons.phrases import phrases
 
-DEFAULT_DESCRIPTION = "The retro TTS bot for Discord"
-
-
 class Hawking:
     ## Initialize the bot, and add base cogs
-    def __init__(self, config_path: Path | None = None):
-        config: HawkingConfig = load_hawking_config(config_path)
+    def __init__(self, config: HawkingConfig):
         app_config = config.hawking.core.app
         self.logger = Logging.initialize_logging(
             logging.getLogger(self.__class__.__qualname__), config.hawking.core.logging
@@ -199,14 +194,5 @@ class Hawking:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=DEFAULT_DESCRIPTION)
-    parser.add_argument(
-        "--config",
-        "-c",
-        help="Path to the configuration directory to use",
-        default=None,
-        type=Path,
-        action="store",
-    )
-    args = vars(parser.parse_args())
-    Hawking(config_path=args["config"]).run()
+    config = load_hawking_config()
+    Hawking(config).run()
