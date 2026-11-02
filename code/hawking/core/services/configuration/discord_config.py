@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class DiscordConfig(BaseModel):
@@ -6,4 +6,4 @@ class DiscordConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    token: str = Field(min_length=1)
+    token: SecretStr = Field(min_length=1)

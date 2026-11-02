@@ -12,9 +12,6 @@
                     "accent_color_hex": "0079f4"
                 }
             },
-            "discord": {
-                "token": "discord bot token goes here"
-            },
             "audio": {
                 "channel_timeout_seconds": 300,
                 "skip_percentage": 0.5,
@@ -44,7 +41,6 @@
                 "anonymous_table": "HawkingAnonymous",
                 "detailed_table_ttl_seconds": 31536000,
                 "dynamodb": {
-                    "credentials_file_path": "",
                     "resource": "dynamodb",
                     "region_name": "us-east-2",
                     "primary_key": "QueryId"
@@ -95,8 +91,6 @@
             "minimum_similarity": 0.5
         },
         "reddit": {
-            "client_id": "reddit client id goes here",
-            "client_secret": "reddit secret goes here",
             "user_agent": {
                 "platform": "this is a string that describes the platform that the bot runs on. For example: 'discord-bot-py'. Make sure to change this.",
                 "app_id": "this is a unique identifier for the bot. For example: 'hawking-tts'. Make sure to change this.",

@@ -1,28 +1,12 @@
-from pathlib import Path
-
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-from hawking.core.services.configuration.validators import resolve_config_path, validate_file_exists
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DynamoDbSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    credentials_file_path: Path
     resource: str = "dynamodb"
     region_name: str = "us-east-2"
     primary_key: str = "QueryId"
-
-    @field_validator("credentials_file_path")
-    @classmethod
-    def resolve_credentials_file_path(cls, value: Path) -> Path:
-        return resolve_config_path(value.expanduser()).resolve()
-
-    @field_validator("credentials_file_path")
-    @classmethod
-    def validate_credentials_file_path(cls, value: Path) -> Path:
-        return validate_file_exists(value)
-
 
 
 class DynamoDbClientConfig(BaseModel):

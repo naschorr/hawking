@@ -15,14 +15,8 @@ class Reddit(DiscoverableModule):
         self.config = config
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
-        client_id = self.config.client_id
-        client_secret = self.config.client_secret
-
-        ## Is there a better way?
-        if (client_id.find('goes here') > -1):
-            raise ModuleLoadException('The \'reddit_client_id\' property in config.json must be changed!')
-        if (client_secret.find('goes here') > -1):
-            raise ModuleLoadException('The \'reddit_secret\' property in config.json must be changed!')
+        client_id = self.config.client_id.get_secret_value()
+        client_secret = self.config.client_secret.get_secret_value()
 
         try:
             user_agent = self._build_user_agent_string(
