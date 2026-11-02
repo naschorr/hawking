@@ -1,0 +1,11 @@
+**
+!code/
+!code/**
+!requirements.txt
+!minimal-requirements.txt
+!README.md
+!docker/
+!docker/entrypoint.sh
+
+# Keep local phrase data out of the image; the Dockerfile downloads the published phrase repository.
+code/addons/phrases/phrases/*

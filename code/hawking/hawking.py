@@ -70,7 +70,10 @@ class Hawking:
         self.module_manager.register_module(
             database_manager.DatabaseManager,
             config.hawking.core.database,
-            dynamo_db_client.DynamoDbClient(config.hawking.core.database),
+            dynamo_db_client.DynamoDbClient(
+                config.hawking.core.database,
+                config.hawking.core.aws,
+            ),
             dependencies=[command_reconstructor.CommandReconstructor, anonymous_item_factory.AnonymousItemFactory],
         )
         self.module_manager.register_module(
@@ -190,7 +193,7 @@ class Hawking:
     def run(self):
         """Starts the bot up."""
         self.logger.info(f"Starting up {self.name}")
-        self.bot.run(self.token)
+        self.bot.run(self.token.get_secret_value())
 
 
 if __name__ == "__main__":

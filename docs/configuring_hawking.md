@@ -1,6 +1,6 @@
 # Configuring Hawking
 
-Hawking reads configuration from `config.json` in the installation root. It then deep-merges the environment-specific `config.<environment>.json` file over it. The environment is selected with `HAWKING_ENV` and defaults to `dev`; for example, `HAWKING_ENV=production` loads `config.production.json`. Put shared, non-secret settings in `config.json` and environment-specific values or secrets in the matching override file. Do not commit credentials or bot tokens.
+Hawking reads configuration files from the `configuration/` directory at the project root, finding any `config.json` or `config.*.json` files then merges them together with `dev` and `prod` configurations overriding base ones. Secrets are stored in an environment file `.env` (feel free to build off of the provided example file `.env.example`) in the same directory, and are made available to both local and dockerized runs of Hawking.
 
 Settings are documented below by their exact dotted path in the JSON tree. Paths may be absolute or relative to the Hawking installation root unless noted otherwise.
 
@@ -16,7 +16,7 @@ The configuration mirrors the package layout: core settings are under `hawking.c
 - `hawking.core.app.ui.accent_color_hex` - Hex string - Embed accent color parsed as a hexadecimal integer, normally without a leading `#`.
 
 ### Discord (`hawking.core.discord`)
-- `hawking.core.discord.token` - Required non-empty string - Bot token used to authenticate with Discord.
+- `hawking.core.discord.token` - Required non-empty string - Bot token used to authenticate with Discord. By default it's loaded from the `HAWKING__CORE__DISCORD__TOKEN` environment variable.
 
 ### Voice playback (`hawking.core.audio`)
 - `hawking.core.audio.channel_timeout_seconds` - Positive integer - Seconds of inactivity before Hawking leaves a voice channel.
@@ -43,7 +43,7 @@ The configuration mirrors the package layout: core settings are under `hawking.c
 - `hawking.core.database.detailed_table` - Non-empty string - DynamoDB table for detailed, temporary records.
 - `hawking.core.database.anonymous_table` - Non-empty string - DynamoDB table for anonymized records.
 - `hawking.core.database.detailed_table_ttl_seconds` - Positive integer - Record lifetime in the detailed table, in seconds.
-- `hawking.core.database.dynamodb.credentials_file_path` - Path - Existing AWS credentials file. The current schema requires a file path; an empty value is not accepted. The path is relative to the Hawking root or absolute.
+- AWS credentials are loaded by Confiddle into `hawking.core.aws` from the `HAWKING__CORE__AWS__ACCESS_KEY_ID`, `HAWKING__CORE__AWS__SECRET_ACCESS_KEY`, and `HAWKING__CORE__AWS__SESSION_TOKEN` environment variables by default. When static access and secret keys are provided, Hawking passes them to the DynamoDB client. If they are absent, Boto3 uses its standard credential provider chain, including profiles and attached IAM roles.
 - `hawking.core.database.dynamodb.resource` - String - Boto3 resource name; normally `dynamodb`.
 - `hawking.core.database.dynamodb.region_name` - String - AWS region containing the tables.
 - `hawking.core.database.dynamodb.primary_key` - String - Partition-key attribute used by both tables.
@@ -92,8 +92,8 @@ Built-in module settings mirror the `hawking/modules` package and are nested und
 
 Create a Reddit script application and configure its OAuth2 details. See Reddit's [OAuth2 guide](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example#first-steps) and [API guide](https://github.com/reddit-archive/reddit/wiki/API) for account and user-agent requirements.
 
-- `addons.reddit.client_id` - Required non-empty string - Client ID provided by Reddit.
-- `addons.reddit.client_secret` - Required non-empty string - Client secret provided by Reddit.
+- `addons.reddit.client_id` - Required secret string - Client ID provided by Reddit, loaded from `ADDONS__REDDIT__CLIENT_ID` environment variable by default.
+- `addons.reddit.client_secret` - Required secret string - Client secret provided by Reddit, loaded from `ADDONS__REDDIT__CLIENT_SECRET` environment variable by default.
 - `addons.reddit.user_agent.platform` - Non-empty string - Platform running the bot, for example `discord-bot-py`.
 - `addons.reddit.user_agent.app_id` - Non-empty string - Identifier for the bot, for example `hawking-tts`.
 - `addons.reddit.user_agent.contact_name` - Non-empty string - Contact name for the Reddit application, for example `/u/your-username`.

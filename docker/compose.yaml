@@ -1,0 +1,22 @@
+services:
+  hawking:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: hawking:local
+    container_name: hawking
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ../configuration/.env
+    volumes:
+      - ../configuration/:/app/configuration/:ro
+      - hawking-logs:/app/logs
+      - hawking-privacy:/app/privacy
+      - hawking-temp:/app/temp
+
+volumes:
+  hawking-logs:
+  hawking-privacy:
+  hawking-temp:

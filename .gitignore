@@ -17,8 +17,8 @@ etc/
 share/
 
 # Ignore non-public config environment files
-config.dev.json
-config.prod.json
+configuration/config.*.json
+configuration/.env
 
 # Ignore dev environment project files
 *.vscode
@@ -38,6 +38,7 @@ pip-selfcheck.json
 pyvenv.cfg
 
 # Ignore credentials
+.env
 token.json
 code/addons/*.json
 
@@ -48,6 +49,7 @@ code/addons/phrases/phrases/*
 # Ignore logfiles
 logs/*
 *.log
+docker-data/
 
 # Ignore delete_requests & container
 privacy/*
