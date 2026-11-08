@@ -1,0 +1,1 @@
+"""Invite cog and settings."""

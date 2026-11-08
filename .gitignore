@@ -17,8 +17,8 @@ etc/
 share/
 
 # Ignore non-public config environment files
-config.dev.json
-config.prod.json
+configuration/config.*.json
+configuration/.env
 
 # Ignore dev environment project files
 *.vscode
@@ -38,19 +38,24 @@ pip-selfcheck.json
 pyvenv.cfg
 
 # Ignore credentials
+.env
 token.json
-modules/*.json
+code/addons/*.json
 
 # Ignore misc phrase files, but include default phrases
-*/phrases/phrases/*
-!*/phrases/phrases/classics.json
+code/addons/phrases/phrases/*
+!code/addons/phrases/phrases/classics.json
 
 # Ignore logfiles
 logs/*
 *.log
+docker-data/
 
 # Ignore delete_requests & container
 privacy/*
 
 # Ignore linter config
 *.pylintrc
+
+# todo: where is this pickle file coming from?
+update_checker_cache.pkl

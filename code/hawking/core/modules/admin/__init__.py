@@ -1,0 +1,1 @@
+"""Administration cog and settings."""
