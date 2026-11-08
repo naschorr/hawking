@@ -2,18 +2,19 @@ import sys
 import json
 from pathlib import Path
 
+import hawking
+
 PLATFORM = sys.platform
 
 
 def get_root_path() -> Path:
-    """Find the installation root containing the configuration directory."""
+    """Find the installation root from the marked Hawking package."""
 
-    ## TODO: This should likely walk the tree to find a root __init__ in the code dir, then that folder's parent is the
-    ## root? The current bandaided implementation is too brittle.
-    for path in Path(__file__).resolve().parents:
-        if (path / "configuration" / "config.json").is_file() or (path / "config.json").is_file():
-            return path
-    raise FileNotFoundError("Unable to locate the Hawking installation root (configuration/config.json).")
+    if not getattr(hawking, "HAWKING_ROOT", False):
+        raise RuntimeError("The Hawking package root marker is missing.")
+
+    package_directory = Path(hawking.__file__).resolve().parent
+    return package_directory.parent.parent
 
 
 def load_json(path: Path) -> dict:
