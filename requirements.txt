@@ -29,6 +29,6 @@ six==1.16.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 update-checker==0.18.0
-urllib3==2.2.2
+urllib3==2.8.0
 websocket-client==1.8.0
 yarl==1.9.4
