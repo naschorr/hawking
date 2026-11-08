@@ -2,7 +2,9 @@ name: Build and publish Docker image
 
 on:
   push:
-  workflow_dispatch:
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
@@ -32,8 +34,6 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/hawking
           tags: |
             type=raw,value=latest
-            type=ref,event=branch
-            type=sha,prefix=main-,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-
 
       - name: Build and publish image
