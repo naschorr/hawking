@@ -25,6 +25,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `/find <text>` - The bot will search its loaded phrases for the one whose contents most closely matches the provided text, and will play it.
 - `/random` - Plays a random phrase from the list of preloaded phrases.
 - `/fortune` - Tells you your magic 8 ball fortune!
+- `/choice <comma-separated options>` - Chooses one of the provided options.
 - `/invite` - Gets you an invite link for the Hawking, as well as gets you an invite link for Hawking's Discord server.
 - `/privacy_policy` - Gives you a link to Hawking's [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md).
 - `/speech_config` - Gives you a link to the [speech configuration documentation](https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md) for Hawking.
