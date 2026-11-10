@@ -59,3 +59,7 @@ privacy/*
 
 # todo: where is this pickle file coming from?
 update_checker_cache.pkl
+
+# Keep Docker helper scripts out of the virtualenv Scripts/ ignore rule
+!docker/scripts/
+!docker/scripts/*.sh
