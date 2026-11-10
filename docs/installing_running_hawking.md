@@ -8,10 +8,10 @@
 - Double check that you're installing into a clean directory. If there's an old version of Hawking or an old venv then this likely won't work!
 - `cd` into the directory that you'd like the project to go (If you're on Linux, I'd recommend '/usr/local/bin')
 - Clone the repository to your machine: `git clone https://github.com/naschorr/hawking`
-- Create a Python virtual environment inside the cloned repository: `python3.15 -m venv hawking/`
+- Create a Python virtual environment inside the cloned repository: `python3.15 -m venv hawking/.venv`
   - You may need to run: `apt install python3.15-venv` to enable virtual environments for Python 3.15 on Linux
 - `cd hawking/`
-- Activate your newly created venv (Run `source bin/activate` on Linux, or `.\Scripts\activate` on Windows)
+- Activate your newly created venv (Run `source .venv/bin/activate` on Linux, or `.venv\Scripts\activate` on Windows)
 - Install dependencies with: `pip install -r requirements.txt` (If you run into any issues with this, try running `pip install -r minimal-requirements.txt`. This installs the bare minimum number of packages and thus forces dependencies to resolve their dependencies automatically.)
   - If you run into issues during `PyNaCl`'s installation on Linux, you may need to run: `apt install build-essential libffi-dev python3.15-dev` to install some supplemental features for the setup process.
   - If you run into issue during `cffi`'s installation on Windows, you may need to install the Microsoft C++ Build Tools. You can find them [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
@@ -75,7 +75,7 @@ Want to get started without any fuss? You can use the Docker image to automate a
 Want to play with Hawking's code, and don't really care about setting up services or containers? You're in the right place!
 
 - `cd` into the project's root
-- Activate the virtual environment (Run `source bin/activate` on Linux, or `.\Scripts\activate` on Windows)
+- Activate the virtual environment (Run `source .venv/bin/activate` on Linux, or `.venv\Scripts\activate` on Windows)
 - Run `python code/hawking/hawking.py` to start Hawking
 
 ### Linux-based Headless Installation
