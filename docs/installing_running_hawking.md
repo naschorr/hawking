@@ -111,3 +111,11 @@ Alternatively if you're on Linux, you can use the handy helper scripts inside `d
 #### Running a Custom Image
 
 From the repository root, run `docker compose -f docker/compose.yaml up --build` to start it up! This is handy if you've made changes to the code and want to run a fresh container with those changes included.
+
+## The First Run
+
+Once you've started Hawking up for the first time, you'll want to do a command sync, so that Discord know what commands the bot has available for users. Using the global command sync is great for most situations: `@Hawking admin sync_global`. However check out the [admin command docs](https://github.com/naschorr/hawking/blob/master/docs/admin_commands.md) for more information.
+
+> *Note:* Admin commands have to be run by mentioning the bot, there aren't any slash commands set up for these operations because I don't want to pollute the command list.
+
+Now Hawking should be installed and ready to go!
