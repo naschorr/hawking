@@ -6,4 +6,5 @@ discord.py[voice]==2.7.1
 emoji==2.16.0
 pydantic>=2.12
 praw==8.0.3
+pytest==9.2.0
 python-dateutil==2.9.0.post0
