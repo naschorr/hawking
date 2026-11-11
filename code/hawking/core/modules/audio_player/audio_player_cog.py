@@ -174,13 +174,33 @@ class ServerStateManager:
             )
 
         if (self.voice_client is not None):
-            ## Check to see if the bot isn't already in the correct channel
-            if (self.voice_client.channel.id != channel.id):
-                await self.voice_client.move_to(channel)
+            current_voice_client = self.voice_client
+            if (not current_voice_client.is_connected()):
+                self.logger.info(f"Discarding disconnected voice client in server: {self.guild.name}")
+                self.voice_client = None
+                await current_voice_client.disconnect(force=False)
+            else:
+                ## Check to see if the bot isn't already in the correct channel
+                if (current_voice_client.channel.id != channel.id):
+                    await current_voice_client.move_to(channel)
 
-            return self.voice_client
+                return current_voice_client
 
         return await channel.connect()
+
+
+    def start_audio_playback(self, audio_source: FFmpegPCMAudio, after: Callable | None):
+        try:
+            if self.voice_client is None:
+                raise RuntimeError("No voice client available for audio playback")
+
+            self.voice_client.play(audio_source, after=after)
+        except Exception:
+            try:
+                audio_source.cleanup()
+            except Exception:
+                self.logger.exception("Failed to clean up audio source after playback failed")
+            raise
 
 
     def skip_audio(self):
@@ -323,7 +343,7 @@ class ServerStateManager:
                     f"in server: {self.active_play_request.channel.guild.name}, "
                     f"for user: {self.active_play_request.author.name if self.active_play_request.author else None}"
                 )
-                self.voice_client.play(self.active_play_request.audio, after=after_play_callback_builder())
+                self.start_audio_playback(self.active_play_request.audio, after_play_callback_builder())
                 await self.next.wait()
 
             except Exception as e:
