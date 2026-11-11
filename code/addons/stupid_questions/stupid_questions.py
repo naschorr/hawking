@@ -31,34 +31,36 @@ class StupidQuestions(DiscoverableCog):
         "what do you think scholars in a thousand years will think about this:",
         "do you ever wonder why we're here? No? Ok, well have a wonder about this:",
         "take a gander at this highly intelligent and deeply insightful question:",
-        "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:"
+        "it's now time for us to plant some daffodils of opinion on the roundabout of chat at the end of conversation street, and discuss:",
     ]
 
     ## Lifecycle
 
     def __init__(self, config: StupidQuestionsConfig, bot: Bot, **kwargs):
-        super().__init__(config, bot, **kwargs)
+        super().__init__(bot, **kwargs)
         self.config = config
         self.bot = bot
         self.logger = Logging.initialize_logging(logging.getLogger(__name__))
 
-        self.speech_cog: SpeechCog = kwargs.get('dependencies', {}).get('SpeechCog')
-        assert (self.speech_cog is not None)
-        self.invoked_command_handler: InvokedCommandHandler = kwargs.get('dependencies', {}).get('InvokedCommandHandler')
-        assert(self.invoked_command_handler is not None)
-        self.database_manager: DatabaseManager = kwargs.get('dependencies', {}).get('DatabaseManager')
-        assert (self.database_manager is not None)
-        self.component_factory: ComponentFactory = kwargs.get('dependencies', {}).get('ComponentFactory')
-        assert(self.component_factory is not None)
+        self.speech_cog: SpeechCog = kwargs.get("dependencies", {}).get("SpeechCog")
+        assert self.speech_cog is not None
+        self.invoked_command_handler: InvokedCommandHandler = kwargs.get("dependencies", {}).get(
+            "InvokedCommandHandler"
+        )
+        assert self.invoked_command_handler is not None
+        self.database_manager: DatabaseManager = kwargs.get("dependencies", {}).get("DatabaseManager")
+        assert self.database_manager is not None
+        self.component_factory: ComponentFactory = kwargs.get("dependencies", {}).get("ComponentFactory")
+        assert self.component_factory is not None
 
         ## Handle Reddit dependency
-        reddit_dependency = kwargs.get('dependencies', {}).get('Reddit')
-        if (not reddit_dependency):
+        reddit_dependency = kwargs.get("dependencies", {}).get("Reddit")
+        if not reddit_dependency:
             self.logger.info(f"No Reddit dependency provided, unable to load {self.__class__.__name__}.")
             self.successful = False
             return
         self.reddit = reddit_dependency.reddit
-        if (not reddit_dependency.successful):
+        if not reddit_dependency.successful:
             self.successful = False
             return
 
@@ -81,24 +83,27 @@ class StupidQuestions(DiscoverableCog):
         ## Load the questions for polling, async
         asyncio.create_task(self.load_questions())
 
-        self.add_command(app_commands.Command(
-            name=StupidQuestions.STUPID_QUESTION_COMMAND_NAME,
-            description=self.stupid_question_command.__doc__ or "Ask a stupid question",
-            callback=self.stupid_question_command
-        ))
-
+        self.add_command(
+            app_commands.Command(
+                name=StupidQuestions.STUPID_QUESTION_COMMAND_NAME,
+                description=self.stupid_question_command.__doc__ or "Ask a stupid question",
+                callback=self.stupid_question_command,
+            )
+        )
 
     async def load_questions(self) -> None:
         ## Don't try to pull more data from Reddit if it's already happening
-        if (self.is_mid_question_refresh):
+        if self.is_mid_question_refresh:
             self.logger.debug("Skipping load_questions as they're already being refreshed.")
             return
         self.is_mid_question_refresh = True
 
-        self.logger.info(f"Loading questions from reddit: top({self.submission_top_time}), {self.submission_count} submissions")
+        self.logger.info(
+            f"Loading questions from reddit: top({self.submission_top_time}), {self.submission_count} submissions"
+        )
         questions = []
         try:
-            submission_generator = self.subreddit.top(self.submission_top_time, limit=self.submission_count)
+            submission_generator = self.subreddit.top(time_filter=self.submission_top_time, limit=self.submission_count)
         except Exception as e:
             self.logger.exception("Unable to load submission from Reddit.", e)
             return
@@ -117,37 +122,40 @@ class StupidQuestions(DiscoverableCog):
     async def stupid_question_command(self, interaction: Interaction):
         """Ask a stupid question, via Reddit."""
 
-        if (len(self.questions) > 0):
+        if len(self.questions) > 0:
             question = random.choice(self.questions)
         else:
             await self.database_manager.store(interaction, valid=False)
-            if (self.is_mid_question_refresh):
-                await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm currently loading new questions from Reddit. Try again later.", ephemeral=True)
+            if self.is_mid_question_refresh:
+                await interaction.response.send_message(
+                    f"Sorry <@{interaction.user.id}>, but I'm currently loading new questions from Reddit. Try again later.",
+                    ephemeral=True,
+                )
             else:
-                await interaction.response.send_message(f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.", ephemeral=True)
+                await interaction.response.send_message(
+                    f"Sorry <@{interaction.user.id}>, but I'm having trouble loading questions from Reddit. Try again in a bit.",
+                    ephemeral=True,
+                )
             return
 
-
         async def callback(invoked_command: InvokedCommand):
-            if (invoked_command.successful):
+            if invoked_command.successful:
                 thought_provoking_string = random.choice(self.THOUGHT_PROVOKING_STRINGS)
                 embed = self.component_factory.create_basic_embed(
-                    description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})",
-                    url=question.url
+                    description=f"{question.text}\n\nvia [/r/{question.subreddit}]({question.url})", url=question.url
                 )
 
                 await self.database_manager.store(interaction)
                 await interaction.response.send_message(
-                    f"Hey <@{interaction.user.id}>, {thought_provoking_string}",
-                    embed=embed
+                    f"Hey <@{interaction.user.id}>, {thought_provoking_string}", embed=embed
                 )
             else:
                 await self.database_manager.store(interaction, valid=False)
                 await interaction.response.send_message(invoked_command.human_readable_error_message, ephemeral=True)
 
             now = time.time()
-            question_refresh_time = 0#self.last_question_refresh_time + self.refresh_time_seconds
-            if (now > question_refresh_time):
+            question_refresh_time = 0  # self.last_question_refresh_time + self.refresh_time_seconds
+            if now > question_refresh_time:
                 self.logger.debug(f"Question refresh task due, {now} > {question_refresh_time}")
                 ## Note that fetching questions before the interaction has been responded to will cause the interaction
                 ## to fail. This might be avoidable by using deferred responses, however that then locks you in to
@@ -159,12 +167,8 @@ class StupidQuestions(DiscoverableCog):
                 ## `async submission for subreddit(...):` will actually yield anything
                 self.bot.loop.create_task(self.load_questions())
 
-
         action = lambda: self.speech_cog.say(
-            text=question.text,
-            author=interaction.user,
-            ignore_char_limit=True,
-            interaction=interaction
+            text=question.text, author=interaction.user, ignore_char_limit=True, interaction=interaction
         )
         await self.invoked_command_handler.invoke_command(interaction, action, ephemeral=False, callback=callback)
 

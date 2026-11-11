@@ -25,6 +25,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `/find <text>` - The bot will search its loaded phrases for the one whose contents most closely matches the provided text, and will play it.
 - `/random` - Plays a random phrase from the list of preloaded phrases.
 - `/fortune` - Tells you your magic 8 ball fortune!
+- `/choice <comma-separated options>` - Chooses one of the provided options.
 - `/invite` - Gets you an invite link for the Hawking, as well as gets you an invite link for Hawking's Discord server.
 - `/privacy_policy` - Gives you a link to Hawking's [privacy policy](https://github.com/naschorr/hawking/blob/master/docs/privacy_policy.md).
 - `/speech_config` - Gives you a link to the [speech configuration documentation](https://github.com/naschorr/hawking/blob/master/docs/configuring_speech.md) for Hawking.
@@ -32,7 +33,7 @@ These commands allow for the basic operation of the bot, by anyone. Just type th
 - `/help` - Show the help screen.
 
 ## Hosting, Configuring, Commanding, and Extending Hawking (and more)!
-- Take a look at the [Hawking installation guide](https://github.com/naschorr/hawking/blob/master/docs/installing_hawking.md)
+- Take a look at the [Hawking installation guide](https://github.com/naschorr/hawking/blob/master/docs/installing_running_hawking.md)
 - After you've got Hawking intalled, check out the [Hawking configuration guide](https://github.com/naschorr/hawking/blob/master/docs/configuring_hawking.md)
 - Once Hawking has been configured, flex those admin muscles with the [admin command guide](https://github.com/naschorr/hawking/blob/master/docs/admin_commands.md)
 - Want to add features to your Hawking installation? Take a look at the [module building guide](https://github.com/naschorr/hawking/blob/master/docs/building_modules.md)!
