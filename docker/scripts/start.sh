@@ -1,17 +1,137 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+usage() {
+    cat <<'EOF'
+Usage: start.sh [OPTIONS]
+
+Options:
+  --container-name NAME       Container name (default: hawking)
+  --data-dir PATH             Host data directory (default: /opt/hawking)
+  --config-dir PATH           Configuration directory (default: DATA_DIR/configuration)
+  --env-file PATH             Environment file (default: CONFIG_DIR/.env)
+  --image IMAGE               Full image reference
+  --image-repository REPO     Image repository (default: ghcr.io/naschorr/hawking)
+  --image-tag TAG             Image tag (default: latest)
+  --previous-image IMAGE      Full rollback image reference
+  --previous-tag TAG          Rollback tag (default: previous)
+  --pull-image true|false     Pull the image first (default: true)
+  --platform PLATFORM         Docker platform (default: linux/amd64)
+  -h, --help                  Show this help
+
+Each option can also be set with its corresponding HAWKING_* environment variable.
+Command-line options take precedence.
+EOF
+}
+
+require_value() {
+    if [[ -z "${2:-}" || "${2:-}" == --* ]]; then
+        echo "$1 requires a value." >&2
+        usage >&2
+        exit 2
+    fi
+}
+
 image_repository="${HAWKING_IMAGE_REPOSITORY:-ghcr.io/naschorr/hawking}"
 image_tag="${HAWKING_IMAGE_TAG:-latest}"
 previous_tag="${HAWKING_PREVIOUS_TAG:-previous}"
-image="${HAWKING_IMAGE:-${image_repository}:${image_tag}}"
-previous_image="${HAWKING_PREVIOUS_IMAGE:-${image_repository}:${previous_tag}}"
+image="${HAWKING_IMAGE:-}"
+previous_image="${HAWKING_PREVIOUS_IMAGE:-}"
+image_changed=false
+previous_image_changed=false
 pull_image="${HAWKING_PULL_IMAGE:-true}"
 container_name="${HAWKING_CONTAINER_NAME:-hawking}"
 data_dir="${HAWKING_DATA_DIR:-/opt/hawking}"
-config_dir="${HAWKING_CONFIG_DIR:-${data_dir}/configuration}"
-env_file="${HAWKING_ENV_FILE:-${config_dir}/.env}"
+config_dir="${HAWKING_CONFIG_DIR:-}"
+env_file="${HAWKING_ENV_FILE:-}"
 platform="${HAWKING_PLATFORM:-linux/amd64}"
+
+while (($# > 0)); do
+    case "$1" in
+        --image)
+            require_value "$1" "${2:-}"
+            image="$2"
+            image_changed=false
+            shift 2
+            ;;
+        --image-repository)
+            require_value "$1" "${2:-}"
+            image_repository="$2"
+            image_changed=true
+            shift 2
+            ;;
+        --image-tag)
+            require_value "$1" "${2:-}"
+            image_tag="$2"
+            image_changed=true
+            shift 2
+            ;;
+        --previous-image)
+            require_value "$1" "${2:-}"
+            previous_image="$2"
+            previous_image_changed=false
+            shift 2
+            ;;
+        --previous-tag)
+            require_value "$1" "${2:-}"
+            previous_tag="$2"
+            previous_image_changed=true
+            shift 2
+            ;;
+        --container-name)
+            require_value "$1" "${2:-}"
+            container_name="$2"
+            shift 2
+            ;;
+        --data-dir)
+            require_value "$1" "${2:-}"
+            data_dir="$2"
+            shift 2
+            ;;
+        --config-dir)
+            require_value "$1" "${2:-}"
+            config_dir="$2"
+            shift 2
+            ;;
+        --env-file)
+            require_value "$1" "${2:-}"
+            env_file="$2"
+            shift 2
+            ;;
+        --pull-image)
+            require_value "$1" "${2:-}"
+            pull_image="$2"
+            shift 2
+            ;;
+        --platform)
+            require_value "$1" "${2:-}"
+            platform="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [[ -z "${image}" || "${image_changed}" == true ]]; then
+    image="${image_repository}:${image_tag}"
+fi
+if [[ -z "${previous_image}" || "${previous_image_changed}" == true ]]; then
+    previous_image="${image_repository}:${previous_tag}"
+fi
+if [[ -z "${config_dir}" ]]; then
+    config_dir="${data_dir}/configuration"
+fi
+if [[ -z "${env_file}" ]]; then
+    env_file="${config_dir}/.env"
+fi
 
 if [[ "${EUID}" -ne 0 ]]; then
     echo "Run this script with sudo." >&2
