@@ -74,7 +74,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Prepare release image references
-        if: github.ref_name == 'main' || github.ref_name == 'master'
         id: release-image
         env:
           IMAGE: ${{ steps.image-name.outputs.image }}
@@ -85,7 +84,6 @@ jobs:
           echo "digest=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Move version tag to the latest run
-        if: github.ref_name == 'main' || github.ref_name == 'master'
         env:
           VERSION: ${{ steps.read-metadata.outputs.version }}
         run: |
@@ -94,7 +92,6 @@ jobs:
           git push --force origin "refs/tags/${tag}"
 
       - name: Publish or update GitHub release
-        if: github.ref_name == 'main' || github.ref_name == 'master'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.read-metadata.outputs.version }}
