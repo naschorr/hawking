@@ -97,9 +97,8 @@ jobs:
           tag_name: v${{ steps.read-metadata.outputs.version }}
           name: Hawking v${{ steps.read-metadata.outputs.version }}
           body: |
-            Container image:
+            ## Docker Image:
 
-            - Version tag: `${{ steps.release-image.outputs.version_tag }}`
-            - Immutable digest: `${{ steps.release-image.outputs.digest }}`
+            Update your image with: `docker pull ${{ steps.release-image.outputs.version_tag }}`!
           generate_release_notes: true
           make_latest: true
