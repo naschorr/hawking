@@ -7,18 +7,29 @@ on:
       - master
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    concurrency:
+      group: publish-hawking-image-${{ github.ref_name == 'main' && 'production' || github.ref_name == 'master' && 'production' || github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Read application version and description
+        id: read-metadata
+        run: |
+          version="$(jq -er '.hawking.core.app.version | strings | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))' configuration/config.json)"
+          description="$(jq -er '.hawking.core.app.description | if type == "array" then join(" ") else tostring end | select(length > 0)' configuration/config.json)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "description=${description}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -27,16 +38,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image name
+        id: image-name
+        run: |
+          repository="$(printf '%s' "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')"
+          echo "image=ghcr.io/${repository}" >> "$GITHUB_OUTPUT"
+
       - name: Generate image tags and labels
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/hawking
+          images: ${{ steps.image-name.outputs.image }}
           tags: |
-            type=raw,value=latest
+            type=ref,event=branch,prefix=branch-,enable=${{ github.ref_name != 'main' && github.ref_name != 'master' }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+            type=raw,value=${{ steps.read-metadata.outputs.version }}
             type=sha,prefix=sha-
+          labels: |
+            org.opencontainers.image.description=${{ steps.read-metadata.outputs.description }}
+            org.opencontainers.image.version=${{ steps.read-metadata.outputs.version }}
 
       - name: Build and publish image
+        id: build-image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -45,5 +68,39 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+          annotations: |
+            index,manifest:org.opencontainers.image.description=${{ steps.read-metadata.outputs.description }}
+          build-args: |
+            DESCRIPTION=${{ steps.read-metadata.outputs.description }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Prepare release image references
+        id: release-image
+        env:
+          IMAGE: ${{ steps.image-name.outputs.image }}
+          VERSION: ${{ steps.read-metadata.outputs.version }}
+          DIGEST: ${{ steps.build-image.outputs.digest }}
+        run: |
+          echo "version_tag=${IMAGE}:${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "digest=${IMAGE}@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Move version tag to the latest run
+        env:
+          VERSION: ${{ steps.read-metadata.outputs.version }}
+        run: |
+          tag="v${VERSION}"
+          git tag --force "${tag}" "${GITHUB_SHA}"
+          git push --force origin "refs/tags/${tag}"
+
+      - name: Publish or update GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.read-metadata.outputs.version }}
+          name: Hawking v${{ steps.read-metadata.outputs.version }}
+          body: |
+            ## Docker Image:
+
+            Update your image with: `docker pull ${{ steps.release-image.outputs.version_tag }}`!
+          generate_release_notes: true
+          make_latest: true

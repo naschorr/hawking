@@ -1,7 +1,42 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+usage() {
+    cat <<'EOF'
+Usage: stop.sh [OPTIONS]
+
+Options:
+  --container-name NAME  Container name (default: hawking)
+  -h, --help             Show this help
+
+The container name can also be set with HAWKING_CONTAINER_NAME.
+EOF
+}
+
 container_name="${HAWKING_CONTAINER_NAME:-hawking}"
+
+while (($# > 0)); do
+    case "$1" in
+        --container-name)
+            if [[ -z "${2:-}" || "${2:-}" == --* ]]; then
+                echo "$1 requires a value." >&2
+                usage >&2
+                exit 2
+            fi
+            container_name="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "Docker is not installed or is not on PATH." >&2

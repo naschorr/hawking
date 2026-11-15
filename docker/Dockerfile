@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM python:3.15-slim-trixie
 
+ARG DESCRIPTION
+LABEL org.opencontainers.image.description="${DESCRIPTION}"
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
