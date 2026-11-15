@@ -53,7 +53,7 @@ jobs:
           tags: |
             type=ref,event=branch,prefix=branch-,enable=${{ github.ref_name != 'main' && github.ref_name != 'master' }}
             type=raw,value=latest,enable=${{ github.ref_name == 'main' || github.ref_name == 'master' }}
-            type=raw,value=${{ steps.read-metadata.outputs.version }},enable=${{ github.ref_name == 'main' || github.ref_name == 'master' }}
+            type=raw,value=${{ steps.read-metadata.outputs.version }}
             type=sha,prefix=sha-
           labels: |
             org.opencontainers.image.version=${{ steps.read-metadata.outputs.version }}
