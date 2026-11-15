@@ -56,6 +56,7 @@ jobs:
             type=raw,value=${{ steps.read-metadata.outputs.version }}
             type=sha,prefix=sha-
           labels: |
+            org.opencontainers.image.description=${{ steps.read-metadata.outputs.description }}
             org.opencontainers.image.version=${{ steps.read-metadata.outputs.version }}
 
       - name: Build and publish image
