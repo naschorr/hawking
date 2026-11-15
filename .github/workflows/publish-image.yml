@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-  workflow_dispatch:
+      - 385-publish-enrichment
 
 permissions:
   contents: write
